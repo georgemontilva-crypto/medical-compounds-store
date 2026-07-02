@@ -426,16 +426,22 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu — always in DOM when visible, animated open/close */}
+      {/* Mobile menu — floating overlay, does not push content */}
       {mobileVisible && (
         <div
-          className={`md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-1 overflow-hidden transition-all duration-[260ms] ${
+          className={`md:hidden absolute top-full left-0 right-0 z-50 transition-all duration-300 ease-out ${
             mobileOpen
-              ? "max-h-[600px] opacity-100 translate-y-0"
-              : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 -translate-y-1 pointer-events-none"
           }`}
-          style={{ transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)" }}
         >
+          {/* Backdrop blur overlay */}
+          <div
+            className={`absolute inset-0 bg-white/80 backdrop-blur-xl border-b border-gray-100/80 shadow-lg shadow-gray-200/40 transition-opacity duration-300 ${
+              mobileOpen ? "opacity-100" : "opacity-0"
+            }`}
+          />
+          <div className="relative px-4 py-4 space-y-0.5">
           <Link href="/compounds">
             <div
               className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
@@ -514,6 +520,7 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+          </div>
           </div>
         </div>
       )}
