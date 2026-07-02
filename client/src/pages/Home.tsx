@@ -210,7 +210,15 @@ function ResearchCatalogSection() {
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<HomeSortOption>("featured");
+  const [sortOpen, setSortOpen] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
+
+  const SORT_LABELS: Record<HomeSortOption, string> = {
+    featured: "Featured",
+    price_asc: "Price: Low to High",
+    price_desc: "Price: High to Low",
+    name_asc: "Name A-Z",
+  };
   const { addItem } = useCart();
 
   const filtered = useMemo(() => {
@@ -325,17 +333,33 @@ function ResearchCatalogSection() {
                 />
               </div>
               <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as HomeSortOption)}
-                  className="appearance-none pl-4 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 cursor-pointer font-medium text-gray-700"
+                <button
+                  onClick={() => setSortOpen(!sortOpen)}
+                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 font-medium hover:border-[#7ECDC4] hover:text-[#2A8E84] transition-all whitespace-nowrap"
                 >
-                  <option value="featured">Featured</option>
-                  <option value="price_asc">Price: Low to High</option>
-                  <option value="price_desc">Price: High to Low</option>
-                  <option value="name_asc">Name A-Z</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  {SORT_LABELS[sortBy]}
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${sortOpen ? "rotate-180 text-[#2A8E84]" : "text-gray-400"}`} />
+                </button>
+                {sortOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-[#C8D8D6] rounded-xl shadow-lg shadow-[#3A9E94]/10 z-20 overflow-hidden">
+                      {(Object.entries(SORT_LABELS) as [HomeSortOption, string][]).map(([val, label]) => (
+                        <button
+                          key={val}
+                          onClick={() => { setSortBy(val); setSortOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                            sortBy === val
+                              ? "bg-[#E8F7F6] text-[#2A8E84] font-semibold border-l-2 border-[#3A9E94]"
+                              : "text-gray-700 hover:bg-[#F5F2EC] hover:text-[#3A9E94]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
