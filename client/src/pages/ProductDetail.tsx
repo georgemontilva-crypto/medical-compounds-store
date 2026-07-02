@@ -10,6 +10,7 @@ import {
   Minus,
   Check,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -252,6 +253,14 @@ export default function ProductDetail({ params }: Props) {
                 </>
               )}
             </button>
+
+            {/* Lab Reports link */}
+            <Link href={`/lab-reports/${params.slug}`}>
+              <button className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:text-violet-700 hover:border-violet-300 hover:bg-violet-50/40 text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                <FileText size={15} />
+                View Lab Reports / COA
+              </button>
+            </Link>
 
             {/* Description */}
             {product.shortDescription && (

@@ -55,6 +55,11 @@ import {
   updateVariation,
   upsertCartItem,
   upsertUser,
+  getLabReportsByProduct,
+  getAllLabReports,
+  createLabReport,
+  deleteLabReport,
+  updateLabReport,
 } from "./db";
 import { storagePut } from "./storage";
 
@@ -593,6 +598,67 @@ export const appRouter = router({
   }),
 
   // ─── Admin Dashboard ───────────────────────────────────────────────────────
+
+  // ─── Lab Reports ──────────────────────────────────────────────────────────────
+  labReports: router({
+    byProduct: publicProcedure
+      .input(z.object({ productId: z.number() }))
+      .query(({ input }) => getLabReportsByProduct(input.productId)),
+
+    all: adminProcedure.query(() => getAllLabReports()),
+
+    upload: adminProcedure
+      .input(
+        z.object({
+          productId: z.number(),
+          title: z.string().min(1),
+          description: z.string().optional(),
+          batchNumber: z.string().optional(),
+          testDate: z.string().optional(),
+          fileBase64: z.string(),
+          fileName: z.string(),
+          fileSize: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.fileBase64, "base64");
+        const key = `lab-reports/${Date.now()}-${input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const { url } = await storagePut(key, buffer, "application/pdf");
+        const id = await createLabReport({
+          productId: input.productId,
+          title: input.title,
+          description: input.description ?? null,
+          fileUrl: url,
+          fileKey: key,
+          fileName: input.fileName,
+          fileSize: input.fileSize ?? null,
+          batchNumber: input.batchNumber ?? null,
+          testDate: input.testDate ? new Date(input.testDate) : null,
+          active: true,
+        });
+        return { id, url };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ input }) => deleteLabReport(input.id)),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          title: z.string().optional(),
+          description: z.string().optional(),
+          batchNumber: z.string().optional(),
+          active: z.boolean().optional(),
+        })
+      )
+      .mutation(({ input }) => {
+        const { id, ...data } = input;
+        return updateLabReport(id, data);
+      }),
+  }),
+
   admin: router({
     stats: adminProcedure.query(async () => {
       const [totalUsers, totalOrders, totalProducts, revenue] = await Promise.all([

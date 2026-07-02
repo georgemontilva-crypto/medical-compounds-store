@@ -193,3 +193,25 @@ export const cartItems = mysqlTable("cart_items", {
 
 export type CartItem = typeof cartItems.$inferSelect;
 export type InsertCartItem = typeof cartItems.$inferInsert;
+
+// ─── Lab Reports ──────────────────────────────────────────────────────────────
+export const labReports = mysqlTable("lab_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId")
+    .notNull()
+    .references(() => products.id),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  fileUrl: varchar("fileUrl", { length: 500 }).notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  fileName: varchar("fileName", { length: 200 }).notNull(),
+  fileSize: int("fileSize"),
+  batchNumber: varchar("batchNumber", { length: 100 }),
+  testDate: timestamp("testDate"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LabReport = typeof labReports.$inferSelect;
+export type InsertLabReport = typeof labReports.$inferInsert;

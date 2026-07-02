@@ -6,6 +6,7 @@ import {
   InsertCartItem,
   InsertCategory,
   InsertCoupon,
+  InsertLabReport,
   InsertOrder,
   InsertOrderItem,
   InsertProduct,
@@ -16,6 +17,7 @@ import {
   cartItems,
   categories,
   coupons,
+  labReports,
   orderItems,
   orders,
   productImages,
@@ -476,4 +478,40 @@ export async function clearCart(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.delete(cartItems).where(eq(cartItems.userId, userId));
+}
+
+// ─── Lab Reports ──────────────────────────────────────────────────────────────
+export async function getLabReportsByProduct(productId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(labReports)
+    .where(eq(labReports.productId, productId))
+    .orderBy(labReports.createdAt);
+}
+
+export async function getAllLabReports() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(labReports).orderBy(labReports.createdAt);
+}
+
+export async function createLabReport(data: InsertLabReport) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(labReports).values(data);
+  return result[0].insertId as number;
+}
+
+export async function deleteLabReport(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.delete(labReports).where(eq(labReports.id, id));
+}
+
+export async function updateLabReport(id: number, data: Partial<InsertLabReport>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(labReports).set(data).where(eq(labReports.id, id));
 }

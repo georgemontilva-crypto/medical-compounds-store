@@ -3,6 +3,7 @@ import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
 import { ArrowRight, FlaskConical, Shield, Microscope, Award, ChevronRight, Plus, Beaker, Dna, Zap, Activity } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import HeroSlider from "@/components/HeroSlider";
 
 // ── Placeholder image component ──────────────────────────────────────────────
 function VialPlaceholder({ label, size = "10mg", color = "#a78bfa", large = false }: { label: string; size?: string; color?: string; large?: boolean }) {
@@ -107,8 +108,11 @@ export default function Home() {
     <div className="min-h-screen bg-[#f8f8fa]">
       <Navbar />
 
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white">
+      {/* ── HERO SLIDER ──────────────────────────────────────────────────── */}
+      <HeroSlider />
+
+      {/* ── HERO STATIC (hidden - replaced by slider) ─────────────────────── */}
+      <section className="relative overflow-hidden bg-white hidden">
         {/* Background geometry */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-violet-100/60 to-indigo-50/40 blur-3xl" />

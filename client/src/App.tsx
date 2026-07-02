@@ -26,6 +26,8 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminOrderDetail from "./pages/admin/AdminOrderDetail";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCoupons from "./pages/admin/AdminCoupons";
+import AdminLabReports from "./pages/admin/AdminLabReports";
+import LabReports from "./pages/LabReports";
 
 function Router() {
   return (
@@ -39,6 +41,7 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/my-orders/:id" component={OrderDetail} />
+      <Route path="/lab-reports/:slug" component={LabReports} />
 
       {/* Admin routes */}
       <Route path="/admin" component={AdminDashboard} />
@@ -48,6 +51,7 @@ function Router() {
       <Route path="/admin/orders/:id" component={AdminOrderDetail} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/coupons" component={AdminCoupons} />
+      <Route path="/admin/lab-reports" component={AdminLabReports} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
