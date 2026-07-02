@@ -3,6 +3,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── Google Fonts already loaded in index.html ───────────────────────────── */
+
 @theme inline {
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
@@ -10,47 +12,73 @@
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
 
-  --color-background: oklch(0.985 0.002 240);
-  --color-foreground: oklch(0.15 0.01 240);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.15 0.01 240);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.15 0.01 240);
-  --color-primary: oklch(0.45 0.18 270);
-  --color-primary-foreground: oklch(1 0 0);
-  --color-secondary: oklch(0.96 0.005 240);
-  --color-secondary-foreground: oklch(0.35 0.01 240);
-  --color-muted: oklch(0.96 0.005 240);
-  --color-muted-foreground: oklch(0.55 0.01 240);
-  --color-accent: oklch(0.96 0.01 270);
-  --color-accent-foreground: oklch(0.45 0.18 270);
-  --color-destructive: oklch(0.55 0.22 25);
+  /* ── Lab palette — extracted from Brighter Days Labs label ──────────────
+     Beige/cream   : #E8DCC8 / #D4C5A9
+     Teal/mint     : #7ECDC4 / #5BB8AE
+     Gold/amber    : #C8A84B / #B8943A
+     Charcoal      : #1A1A1A / #2D2D2D
+     Off-white bg  : #F5F2EC
+  ──────────────────────────────────────────────────────────────────────── */
+
+  /* Background: warm off-white derived from label cream */
+  --color-background:          oklch(0.972 0.008 80);   /* #F5F2EC */
+  --color-foreground:          oklch(0.13  0.005 240);  /* #1A1A1A */
+
+  /* Card: pure white with slight warm tint */
+  --color-card:                oklch(1    0     0);
+  --color-card-foreground:     oklch(0.13 0.005 240);
+
+  --color-popover:             oklch(1    0     0);
+  --color-popover-foreground:  oklch(0.13 0.005 240);
+
+  /* Primary: teal/mint from label bottom bar */
+  --color-primary:             oklch(0.73 0.09  185);   /* #7ECDC4 */
+  --color-primary-foreground:  oklch(0.13 0.005 240);
+
+  /* Secondary: warm beige from label background */
+  --color-secondary:           oklch(0.90 0.022 80);    /* #E8DCC8 */
+  --color-secondary-foreground:oklch(0.30 0.01  80);
+
+  /* Muted: lighter beige */
+  --color-muted:               oklch(0.95 0.012 80);
+  --color-muted-foreground:    oklch(0.50 0.01  80);
+
+  /* Accent: gold/amber from label badges */
+  --color-accent:              oklch(0.78 0.10  75);    /* #C8A84B */
+  --color-accent-foreground:   oklch(0.13 0.005 240);
+
+  --color-destructive:         oklch(0.55 0.22  25);
   --color-destructive-foreground: oklch(1 0 0);
-  --color-border: oklch(0.9 0.005 240);
-  --color-input: oklch(0.9 0.005 240);
-  --color-ring: oklch(0.45 0.18 270);
-  --color-chart-1: oklch(0.45 0.18 270);
-  --color-chart-2: oklch(0.6 0.15 200);
-  --color-chart-3: oklch(0.65 0.15 150);
-  --color-chart-4: oklch(0.7 0.15 60);
-  --color-chart-5: oklch(0.6 0.2 25);
-  --color-sidebar: oklch(0.98 0.003 240);
-  --color-sidebar-foreground: oklch(0.15 0.01 240);
-  --color-sidebar-primary: oklch(0.45 0.18 270);
-  --color-sidebar-primary-foreground: oklch(1 0 0);
-  --color-sidebar-accent: oklch(0.95 0.01 270);
-  --color-sidebar-accent-foreground: oklch(0.45 0.18 270);
-  --color-sidebar-border: oklch(0.9 0.005 240);
-  --color-sidebar-ring: oklch(0.45 0.18 270);
+
+  --color-border:              oklch(0.88 0.015 80);
+  --color-input:               oklch(0.88 0.015 80);
+  --color-ring:                oklch(0.73 0.09  185);
+
+  /* Charts */
+  --color-chart-1:             oklch(0.73 0.09  185);
+  --color-chart-2:             oklch(0.78 0.10  75);
+  --color-chart-3:             oklch(0.90 0.022 80);
+  --color-chart-4:             oklch(0.55 0.22  25);
+  --color-chart-5:             oklch(0.45 0.10  240);
+
+  /* Sidebar */
+  --color-sidebar:             oklch(0.97 0.008 80);
+  --color-sidebar-foreground:  oklch(0.13 0.005 240);
+  --color-sidebar-primary:     oklch(0.73 0.09  185);
+  --color-sidebar-primary-foreground: oklch(0.13 0.005 240);
+  --color-sidebar-accent:      oklch(0.93 0.015 80);
+  --color-sidebar-accent-foreground: oklch(0.30 0.01 80);
+  --color-sidebar-border:      oklch(0.88 0.015 80);
+  --color-sidebar-ring:        oklch(0.73 0.09  185);
 
   --font-sans: "DM Sans", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  --shadow-xs: 0 1px 2px oklch(0.15 0.01 240 / 0.04);
-  --shadow-sm: 0 1px 3px oklch(0.15 0.01 240 / 0.06), 0 1px 2px oklch(0.15 0.01 240 / 0.04);
-  --shadow-md: 0 4px 6px oklch(0.15 0.01 240 / 0.05), 0 2px 4px oklch(0.15 0.01 240 / 0.04);
-  --shadow-lg: 0 10px 15px oklch(0.15 0.01 240 / 0.06), 0 4px 6px oklch(0.15 0.01 240 / 0.04);
-  --shadow-xl: 0 20px 25px oklch(0.15 0.01 240 / 0.08), 0 8px 10px oklch(0.15 0.01 240 / 0.04);
+  --shadow-xs: 0 1px 2px oklch(0.13 0.005 240 / 0.05);
+  --shadow-sm: 0 1px 3px oklch(0.13 0.005 240 / 0.08), 0 1px 2px oklch(0.13 0.005 240 / 0.05);
+  --shadow-md: 0 4px 6px oklch(0.13 0.005 240 / 0.07), 0 2px 4px oklch(0.13 0.005 240 / 0.05);
+  --shadow-lg: 0 10px 15px oklch(0.13 0.005 240 / 0.08), 0 4px 6px oklch(0.13 0.005 240 / 0.05);
+  --shadow-xl: 0 20px 25px oklch(0.13 0.005 240 / 0.10), 0 8px 10px oklch(0.13 0.005 240 / 0.05);
 }
 
 @layer base {
@@ -65,6 +93,59 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HEX PATTERN — SVG hexagonal grid from the label, used as texture
+   Usage: class="hex-bg" or "hex-bg-fade" (with gradient overlay)
+══════════════════════════════════════════════════════════════════════════ */
+.hex-bg {
+  background-color: #F5F2EC;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50V18L28 2l28 16v32L28 66zm0-6l22-12.7V21.7L28 9 6 21.7v25.6L28 60z' fill='%23C8A84B' fill-opacity='0.07'/%3E%3Cpath d='M28 100l-28-16V68l28 16 28-16v16L28 100z' fill='%237ECDC4' fill-opacity='0.06'/%3E%3C/svg%3E");
+  background-size: 56px 100px;
+}
+
+/* Hex pattern with gradient fade — white on top, pattern visible below */
+.hex-bg-fade {
+  position: relative;
+}
+.hex-bg-fade::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50V18L28 2l28 16v32L28 66zm0-6l22-12.7V21.7L28 9 6 21.7v25.6L28 60z' fill='%23C8A84B' fill-opacity='0.08'/%3E%3Cpath d='M28 100l-28-16V68l28 16 28-16v16L28 100z' fill='%237ECDC4' fill-opacity='0.07'/%3E%3C/svg%3E");
+  background-size: 56px 100px;
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.4) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Hex pattern on white sections — subtle warm cream with hex overlay */
+.hex-section {
+  background-color: #FFFFFF;
+  background-image:
+    linear-gradient(135deg, rgba(232,220,200,0.18) 0%, rgba(255,255,255,0) 50%, rgba(126,205,196,0.10) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50V18L28 2l28 16v32L28 66zm0-6l22-12.7V21.7L28 9 6 21.7v25.6L28 60z' fill='%23C8A84B' fill-opacity='0.055'/%3E%3Cpath d='M28 100l-28-16V68l28 16 28-16v16L28 100z' fill='%237ECDC4' fill-opacity='0.045'/%3E%3C/svg%3E");
+  background-size: auto, 56px 100px;
+}
+
+/* Cream section — beige background with hex pattern */
+.hex-cream {
+  background-color: #F5F2EC;
+  background-image:
+    linear-gradient(135deg, rgba(200,168,75,0.08) 0%, rgba(245,242,236,0) 50%, rgba(126,205,196,0.08) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50V18L28 2l28 16v32L28 66zm0-6l22-12.7V21.7L28 9 6 21.7v25.6L28 60z' fill='%23C8A84B' fill-opacity='0.09'/%3E%3Cpath d='M28 100l-28-16V68l28 16 28-16v16L28 100z' fill='%237ECDC4' fill-opacity='0.07'/%3E%3C/svg%3E");
+  background-size: auto, 56px 100px;
+}
+
+/* Teal accent section */
+.hex-teal {
+  background-color: #7ECDC4;
+  background-image:
+    linear-gradient(135deg, rgba(91,184,174,0.5) 0%, rgba(126,205,196,0) 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50V18L28 2l28 16v32L28 66zm0-6l22-12.7V21.7L28 9 6 21.7v25.6L28 60z' fill='%23ffffff' fill-opacity='0.12'/%3E%3Cpath d='M28 100l-28-16V68l28 16 28-16v16L28 100z' fill='%23ffffff' fill-opacity='0.08'/%3E%3C/svg%3E");
+  background-size: auto, 56px 100px;
 }
 
 /* ── Lab aesthetic utilities ─────────────────────────────────────────────── */
@@ -96,27 +177,65 @@
   .lab-section-title {
     @apply text-xs font-semibold uppercase tracking-widest text-muted-foreground;
   }
+
+  /* Teal color utilities */
+  .text-teal { color: #5BB8AE; }
+  .text-teal-dark { color: #3A9E94; }
+  .bg-teal { background-color: #7ECDC4; }
+  .bg-teal-light { background-color: #E8F7F6; }
+  .border-teal { border-color: #7ECDC4; }
+
+  /* Gold/amber utilities */
+  .text-gold { color: #C8A84B; }
+  .bg-gold { background-color: #C8A84B; }
+  .bg-gold-light { background-color: #FBF5E6; }
+  .border-gold { border-color: #C8A84B; }
+
+  /* Cream/beige utilities */
+  .bg-cream { background-color: #F5F2EC; }
+  .bg-beige { background-color: #E8DCC8; }
+  .border-cream { border-color: #D4C5A9; }
+}
+
+/* ── Ken Burns animation (hero slider) ───────────────────────────────────── */
+@keyframes kenburns {
+  0%   { transform: scale(1)     translateX(0)      translateY(0); }
+  100% { transform: scale(1.12)  translateX(-1.5%)  translateY(-1%); }
+}
+@keyframes kenburns-alt {
+  0%   { transform: scale(1)     translateX(0)      translateY(0); }
+  100% { transform: scale(1.12)  translateX(1.5%)   translateY(-1%); }
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: oklch(0.85 0.005 240); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: oklch(0.75 0.01 240); }
+::-webkit-scrollbar-thumb { background: #D4C5A9; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #C8A84B; }
 
 /* ── Container ───────────────────────────────────────────────────────────── */
 .container {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
-@media (min-width: 640px) { .container { max-width: 640px; } }
-@media (min-width: 768px) { .container { max-width: 768px; padding-left: 2rem; padding-right: 2rem; } }
+@media (min-width: 480px)  { .container { padding-left: 1.5rem; padding-right: 1.5rem; } }
+@media (min-width: 640px)  { .container { max-width: 640px; } }
+@media (min-width: 768px)  { .container { max-width: 768px;  padding-left: 2rem; padding-right: 2rem; } }
 @media (min-width: 1024px) { .container { max-width: 1024px; } }
 @media (min-width: 1280px) { .container { max-width: 1280px; } }
 @media (min-width: 1536px) { .container { max-width: 1400px; } }
 
 /* ── Flex fix ────────────────────────────────────────────────────────────── */
 .flex { min-width: 0; min-height: 0; }
+
+/* ── Mobile nav helpers ──────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .mobile-menu-open { overflow: hidden; }
+}

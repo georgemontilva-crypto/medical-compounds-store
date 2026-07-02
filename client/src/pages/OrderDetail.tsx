@@ -6,8 +6,8 @@ import { Link, useParams } from "wouter";
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   pending: { label: "Pending", color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
   confirmed: { label: "Confirmed", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle },
-  processing: { label: "Processing", color: "text-purple-600 bg-purple-50 border-purple-200", icon: Package },
-  shipped: { label: "Shipped", color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Truck },
+  processing: { label: "Processing", color: "text-[#3A9E94] bg-[#E8F7F6] border-[#7ECDC4]", icon: Package },
+  shipped: { label: "Shipped", color: "text-[#2A8E84] bg-[#d0f0ed] border-[#5BB8AE]", icon: Truck },
   delivered: { label: "Delivered", color: "text-green-600 bg-green-50 border-green-200", icon: CheckCircle },
   cancelled: { label: "Cancelled", color: "text-red-600 bg-red-50 border-red-200", icon: XCircle },
 };
@@ -68,7 +68,7 @@ export default function OrderDetail() {
   const StatusIcon = statusCfg.icon;
 
   return (
-    <div className="min-h-screen bg-lab-bg">
+    <div className="min-h-screen hex-cream">
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">

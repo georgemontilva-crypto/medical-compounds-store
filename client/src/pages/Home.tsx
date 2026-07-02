@@ -29,30 +29,30 @@ function VialPlaceholder({ label, size = "10mg", color = "#a78bfa", large = fals
 
 // ── Static product data for hero display ─────────────────────────────────────
 const FEATURED_PRODUCTS = [
-  { name: "BPC-157", category: "Tissue", size: "10mg", color: "#7c3aed", description: "Pentadecapeptide with potent tissue repair and cytoprotective properties.", price: "$60.00", slug: "bpc-157" },
-  { name: "TB-500", category: "Tissue", size: "10mg", color: "#7c3aed", description: "Thymosin Beta-4 fragment promoting actin regulation and tissue recovery.", price: "$60.00", slug: "tb-500" },
-  { name: "NAD+", category: "Metabolic", size: "500mg", color: "#db2777", description: "Nicotinamide Adenine Dinucleotide — essential coenzyme for cellular energy metabolism.", price: "$85.00", slug: "nad-plus" },
-  { name: "GHK-Cu", category: "Tissue", size: "50mg", color: "#0ea5e9", description: "Copper peptide with regenerative and anti-inflammatory signaling properties.", price: "$60.00", slug: "ghk-cu" },
-  { name: "Sermorelin", category: "Endocrine", size: "5mg", color: "#f59e0b", description: "GHRH analogue that stimulates natural growth hormone secretion.", price: "$55.00", slug: "sermorelin" },
-  { name: "MOTS-C", category: "Metabolic", size: "10mg", color: "#10b981", description: "Mitochondrial-derived peptide regulating metabolic homeostasis.", price: "$90.00", slug: "mots-c" },
-  { name: "PT-141", category: "Endocrine", size: "10mg", color: "#ec4899", description: "Melanocortin receptor agonist studied for central nervous system effects.", price: "$65.00", slug: "pt-141" },
-  { name: "Semax", category: "Neural", size: "10mg", color: "#6366f1", description: "Synthetic peptide analogue of ACTH with neuroprotective properties.", price: "$70.00", slug: "semax" },
+  { name: "BPC-157", category: "Tissue", size: "10mg", color: "#7ECDC4", description: "Pentadecapeptide with potent tissue repair and cytoprotective properties.", price: "$60.00", slug: "bpc-157" },
+  { name: "TB-500", category: "Tissue", size: "10mg", color: "#7ECDC4", description: "Thymosin Beta-4 fragment promoting actin regulation and tissue recovery.", price: "$60.00", slug: "tb-500" },
+  { name: "NAD+", category: "Metabolic", size: "500mg", color: "#C8A84B", description: "Nicotinamide Adenine Dinucleotide — essential coenzyme for cellular energy metabolism.", price: "$85.00", slug: "nad-plus" },
+  { name: "GHK-Cu", category: "Tissue", size: "50mg", color: "#5BB8AE", description: "Copper peptide with regenerative and anti-inflammatory signaling properties.", price: "$60.00", slug: "ghk-cu" },
+  { name: "Sermorelin", category: "Endocrine", size: "5mg", color: "#B8943A", description: "GHRH analogue that stimulates natural growth hormone secretion.", price: "$55.00", slug: "sermorelin" },
+  { name: "MOTS-C", category: "Metabolic", size: "10mg", color: "#C8A84B", description: "Mitochondrial-derived peptide regulating metabolic homeostasis.", price: "$90.00", slug: "mots-c" },
+  { name: "PT-141", category: "Endocrine", size: "10mg", color: "#B8943A", description: "Melanocortin receptor agonist studied for central nervous system effects.", price: "$65.00", slug: "pt-141" },
+  { name: "Semax", category: "Neural", size: "10mg", color: "#3A9E94", description: "Synthetic peptide analogue of ACTH with neuroprotective properties.", price: "$70.00", slug: "semax" },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Tissue: "#7c3aed",
-  Cellular: "#0ea5e9",
-  Neural: "#6366f1",
-  Metabolic: "#10b981",
-  Endocrine: "#f59e0b",
-  Misc: "#6b7280",
+  Tissue: "#7ECDC4",
+  Cellular: "#5BB8AE",
+  Neural: "#3A9E94",
+  Metabolic: "#C8A84B",
+  Endocrine: "#B8943A",
+  Misc: "#8a9ba8",
 };
 
 const RESEARCH_CATEGORIES = [
-  { icon: Dna, label: "Tissue Repair", desc: "BPC-157, TB-500, GHK-Cu, KPV", color: "from-violet-50 to-purple-50", accent: "#7c3aed" },
-  { icon: Zap, label: "Metabolic", desc: "NAD+, MOTS-C, SS-31", color: "from-emerald-50 to-teal-50", accent: "#10b981" },
-  { icon: Activity, label: "Neural", desc: "Semax, Selank, PT-141", color: "from-indigo-50 to-blue-50", accent: "#6366f1" },
-  { icon: Beaker, label: "Endocrine", desc: "Sermorelin, Tesamorelin, CJC-1295", color: "from-amber-50 to-yellow-50", accent: "#f59e0b" },
+  { icon: Dna, label: "Tissue Repair", desc: "BPC-157, TB-500, GHK-Cu, KPV", color: "from-[#E8F7F6] to-[#F0FAF9]", accent: "#7ECDC4" },
+  { icon: Zap, label: "Metabolic", desc: "NAD+, MOTS-C, SS-31", color: "from-[#FBF6E8] to-[#FDF9F0]", accent: "#C8A84B" },
+  { icon: Activity, label: "Neural", desc: "Semax, Selank, PT-141", color: "from-[#E8F7F6] to-[#EEF8F7]", accent: "#3A9E94" },
+  { icon: Beaker, label: "Endocrine", desc: "Sermorelin, Tesamorelin, CJC-1295", color: "from-[#FBF6E8] to-[#FEF8EC]", accent: "#B8943A" },
 ];
 
 // ── ProductCard ───────────────────────────────────────────────────────────────
@@ -104,38 +104,38 @@ function ProductCard({ product }: { product: typeof FEATURED_PRODUCTS[0] }) {
 
 // ── Category color maps (shared) ─────────────────────────────────────────────
 const CAT_COLORS_MAP: Record<string, string> = {
-  Tissue: "#7c3aed", Cellular: "#0ea5e9", Neural: "#6366f1",
-  Metabolic: "#10b981", Endocrine: "#f59e0b", Misc: "#6b7280",
+  Tissue: "#7ECDC4", Cellular: "#5BB8AE", Neural: "#3A9E94",
+  Metabolic: "#C8A84B", Endocrine: "#B8943A", Misc: "#8a9ba8",
 };
 const CAT_TEXT_MAP: Record<string, string> = {
-  Tissue: "text-violet-600", Cellular: "text-sky-600", Neural: "text-indigo-600",
-  Metabolic: "text-emerald-600", Endocrine: "text-amber-600", Misc: "text-gray-500",
+  Tissue: "text-[#3A9E94]", Cellular: "text-[#3A9E94]", Neural: "text-[#2A8E84]",
+  Metabolic: "text-[#A07A28]", Endocrine: "text-[#A07A28]", Misc: "text-gray-500",
 };
 const CAT_BG_MAP: Record<string, string> = {
-  Tissue: "bg-violet-50", Cellular: "bg-sky-50", Neural: "bg-indigo-50",
-  Metabolic: "bg-emerald-50", Endocrine: "bg-amber-50", Misc: "bg-gray-50",
+  Tissue: "bg-[#E8F7F6]", Cellular: "bg-[#E8F7F6]", Neural: "bg-[#DFF4F3]",
+  Metabolic: "bg-[#FBF6E8]", Endocrine: "bg-[#FBF6E8]", Misc: "bg-gray-50",
 };
 
 const CATALOG_PRODUCTS = [
-  { id: 1, name: "BPC-157", slug: "bpc-157", category: "Tissue", sizes: ["10mg", "20mg"], color: "#7c3aed", price: 55, popular: true },
-  { id: 2, name: "TB-500", slug: "tb-500", category: "Tissue", sizes: ["10mg"], color: "#7c3aed", price: 60, popular: true },
-  { id: 3, name: "KPV", slug: "kpv", category: "Tissue", sizes: ["5mg", "10mg"], color: "#7c3aed", price: 40, popular: false },
-  { id: 4, name: "GHK-Cu", slug: "ghk-cu", category: "Tissue", sizes: ["50mg"], color: "#0ea5e9", price: 60, popular: false },
-  { id: 5, name: "RT-30", slug: "rt-30", category: "Tissue", sizes: ["30mg"], color: "#7c3aed", price: 75, popular: false },
-  { id: 6, name: "RT-10", slug: "rt-10", category: "Tissue", sizes: ["10mg"], color: "#7c3aed", price: 55, popular: false },
-  { id: 7, name: "Epithalon", slug: "epithalon", category: "Cellular", sizes: ["10mg", "30mg"], color: "#0ea5e9", price: 55, popular: true },
-  { id: 8, name: "MOTS-C", slug: "mots-c", category: "Cellular", sizes: ["10mg", "20mg"], color: "#0ea5e9", price: 90, popular: false },
-  { id: 9, name: "GLOW", slug: "glow", category: "Cellular", sizes: ["70mg"], color: "#0ea5e9", price: 90, popular: false },
-  { id: 10, name: "KLOW", slug: "klow", category: "Cellular", sizes: ["80mg"], color: "#0ea5e9", price: 90, popular: false },
-  { id: 11, name: "Semax", slug: "semax", category: "Neural", sizes: ["10mg"], color: "#6366f1", price: 70, popular: false },
-  { id: 12, name: "TZ-30", slug: "tz-30", category: "Neural", sizes: ["30mg"], color: "#6366f1", price: 80, popular: false },
-  { id: 13, name: "TZ-10", slug: "tz-10", category: "Neural", sizes: ["10mg"], color: "#6366f1", price: 60, popular: false },
-  { id: 14, name: "NAD+", slug: "nad-plus", category: "Metabolic", sizes: ["250mg", "500mg"], color: "#db2777", price: 75, popular: true },
-  { id: 15, name: "SS-31", slug: "ss-31", category: "Metabolic", sizes: ["10mg"], color: "#10b981", price: 95, popular: false },
-  { id: 16, name: "PT-141", slug: "pt-141", category: "Endocrine", sizes: ["10mg"], color: "#ec4899", price: 65, popular: false },
-  { id: 17, name: "Sermorelin", slug: "sermorelin", category: "Endocrine", sizes: ["5mg"], color: "#f59e0b", price: 55, popular: false },
-  { id: 18, name: "Tesamorelin", slug: "tesamorelin", category: "Endocrine", sizes: ["10mg"], color: "#f59e0b", price: 80, popular: false },
-  { id: 19, name: "CJC-1295", slug: "cjc-1295", category: "Endocrine", sizes: ["2mg"], color: "#f59e0b", price: 60, popular: false },
+  { id: 1, name: "BPC-157", slug: "bpc-157", category: "Tissue", sizes: ["10mg", "20mg"], color: "#7ECDC4", price: 55, popular: true },
+  { id: 2, name: "TB-500", slug: "tb-500", category: "Tissue", sizes: ["10mg"], color: "#7ECDC4", price: 60, popular: true },
+  { id: 3, name: "KPV", slug: "kpv", category: "Tissue", sizes: ["5mg", "10mg"], color: "#7ECDC4", price: 40, popular: false },
+  { id: 4, name: "GHK-Cu", slug: "ghk-cu", category: "Tissue", sizes: ["50mg"], color: "#5BB8AE", price: 60, popular: false },
+  { id: 5, name: "RT-30", slug: "rt-30", category: "Tissue", sizes: ["30mg"], color: "#7ECDC4", price: 75, popular: false },
+  { id: 6, name: "RT-10", slug: "rt-10", category: "Tissue", sizes: ["10mg"], color: "#7ECDC4", price: 55, popular: false },
+  { id: 7, name: "Epithalon", slug: "epithalon", category: "Cellular", sizes: ["10mg", "30mg"], color: "#5BB8AE", price: 55, popular: true },
+  { id: 8, name: "MOTS-C", slug: "mots-c", category: "Cellular", sizes: ["10mg", "20mg"], color: "#5BB8AE", price: 90, popular: false },
+  { id: 9, name: "GLOW", slug: "glow", category: "Cellular", sizes: ["70mg"], color: "#5BB8AE", price: 90, popular: false },
+  { id: 10, name: "KLOW", slug: "klow", category: "Cellular", sizes: ["80mg"], color: "#5BB8AE", price: 90, popular: false },
+  { id: 11, name: "Semax", slug: "semax", category: "Neural", sizes: ["10mg"], color: "#3A9E94", price: 70, popular: false },
+  { id: 12, name: "TZ-30", slug: "tz-30", category: "Neural", sizes: ["30mg"], color: "#3A9E94", price: 80, popular: false },
+  { id: 13, name: "TZ-10", slug: "tz-10", category: "Neural", sizes: ["10mg"], color: "#3A9E94", price: 60, popular: false },
+  { id: 14, name: "NAD+", slug: "nad-plus", category: "Metabolic", sizes: ["250mg", "500mg"], color: "#C8A84B", price: 75, popular: true },
+  { id: 15, name: "SS-31", slug: "ss-31", category: "Metabolic", sizes: ["10mg"], color: "#C8A84B", price: 95, popular: false },
+  { id: 16, name: "PT-141", slug: "pt-141", category: "Endocrine", sizes: ["10mg"], color: "#B8943A", price: 65, popular: false },
+  { id: 17, name: "Sermorelin", slug: "sermorelin", category: "Endocrine", sizes: ["5mg"], color: "#B8943A", price: 55, popular: false },
+  { id: 18, name: "Tesamorelin", slug: "tesamorelin", category: "Endocrine", sizes: ["10mg"], color: "#B8943A", price: 80, popular: false },
+  { id: 19, name: "CJC-1295", slug: "cjc-1295", category: "Endocrine", sizes: ["2mg"], color: "#B8943A", price: 60, popular: false },
 ];
 
 const CATALOG_CATS = [
@@ -176,8 +176,8 @@ function CatalogVialCard({ product, onAdd, added }: {
           <button
             onClick={(e) => { e.preventDefault(); onAdd(); }}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
-              added ? "bg-violet-600 text-white opacity-100 scale-110"
-                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white"
+              added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
+                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
             }`}
           >
             {added ? <Check size={13} /> : <Plus size={13} />}
@@ -193,7 +193,7 @@ function CatalogVialCard({ product, onAdd, added }: {
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-violet-600 transition-colors">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#3A9E94] transition-colors">{product.name}</h3>
         </Link>
         <div className="flex flex-wrap gap-1 mb-2">
           {product.sizes.map((s) => (
@@ -248,12 +248,12 @@ function ResearchCatalogSection() {
       <div className="container">
         {/* Header */}
         <div className="mb-10">
-          <div className="inline-flex items-center gap-2 bg-violet-50 border border-violet-100 text-violet-600 text-[11px] font-bold px-3 py-1.5 rounded-full mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+          <div className="inline-flex items-center gap-2 bg-[#E8F7F6] border border-[#7ECDC4]/30 text-[#3A9E94] text-[11px] font-bold px-3 py-1.5 rounded-full mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7ECDC4]" />
             FULL CATALOG
           </div>
           <h2 className="text-4xl font-extrabold text-gray-950 mb-1">Research Compounds</h2>
-          <div className="w-16 h-1 rounded-full bg-gradient-to-r from-violet-500 via-blue-400 to-emerald-400 mb-4" />
+          <div className="w-16 h-1 rounded-full bg-gradient-to-r from-[#7ECDC4] via-[#C8A84B] to-[#5BB8AE] mb-4" />
           <p className="text-gray-500 text-sm max-w-xl">
             {totalCount} compounds across {CATALOG_CATS.length} research categories. Click any card to view the full research monograph.
           </p>
@@ -266,7 +266,7 @@ function ResearchCatalogSection() {
             <button
               onClick={() => setSelectedCat(null)}
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                selectedCat === null ? "bg-violet-600 text-white" : "text-gray-700 hover:bg-gray-50"
+                selectedCat === null ? "bg-[#3A9E94] text-white" : "text-gray-700 hover:bg-[#F5F2EC]"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -274,7 +274,7 @@ function ResearchCatalogSection() {
                 All Compounds
               </span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                selectedCat === null ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                selectedCat === null ? "bg-white/20 text-white" : "bg-[#F5F2EC] text-gray-500"
               }`}>{totalCount}</span>
             </button>
 
@@ -288,7 +288,7 @@ function ResearchCatalogSection() {
                   key={cat.name}
                   onClick={() => setSelectedCat(isActive ? null : cat.name)}
                   className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
-                    isActive ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-600 hover:bg-gray-50"
+                    isActive ? "bg-[#E8F7F6] font-semibold text-gray-900" : "text-gray-600 hover:bg-[#F5F2EC]"
                   }`}
                 >
                   <span className="flex items-center gap-2.5">
@@ -303,7 +303,7 @@ function ResearchCatalogSection() {
             <div className="h-px bg-gray-100 my-2" />
 
             <Link href="/compounds">
-              <button className="w-full flex items-center justify-center gap-2 border border-violet-200 text-violet-600 hover:bg-violet-50 text-xs font-semibold py-2.5 rounded-xl transition-colors">
+              <button className="w-full flex items-center justify-center gap-2 border border-[#7ECDC4]/50 text-[#3A9E94] hover:bg-[#E8F7F6] text-xs font-semibold py-2.5 rounded-xl transition-colors">
                 <FlaskConical size={13} />
                 Find Your Compound
               </button>
@@ -321,14 +321,14 @@ function ResearchCatalogSection() {
                   placeholder="Search by name, CAS number, or mechanism..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4] transition-all"
                 />
               </div>
               <div className="relative">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as HomeSortOption)}
-                  className="appearance-none pl-4 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-200 cursor-pointer font-medium text-gray-700"
+                  className="appearance-none pl-4 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 cursor-pointer font-medium text-gray-700"
                 >
                   <option value="featured">Featured</option>
                   <option value="price_asc">Price: Low to High</option>
@@ -344,7 +344,7 @@ function ResearchCatalogSection() {
               <button
                 onClick={() => setSelectedCat(null)}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  selectedCat === null ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  selectedCat === null ? "bg-[#3A9E94] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >All ({totalCount})</button>
               {CATALOG_CATS.map((cat) => (
@@ -352,7 +352,7 @@ function ResearchCatalogSection() {
                   key={cat.name}
                   onClick={() => setSelectedCat(selectedCat === cat.name ? null : cat.name)}
                   className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                    selectedCat === cat.name ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    selectedCat === cat.name ? "bg-[#3A9E94] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >{cat.name} ({cat.count})</button>
               ))}
@@ -380,7 +380,7 @@ function ResearchCatalogSection() {
             {/* View all link */}
             <div className="text-center mt-10">
               <Link href="/compounds">
-                <button className="inline-flex items-center gap-2 border border-gray-200 text-gray-600 hover:text-violet-700 hover:border-violet-300 hover:bg-violet-50/40 text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
+                <button className="inline-flex items-center gap-2 border border-gray-200 text-gray-600 hover:text-[#3A9E94] hover:border-[#7ECDC4]/50 hover:bg-[#E8F7F6]/40 text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
                   View Full Catalog <ArrowRight size={14} />
                 </button>
               </Link>
@@ -407,8 +407,8 @@ export default function Home() {
       <section className="relative overflow-hidden bg-white hidden">
         {/* Background geometry */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-violet-100/60 to-indigo-50/40 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-blue-50/50 to-purple-50/30 blur-2xl" />
+          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#7ECDC4]/20 to-[#E8DCC8]/20 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[#E8DCC8]/30 to-[#7ECDC4]/20 blur-2xl" />
           {/* Grid dots */}
           <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -424,13 +424,13 @@ export default function Home() {
           <div className="grid lg:grid-cols-2 gap-12 items-center py-20 lg:py-28">
             {/* Left: Copy */}
             <div className="max-w-xl">
-              <div className="inline-flex items-center gap-2 bg-violet-50 border border-violet-100 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-6" style={{backgroundColor:"#E8F7F6", borderColor:"#7ECDC4", border:"1px solid", color:"#3A9E94"}}>
                 <FlaskConical size={12} />
                 Research Grade · ≥99% Purity
               </div>
               <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-950 leading-[1.05] mb-6">
                 Precision<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-500">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3A9E94] to-[#C8A84B]">
                   Compounds
                 </span>{" "}
                 for<br />
@@ -441,7 +441,7 @@ export default function Home() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/compounds">
-                  <button className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-violet-200">
+                  <button className="inline-flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-[#3A9E94]/20">
                     Browse Compounds
                     <ArrowRight size={16} />
                   </button>
@@ -455,8 +455,8 @@ export default function Home() {
               {/* Trust badges */}
               <div className="flex flex-wrap items-center gap-6 mt-10 pt-8 border-t border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
-                    <Shield size={15} className="text-violet-600" />
+                  <div className="w-8 h-8 rounded-lg bg-[#E8F7F6] flex items-center justify-center">
+                    <Shield size={15} style={{color:"#3A9E94"}} />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-gray-800">Third-party Tested</p>
@@ -464,8 +464,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                    <Microscope size={15} className="text-indigo-600" />
+                  <div className="w-8 h-8 rounded-lg bg-[#E8F7F6] flex items-center justify-center">
+                    <Microscope size={15} style={{color:"#3A9E94"}} />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-gray-800">Lab Manufactured</p>
@@ -495,7 +495,7 @@ export default function Home() {
                       <p className="text-sm font-extrabold text-gray-900">BPC-157</p>
                       <p className="text-xs text-gray-400">Tissue Repair · 10mg / 20mg · From $55.00</p>
                     </div>
-                    <div className="absolute top-3 left-3 bg-violet-600 text-white text-[10px] font-bold px-2 py-1 rounded-full">Popular</div>
+                    <div className="absolute top-3 left-3 bg-[#3A9E94] text-white text-[10px] font-bold px-2 py-1 rounded-full">Popular</div>
                   </div>
                 </Link>
                 {/* Small vials row */}
@@ -529,7 +529,7 @@ export default function Home() {
               { value: "COA", label: "Every Batch Tested" },
             ].map((stat) => (
               <div key={stat.label}>
-                <p className="text-2xl font-extrabold text-violet-400 mb-1">{stat.value}</p>
+                <p className="text-2xl font-extrabold text-[#7ECDC4] mb-1">{stat.value}</p>
                 <p className="text-xs text-gray-400 font-medium tracking-wide">{stat.label}</p>
               </div>
             ))}
@@ -538,10 +538,10 @@ export default function Home() {
       </section>
 
       {/* ── RESEARCH CATEGORIES ──────────────────────────────────────────── */}
-      <section className="py-20 bg-[#f8f8fa]">
+      <section className="py-20 hex-cream">
         <div className="container">
           <div className="mb-12">
-            <p className="text-xs font-semibold tracking-widest uppercase text-violet-500 mb-2">Research Areas</p>
+            <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Research Areas</p>
             <h2 className="text-3xl font-extrabold text-gray-950">Explore by Category</h2>
             <p className="text-gray-400 mt-2 max-w-lg">Our catalog spans five research categories, each with compounds selected for their scientific relevance and purity profile.</p>
           </div>
@@ -568,10 +568,10 @@ export default function Home() {
       <ResearchCatalogSection />
 
       {/* ── COMPOUND SPOTLIGHT ───────────────────────────────────────────── */}
-      <section className="py-20 bg-[#f8f8fa]">
+      <section className="py-20 hex-section">
         <div className="container">
           <div className="mb-12">
-            <p className="text-xs font-semibold tracking-widest uppercase text-violet-500 mb-2">Compound Spotlight</p>
+            <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Compound Spotlight</p>
             <h2 className="text-3xl font-extrabold text-gray-950">Research Highlights</h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
@@ -583,9 +583,9 @@ export default function Home() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-                    <span className="text-[10px] font-semibold tracking-widest uppercase text-violet-600">Tissue</span>
-                    <span className="text-[10px] bg-violet-50 text-violet-600 font-semibold px-2 py-0.5 rounded-full">Popular</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#7ECDC4]" />
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[#3A9E94]">Tissue</span>
+                    <span className="text-[10px] bg-[#E8F7F6] text-[#3A9E94] font-semibold px-2 py-0.5 rounded-full">Popular</span>
                   </div>
                   <h3 className="text-xl font-extrabold text-gray-950 mb-2">BPC-157</h3>
                   <p className="text-sm text-gray-500 leading-relaxed mb-4">
@@ -596,7 +596,7 @@ export default function Home() {
                     <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded-full">10mg · 20mg</span>
                   </div>
                   <Link href="/compounds/bpc-157">
-                    <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+                    <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#3A9E94] hover:text-[#2A8E84] transition-colors">
                       View Research <ArrowRight size={13} />
                     </button>
                   </Link>
@@ -612,9 +612,9 @@ export default function Home() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                    <span className="text-[10px] font-semibold tracking-widest uppercase text-pink-600">Metabolic</span>
-                    <span className="text-[10px] bg-pink-50 text-pink-600 font-semibold px-2 py-0.5 rounded-full">Popular</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8A84B]" />
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[#A07A28]">Metabolic</span>
+                    <span className="text-[10px] bg-[#FBF6E8] text-[#A07A28] font-semibold px-2 py-0.5 rounded-full">Popular</span>
                   </div>
                   <h3 className="text-xl font-extrabold text-gray-950 mb-2">NAD+</h3>
                   <p className="text-sm text-gray-500 leading-relaxed mb-4">
@@ -625,7 +625,7 @@ export default function Home() {
                     <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded-full">250mg · 500mg</span>
                   </div>
                   <Link href="/compounds/nad-plus">
-                    <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-pink-600 hover:text-pink-700 transition-colors">
+                    <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#A07A28] hover:text-[#8A6A20] transition-colors">
                       View Research <ArrowRight size={13} />
                     </button>
                   </Link>
@@ -637,10 +637,10 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="py-20 bg-white">
+      <section className="py-20 hex-section">
         <div className="container">
           <div className="text-center mb-14">
-            <p className="text-xs font-semibold tracking-widest uppercase text-violet-500 mb-2">Process</p>
+            <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Process</p>
             <h2 className="text-3xl font-extrabold text-gray-950">How It Works</h2>
             <p className="text-gray-400 mt-2 max-w-md mx-auto">From catalog to your laboratory in a few simple steps.</p>
           </div>
@@ -651,8 +651,8 @@ export default function Home() {
               { step: "03", title: "Fast Dispatch", desc: "Orders are processed same-day. Each vial ships with a Certificate of Analysis confirming purity and identity." },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-sm font-extrabold text-violet-600">{item.step}</span>
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F7F6] flex items-center justify-center mx-auto mb-4">
+                  <span className="text-sm font-extrabold text-[#3A9E94]">{item.step}</span>
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
                 <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
@@ -663,7 +663,7 @@ export default function Home() {
       </section>
 
       {/* ── CTA BANNER ───────────────────────────────────────────────────── */}
-      <section className="py-20 bg-gradient-to-br from-violet-600 to-indigo-600 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-[#0d1a18] via-[#163028] to-[#0a1f18] relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
@@ -675,11 +675,11 @@ export default function Home() {
           <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">
             Ready to Start Your Research?
           </h2>
-          <p className="text-violet-200 text-lg mb-8 max-w-md mx-auto">
+          <p className="text-[#7ECDC4]/80 text-lg mb-8 max-w-md mx-auto">
             Browse our complete catalog of research-grade compounds and peptides.
           </p>
           <Link href="/compounds">
-            <button className="inline-flex items-center gap-2 bg-white text-violet-700 font-bold px-8 py-3.5 rounded-xl hover:bg-violet-50 transition-all duration-200 active:scale-[0.98] shadow-xl shadow-violet-900/20">
+            <button className="inline-flex items-center gap-2 bg-[#7ECDC4] text-[#0d1a18] font-bold px-8 py-3.5 rounded-xl hover:bg-[#5BB8AE] transition-all duration-200 active:scale-[0.98] shadow-xl shadow-black/20">
               Explore All Compounds <ArrowRight size={16} />
             </button>
           </Link>
@@ -691,7 +691,7 @@ export default function Home() {
         <div className="container">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#7ECDC4] flex items-center justify-center">
                 <FlaskConical size={15} className="text-white" />
               </div>
               <div>

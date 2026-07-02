@@ -91,7 +91,7 @@ function NavDropdown({
     >
       <button
         className={`flex items-center gap-1 text-sm font-medium px-2 py-1.5 rounded-lg transition-colors duration-150 ${
-          active ? "text-violet-600 font-semibold" : "text-gray-700 hover:text-gray-900"
+          active ? "text-[#3A9E94] font-semibold" : "text-gray-700 hover:text-gray-900"
         }`}
         onClick={() => setOpen((v) => !v)}
       >
@@ -151,7 +151,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/">
             <div className="flex items-center gap-2.5 cursor-pointer shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-200">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3A9E94] to-[#5BB8AE] flex items-center justify-center shadow-md shadow-[#3A9E94]/20">
                 <FlaskConical size={17} className="text-white" />
               </div>
               <div className="leading-none">
@@ -192,11 +192,11 @@ export default function Navbar() {
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <Link href="/compounds">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-violet-50 cursor-pointer transition-colors group">
-                      <span className="text-sm font-semibold text-violet-600 group-hover:text-violet-700">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#E8F7F6] cursor-pointer transition-colors group">
+                      <span className="text-sm font-semibold text-[#3A9E94] group-hover:text-[#2A8E84]">
                         All Compounds
                       </span>
-                      <ArrowRight size={13} className="text-violet-500" />
+                      <ArrowRight size={13} className="text-[#7ECDC4]" />
                     </div>
                   </Link>
                 </div>
@@ -212,10 +212,10 @@ export default function Navbar() {
                       key={item.label}
                       className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group"
                     >
-                      <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-violet-50 transition-colors">
+                      <div className="w-9 h-9 rounded-xl bg-[#F5F2EC] flex items-center justify-center shrink-0 group-hover:bg-[#E8F7F6] transition-colors">
                         <item.icon
                           size={15}
-                          className="text-gray-500 group-hover:text-violet-600 transition-colors"
+                          className="text-gray-500 group-hover:text-[#3A9E94] transition-colors"
                         />
                       </div>
                       <div>
@@ -260,10 +260,10 @@ export default function Navbar() {
                       key={item.label}
                       className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group"
                     >
-                      <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-violet-50 transition-colors">
+                      <div className="w-9 h-9 rounded-xl bg-[#F5F2EC] flex items-center justify-center shrink-0 group-hover:bg-[#E8F7F6] transition-colors">
                         <item.icon
                           size={15}
-                          className="text-gray-500 group-hover:text-violet-600 transition-colors"
+                          className="text-gray-500 group-hover:text-[#3A9E94] transition-colors"
                         />
                       </div>
                       <div>
@@ -294,11 +294,11 @@ export default function Navbar() {
                     </div>
                   ))}
                   <div className="mt-2 pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-violet-50 cursor-pointer transition-colors group">
-                      <span className="text-sm font-semibold text-violet-600 group-hover:text-violet-700">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#E8F7F6] cursor-pointer transition-colors group">
+                      <span className="text-sm font-semibold text-[#3A9E94] group-hover:text-[#2A8E84]">
                         All Research Articles
                       </span>
-                      <ArrowRight size={13} className="text-violet-500" />
+                      <ArrowRight size={13} className="text-[#5BB8AE]" />
                     </div>
                   </div>
                 </div>
@@ -307,7 +307,7 @@ export default function Navbar() {
 
             {/* Wholesale */}
             <Link href="/wholesale">
-              <button className="ml-2 text-sm font-semibold border border-violet-200 text-violet-700 hover:bg-violet-50 px-4 py-1.5 rounded-full transition-colors duration-150">
+              <button className="ml-2 text-sm font-semibold border border-[#7ECDC4] text-[#3A9E94] hover:bg-[#E8F7F6] px-4 py-1.5 rounded-full transition-colors duration-150">
                 Apply for Wholesale
               </button>
             </Link>
@@ -328,7 +328,7 @@ export default function Navbar() {
             >
               <ShoppingBag size={18} />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] min-h-[18px] bg-violet-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none px-1">
+                <span className="absolute -top-1 -right-1 min-w-[18px] min-h-[18px] bg-[#3A9E94] text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none px-1">
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
               )}
@@ -341,8 +341,8 @@ export default function Navbar() {
                   onClick={() => setUserMenuOpen((v) => !v)}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center">
-                    <span className="text-xs font-bold text-violet-700">
+                  <div className="w-7 h-7 rounded-full bg-[#E8F7F6] flex items-center justify-center">
+                    <span className="text-xs font-bold text-[#3A9E94]">
                       {(user?.name ?? user?.email ?? "U")[0].toUpperCase()}
                     </span>
                   </div>
@@ -369,7 +369,7 @@ export default function Navbar() {
                     {isAdmin && (
                       <Link href="/admin">
                         <div
-                          className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-violet-700 hover:bg-violet-50 cursor-pointer transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-[#3A9E94] hover:bg-[#E8F7F6] cursor-pointer transition-colors"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           <Settings size={14} />
@@ -396,7 +396,7 @@ export default function Navbar() {
                   </button>
                 </Link>
                 <Link href="/register">
-                  <button className="text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white px-4 py-1.5 rounded-xl transition-colors shadow-sm shadow-violet-200">
+                  <button className="text-sm font-semibold bg-[#3A9E94] hover:bg-[#2A8E84] text-white px-4 py-1.5 rounded-xl transition-colors shadow-sm shadow-[#3A9E94]/20">
                     Register
                   </button>
                 </Link>
@@ -433,7 +433,7 @@ export default function Navbar() {
           </div>
           <Link href="/wholesale">
             <div
-              className="px-3 py-2.5 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 cursor-pointer"
+              className="px-3 py-2.5 rounded-xl text-sm font-semibold text-[#3A9E94] hover:bg-[#E8F7F6] cursor-pointer"
               onClick={() => setMobileOpen(false)}
             >
               Apply for Wholesale
@@ -453,7 +453,7 @@ export default function Navbar() {
                 {isAdmin && (
                   <Link href="/admin">
                     <div
-                      className="px-3 py-2.5 rounded-xl text-sm font-semibold text-violet-700 hover:bg-violet-50 cursor-pointer"
+                      className="px-3 py-2.5 rounded-xl text-sm font-semibold text-[#3A9E94] hover:bg-[#E8F7F6] cursor-pointer"
                       onClick={() => setMobileOpen(false)}
                     >
                       Admin Panel
@@ -487,7 +487,7 @@ export default function Navbar() {
                 </Link>
                 <Link href="/register">
                   <button
-                    className="flex-1 text-sm font-semibold bg-violet-600 text-white px-4 py-2 rounded-xl hover:bg-violet-700 transition-colors"
+                    className="flex-1 text-sm font-semibold bg-[#3A9E94] text-white px-4 py-2 rounded-xl hover:bg-[#2A8E84] transition-colors"
                     onClick={() => setMobileOpen(false)}
                   >
                     Register

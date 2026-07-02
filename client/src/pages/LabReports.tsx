@@ -29,7 +29,7 @@ export default function LabReports() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8fa]">
+      <div className="min-h-screen hex-cream">
         <Navbar />
         <div className="max-w-4xl mx-auto px-6 py-20">
           <div className="space-y-4">
@@ -44,12 +44,12 @@ export default function LabReports() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#f8f8fa]">
+      <div className="min-h-screen hex-cream">
         <Navbar />
         <div className="max-w-4xl mx-auto px-6 py-20 text-center">
           <p className="text-gray-500">Product not found.</p>
           <Link href="/compounds">
-            <button className="mt-4 text-violet-600 hover:text-violet-700 font-medium text-sm">
+            <button className="mt-4 font-medium text-sm" style={{color:'#3A9E94'}}>
               ← Back to Compounds
             </button>
           </Link>
@@ -61,7 +61,7 @@ export default function LabReports() {
   const activeReports = reports.filter((r) => r.active);
 
   return (
-    <div className="min-h-screen bg-[#f8f8fa]">
+    <div className="min-h-screen hex-cream">
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
@@ -76,12 +76,12 @@ export default function LabReports() {
         {/* Header */}
         <div className="bg-white rounded-3xl border border-gray-100 p-8 mb-8 shadow-sm">
           <div className="flex items-start gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center shrink-0">
-              <FlaskConical size={24} className="text-violet-600" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{backgroundColor:'#E8F7F6'}}>
+              <FlaskConical size={24} style={{color:'#3A9E94'}} />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-bold tracking-widest uppercase text-violet-500">
+                <span className="text-xs font-bold tracking-widest uppercase" style={{color:'#3A9E94'}}>
                   Laboratory Analysis
                 </span>
               </div>
@@ -186,7 +186,7 @@ export default function LabReports() {
                       href={report.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-4 py-2 rounded-xl transition-colors"
+                      className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors" style={{color:'#3A9E94', backgroundColor:'#E8F7F6'}}
                     >
                       <ExternalLink size={14} />
                       View

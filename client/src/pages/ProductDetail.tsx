@@ -256,7 +256,7 @@ export default function ProductDetail({ params }: Props) {
 
             {/* Lab Reports link */}
             <Link href={`/lab-reports/${params.slug}`}>
-              <button className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:text-violet-700 hover:border-violet-300 hover:bg-violet-50/40 text-sm font-semibold py-2.5 rounded-xl transition-colors">
+              <button className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:text-[#3A9E94] hover:border-[#7ECDC4] hover:bg-[#E8F7F6]/40 text-sm font-semibold py-2.5 rounded-xl transition-colors">
                 <FileText size={15} />
                 View Lab Reports / COA
               </button>

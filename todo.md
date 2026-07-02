@@ -70,3 +70,17 @@
 - [x] Página de detalle de orden para usuario (/my-orders/:id) — implementada
 - [ ] Integración de pasarela de pago real (Stripe, PayPal, etc.) — requiere decisión del usuario
 - [ ] Configurar variables de entorno en Railway (DATABASE_URL, JWT_SECRET, R2 credentials) — requiere credenciales del usuario
+
+## Fase 8: Paleta Teal/Beige/Gold y Textura Hex-Cream
+- [x] Paleta de colores teal (#3A9E94, #7ECDC4, #5BB8AE, #2A8E84) aplicada globalmente
+- [x] Textura hexagonal (hex-cream, hex-section) definida en index.css y aplicada en todas las páginas
+- [x] Contact.tsx: bug del label "Name *" corregido, paleta teal aplicada
+- [x] Login.tsx y Register.tsx: fondo hex-cream aplicado
+- [x] Checkout.tsx: fondo hex-cream aplicado en todos los estados
+- [x] MyOrders.tsx: fondo hex-cream + colores processing/shipped en teal
+- [x] OrderDetail.tsx: fondo hex-cream + colores processing/shipped en teal
+- [x] LabReports.tsx: fondo hex-cream + iconos y botones en teal
+- [x] ProductDetail.tsx: hover del botón Lab Reports en teal
+- [x] Navbar.tsx: todos los colores violeta reemplazados por teal
+- [x] Home.tsx: sección CTA y trust badges en teal
+- [x] AdminDashboard, AdminOrders, AdminOrderDetail, AdminUsers, AdminLabReports: colores teal aplicados

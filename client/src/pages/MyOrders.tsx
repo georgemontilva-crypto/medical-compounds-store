@@ -6,8 +6,8 @@ import { FlaskConical, Package, ChevronRight, Clock } from "lucide-react";
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   confirmed: "bg-blue-100 text-blue-700",
-  processing: "bg-purple-100 text-purple-700",
-  shipped: "bg-indigo-100 text-indigo-700",
+  processing: "bg-[#E8F7F6] text-[#3A9E94]",
+  shipped: "bg-[#d0f0ed] text-[#2A8E84]",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
 };
@@ -45,7 +45,7 @@ export default function MyOrders() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen hex-cream">
       <div className="container py-8">
         <div className="mb-8">
           <p className="lab-section-title mb-1">Account</p>

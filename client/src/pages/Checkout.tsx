@@ -89,7 +89,7 @@ export default function Checkout() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen hex-cream flex items-center justify-center p-4">
         <div className="lab-card p-8 max-w-md w-full text-center">
           <Lock size={32} className="text-primary mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Sign In Required</h2>
@@ -109,7 +109,7 @@ export default function Checkout() {
 
   if (items.length === 0 && step !== "confirmation") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen hex-cream flex items-center justify-center p-4">
         <div className="lab-card p-8 max-w-md w-full text-center">
           <FlaskConical size={32} className="text-muted-foreground/30 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Your cart is empty</h2>
@@ -123,7 +123,7 @@ export default function Checkout() {
 
   if (step === "confirmation") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen hex-cream flex items-center justify-center p-4">
         <div className="lab-card p-10 max-w-md w-full text-center">
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={32} className="text-green-600" />
@@ -149,7 +149,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen hex-cream">
       <div className="container py-8">
         {/* Header */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
