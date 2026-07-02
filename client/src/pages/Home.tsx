@@ -1,7 +1,8 @@
 import { trpc } from "@/lib/trpc";
+import { useState, useMemo } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
-import { ArrowRight, FlaskConical, Shield, Microscope, Award, ChevronRight, Plus, Beaker, Dna, Zap, Activity } from "lucide-react";
+import { ArrowRight, FlaskConical, Shield, Microscope, Award, ChevronRight, Plus, Check, Search, ChevronDown, Beaker, Dna, Zap, Activity } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
 
@@ -97,6 +98,297 @@ function ProductCard({ product }: { product: typeof FEATURED_PRODUCTS[0] }) {
         </div>
       </div>
     </div>
+  );
+}
+
+
+// ── Category color maps (shared) ─────────────────────────────────────────────
+const CAT_COLORS_MAP: Record<string, string> = {
+  Tissue: "#7c3aed", Cellular: "#0ea5e9", Neural: "#6366f1",
+  Metabolic: "#10b981", Endocrine: "#f59e0b", Misc: "#6b7280",
+};
+const CAT_TEXT_MAP: Record<string, string> = {
+  Tissue: "text-violet-600", Cellular: "text-sky-600", Neural: "text-indigo-600",
+  Metabolic: "text-emerald-600", Endocrine: "text-amber-600", Misc: "text-gray-500",
+};
+const CAT_BG_MAP: Record<string, string> = {
+  Tissue: "bg-violet-50", Cellular: "bg-sky-50", Neural: "bg-indigo-50",
+  Metabolic: "bg-emerald-50", Endocrine: "bg-amber-50", Misc: "bg-gray-50",
+};
+
+const CATALOG_PRODUCTS = [
+  { id: 1, name: "BPC-157", slug: "bpc-157", category: "Tissue", sizes: ["10mg", "20mg"], color: "#7c3aed", price: 55, popular: true },
+  { id: 2, name: "TB-500", slug: "tb-500", category: "Tissue", sizes: ["10mg"], color: "#7c3aed", price: 60, popular: true },
+  { id: 3, name: "KPV", slug: "kpv", category: "Tissue", sizes: ["5mg", "10mg"], color: "#7c3aed", price: 40, popular: false },
+  { id: 4, name: "GHK-Cu", slug: "ghk-cu", category: "Tissue", sizes: ["50mg"], color: "#0ea5e9", price: 60, popular: false },
+  { id: 5, name: "RT-30", slug: "rt-30", category: "Tissue", sizes: ["30mg"], color: "#7c3aed", price: 75, popular: false },
+  { id: 6, name: "RT-10", slug: "rt-10", category: "Tissue", sizes: ["10mg"], color: "#7c3aed", price: 55, popular: false },
+  { id: 7, name: "Epithalon", slug: "epithalon", category: "Cellular", sizes: ["10mg", "30mg"], color: "#0ea5e9", price: 55, popular: true },
+  { id: 8, name: "MOTS-C", slug: "mots-c", category: "Cellular", sizes: ["10mg", "20mg"], color: "#0ea5e9", price: 90, popular: false },
+  { id: 9, name: "GLOW", slug: "glow", category: "Cellular", sizes: ["70mg"], color: "#0ea5e9", price: 90, popular: false },
+  { id: 10, name: "KLOW", slug: "klow", category: "Cellular", sizes: ["80mg"], color: "#0ea5e9", price: 90, popular: false },
+  { id: 11, name: "Semax", slug: "semax", category: "Neural", sizes: ["10mg"], color: "#6366f1", price: 70, popular: false },
+  { id: 12, name: "TZ-30", slug: "tz-30", category: "Neural", sizes: ["30mg"], color: "#6366f1", price: 80, popular: false },
+  { id: 13, name: "TZ-10", slug: "tz-10", category: "Neural", sizes: ["10mg"], color: "#6366f1", price: 60, popular: false },
+  { id: 14, name: "NAD+", slug: "nad-plus", category: "Metabolic", sizes: ["250mg", "500mg"], color: "#db2777", price: 75, popular: true },
+  { id: 15, name: "SS-31", slug: "ss-31", category: "Metabolic", sizes: ["10mg"], color: "#10b981", price: 95, popular: false },
+  { id: 16, name: "PT-141", slug: "pt-141", category: "Endocrine", sizes: ["10mg"], color: "#ec4899", price: 65, popular: false },
+  { id: 17, name: "Sermorelin", slug: "sermorelin", category: "Endocrine", sizes: ["5mg"], color: "#f59e0b", price: 55, popular: false },
+  { id: 18, name: "Tesamorelin", slug: "tesamorelin", category: "Endocrine", sizes: ["10mg"], color: "#f59e0b", price: 80, popular: false },
+  { id: 19, name: "CJC-1295", slug: "cjc-1295", category: "Endocrine", sizes: ["2mg"], color: "#f59e0b", price: 60, popular: false },
+];
+
+const CATALOG_CATS = [
+  { name: "Tissue", count: 6 }, { name: "Cellular", count: 4 },
+  { name: "Neural", count: 3 }, { name: "Metabolic", count: 2 },
+  { name: "Endocrine", count: 4 },
+];
+
+type HomeSortOption = "featured" | "price_asc" | "price_desc" | "name_asc";
+
+function CatalogVialCard({ product, onAdd, added }: {
+  product: typeof CATALOG_PRODUCTS[0]; onAdd: () => void; added: boolean;
+}) {
+  const catColor = CAT_COLORS_MAP[product.category] ?? "#6b7280";
+  const catText = CAT_TEXT_MAP[product.category] ?? "text-gray-500";
+  const catBg = CAT_BG_MAP[product.category] ?? "bg-gray-50";
+  const hasVariations = product.sizes.length > 1;
+  const shortLabel = product.name.length > 9 ? product.name.slice(0, 9) : product.name;
+
+  return (
+    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+      <Link href={`/compounds/${product.slug}`}>
+        <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
+          <div className="w-full h-full flex items-center justify-center">
+            <svg viewBox="0 0 80 120" className="w-16 h-24 drop-shadow" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="28" y="2" width="24" height="14" rx="4" fill={catColor} opacity="0.85" />
+              <rect x="32" y="14" width="16" height="6" rx="2" fill="#d1d5db" />
+              <rect x="20" y="20" width="40" height="70" rx="8" fill="white" stroke="#e5e7eb" strokeWidth="1.5" />
+              <rect x="24" y="32" width="32" height="46" rx="4" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1" />
+              <text x="40" y="50" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="#374151" fontFamily="system-ui">{shortLabel}</text>
+              <text x="40" y="59" textAnchor="middle" fontSize="4" fill="#9ca3af" fontFamily="system-ui">LYOPHILIZED POWDER</text>
+              <text x="40" y="69" textAnchor="middle" fontSize="7" fontWeight="800" fill={catColor} fontFamily="system-ui">{product.sizes[0]}</text>
+              <rect x="20" y="88" width="40" height="8" rx="0" fill={catColor} opacity="0.25" />
+              <text x="40" y="95" textAnchor="middle" fontSize="3.5" fill="#6b7280" fontFamily="system-ui">FOR RESEARCH USE ONLY</text>
+              <rect x="20" y="90" width="40" height="8" rx="4" fill="#e5e7eb" />
+            </svg>
+          </div>
+          <button
+            onClick={(e) => { e.preventDefault(); onAdd(); }}
+            className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
+              added ? "bg-violet-600 text-white opacity-100 scale-110"
+                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white"
+            }`}
+          >
+            {added ? <Check size={13} /> : <Plus size={13} />}
+          </button>
+        </div>
+      </Link>
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
+          <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
+          {product.popular && (
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
+          )}
+        </div>
+        <Link href={`/compounds/${product.slug}`}>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-violet-600 transition-colors">{product.name}</h3>
+        </Link>
+        <div className="flex flex-wrap gap-1 mb-2">
+          {product.sizes.map((s) => (
+            <span key={s} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono">{s}</span>
+          ))}
+        </div>
+        <p className="font-semibold text-gray-900 text-sm">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
+      </div>
+    </div>
+  );
+}
+
+function ResearchCatalogSection() {
+  const [search, setSearch] = useState("");
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<HomeSortOption>("featured");
+  const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
+  const { addItem } = useCart();
+
+  const filtered = useMemo(() => {
+    let list = [...CATALOG_PRODUCTS];
+    if (selectedCat) list = list.filter((p) => p.category === selectedCat);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+    }
+    if (sortBy === "price_asc") list.sort((a, b) => a.price - b.price);
+    else if (sortBy === "price_desc") list.sort((a, b) => b.price - a.price);
+    else if (sortBy === "name_asc") list.sort((a, b) => a.name.localeCompare(b.name));
+    else list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+    return list;
+  }, [search, selectedCat, sortBy]);
+
+  const handleAdd = (product: typeof CATALOG_PRODUCTS[0]) => {
+    addItem({
+      productId: product.id, productName: product.name,
+      unitPrice: product.price, quantity: 1,
+      image: undefined, variationId: undefined,
+      variationLabel: product.sizes[0], slug: product.slug,
+    });
+    setAddedIds((prev) => {
+      const next = new Set(prev); next.add(product.id);
+      setTimeout(() => setAddedIds((p) => { const n = new Set(p); n.delete(product.id); return n; }), 2000);
+      return next;
+    });
+  };
+
+  const totalCount = CATALOG_PRODUCTS.length;
+
+  return (
+    <section className="py-20 bg-white">
+      <div className="container">
+        {/* Header */}
+        <div className="mb-10">
+          <div className="inline-flex items-center gap-2 bg-violet-50 border border-violet-100 text-violet-600 text-[11px] font-bold px-3 py-1.5 rounded-full mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+            FULL CATALOG
+          </div>
+          <h2 className="text-4xl font-extrabold text-gray-950 mb-1">Research Compounds</h2>
+          <div className="w-16 h-1 rounded-full bg-gradient-to-r from-violet-500 via-blue-400 to-emerald-400 mb-4" />
+          <p className="text-gray-500 text-sm max-w-xl">
+            {totalCount} compounds across {CATALOG_CATS.length} research categories. Click any card to view the full research monograph.
+          </p>
+        </div>
+
+        {/* Layout: sidebar + content */}
+        <div className="flex gap-8 items-start">
+          {/* Sidebar */}
+          <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 bg-white border border-gray-100 rounded-2xl p-4 sticky top-24">
+            <button
+              onClick={() => setSelectedCat(null)}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                selectedCat === null ? "bg-violet-600 text-white" : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <FlaskConical size={14} />
+                All Compounds
+              </span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                selectedCat === null ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+              }`}>{totalCount}</span>
+            </button>
+
+            <div className="h-px bg-gray-100 my-2" />
+
+            {CATALOG_CATS.map((cat) => {
+              const color = CAT_COLORS_MAP[cat.name] ?? "#6b7280";
+              const isActive = selectedCat === cat.name;
+              return (
+                <button
+                  key={cat.name}
+                  onClick={() => setSelectedCat(isActive ? null : cat.name)}
+                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
+                    isActive ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    {cat.name}
+                  </span>
+                  <span className="text-xs text-gray-400">{cat.count}</span>
+                </button>
+              );
+            })}
+
+            <div className="h-px bg-gray-100 my-2" />
+
+            <Link href="/compounds">
+              <button className="w-full flex items-center justify-center gap-2 border border-violet-200 text-violet-600 hover:bg-violet-50 text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                <FlaskConical size={13} />
+                Find Your Compound
+              </button>
+            </Link>
+          </aside>
+
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            {/* Search + sort bar */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-1 relative">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, CAS number, or mechanism..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
+                />
+              </div>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as HomeSortOption)}
+                  className="appearance-none pl-4 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-200 cursor-pointer font-medium text-gray-700"
+                >
+                  <option value="featured">Featured</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="name_asc">Name A-Z</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Mobile category pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-5 lg:hidden">
+              <button
+                onClick={() => setSelectedCat(null)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                  selectedCat === null ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >All ({totalCount})</button>
+              {CATALOG_CATS.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => setSelectedCat(selectedCat === cat.name ? null : cat.name)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    selectedCat === cat.name ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >{cat.name} ({cat.count})</button>
+              ))}
+            </div>
+
+            {/* Product grid */}
+            {filtered.length === 0 ? (
+              <div className="text-center py-20 text-gray-400">
+                <FlaskConical size={32} className="mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No compounds found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+                {filtered.map((product) => (
+                  <CatalogVialCard
+                    key={product.id}
+                    product={product}
+                    onAdd={() => handleAdd(product)}
+                    added={addedIds.has(product.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* View all link */}
+            <div className="text-center mt-10">
+              <Link href="/compounds">
+                <button className="inline-flex items-center gap-2 border border-gray-200 text-gray-600 hover:text-violet-700 hover:border-violet-300 hover:bg-violet-50/40 text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
+                  View Full Catalog <ArrowRight size={14} />
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -272,33 +564,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FEATURED PRODUCTS ────────────────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="container">
-          <div className="flex items-end justify-between mb-12">
-            <div>
-              <p className="text-xs font-semibold tracking-widest uppercase text-violet-500 mb-2">Featured</p>
-              <h2 className="text-3xl font-extrabold text-gray-950">Popular Compounds</h2>
-              <p className="text-gray-400 mt-2">Most researched peptides in our catalog</p>
-            </div>
-            <Link href="/compounds">
-              <button className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors">
-                View all <ArrowRight size={14} />
-              </button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {FEATURED_PRODUCTS.map((product) => (
-              <ProductCard key={product.name} product={product} />
-            ))}
-          </div>
-          <div className="text-center mt-10 sm:hidden">
-            <Link href="/compounds">
-              <button className="lab-btn-secondary">View all compounds <ArrowRight size={14} /></button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* ── RESEARCH COMPOUNDS CATALOG (Nulumin-style) ───────────────────── */}
+      <ResearchCatalogSection />
 
       {/* ── COMPOUND SPOTLIGHT ───────────────────────────────────────────── */}
       <section className="py-20 bg-[#f8f8fa]">

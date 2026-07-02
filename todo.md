@@ -60,11 +60,11 @@
 - [x] Checkpoint final
 
 ## Fase 7: Navbar, Hero Slider y Lab Reports
-- [ ] Navbar con mega-menús desplegables (Shop, Science, Research, Wholesale, Contact, Sign In)
-- [ ] Hero banner fullscreen con slider de imágenes y efecto Ken Burns
-- [ ] Sistema de reportes de laboratorio: subida de PDFs en admin
-- [ ] Página pública /lab-reports/:slug para ver reportes del producto
-- [ ] Ruta y enlace desde la página de detalle de producto
+- [x] Navbar con mega-menús desplegables (Shop, Science, Research, Wholesale, Contact, Sign In)
+- [x] Hero banner fullscreen con slider de imágenes y efecto Ken Burns
+- [x] Sistema de reportes de laboratorio: subida de PDFs en admin
+- [x] Página pública /lab-reports/:slug para ver reportes del producto
+- [x] Ruta y enlace desde la página de detalle de producto
 
 ## Configuración externa (post-entrega)
 - [x] Página de detalle de orden para usuario (/my-orders/:id) — implementada
