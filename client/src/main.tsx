@@ -15,10 +15,15 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (typeof window === "undefined") return;
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  // Redirect to our own login page (email/password auth), not OAuth
+  const currentPath = window.location.pathname;
+  const isAdminRoute = currentPath.startsWith("/admin");
+  const isAuthRoute = currentPath === "/login" || currentPath === "/register";
+  if (!isAuthRoute) {
+    window.location.href = isAdminRoute ? "/login" : "/login";
+  }
 };
 
 queryClient.getQueryCache().subscribe(event => {
