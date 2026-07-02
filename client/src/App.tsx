@@ -28,6 +28,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminLabReports from "./pages/admin/AdminLabReports";
 import LabReports from "./pages/LabReports";
+import Contact from "./pages/Contact";
 
 function Router() {
   return (
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/my-orders/:id" component={OrderDetail} />
       <Route path="/lab-reports/:slug" component={LabReports} />
+      <Route path="/contact" component={Contact} />
 
       {/* Admin routes */}
       <Route path="/admin" component={AdminDashboard} />
