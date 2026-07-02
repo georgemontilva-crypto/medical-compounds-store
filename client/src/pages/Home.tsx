@@ -262,7 +262,7 @@ function ResearchCatalogSection() {
         {/* Layout: sidebar + content */}
         <div className="flex gap-8 items-start">
           {/* Sidebar */}
-          <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 bg-white border border-gray-100 rounded-2xl p-4 sticky top-24">
+          <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 bg-white border border-gray-100 rounded-2xl p-4 sticky top-[80px] self-start">
             <button
               onClick={() => setSelectedCat(null)}
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${

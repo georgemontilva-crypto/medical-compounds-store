@@ -285,9 +285,9 @@ export default function Compounds() {
           </p>
         </div>
 
-        <div className="flex gap-7">
+        <div className="flex gap-7 items-start">
           {/* ── Sidebar ─────────────────────────────────────────────────── */}
-          <aside className="hidden lg:flex flex-col gap-3 w-56 shrink-0">
+          <aside className="hidden lg:flex flex-col gap-3 w-56 shrink-0 sticky top-[80px] self-start">
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
               {/* All */}
               <button
