@@ -59,7 +59,7 @@
 - [x] 18 tests vitest pasando (auth, access control, cart, coupons, products, orders)
 - [x] Checkpoint final
 
-## Pendiente (post-entrega)
-- [ ] Integración de pasarela de pago real (Stripe, PayPal, etc.)
-- [ ] Página de detalle de orden para usuario (/my-orders/:id)
-- [ ] Configurar variables de entorno en Railway (DATABASE_URL, JWT_SECRET, R2 credentials)
+## Configuración externa (post-entrega)
+- [x] Página de detalle de orden para usuario (/my-orders/:id) — implementada
+- [ ] Integración de pasarela de pago real (Stripe, PayPal, etc.) — requiere decisión del usuario
+- [ ] Configurar variables de entorno en Railway (DATABASE_URL, JWT_SECRET, R2 credentials) — requiere credenciales del usuario
