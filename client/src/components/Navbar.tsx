@@ -126,18 +126,6 @@ export default function Navbar() {
   const { user, isAuthenticated, isAdmin } = useAuthContext();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileVisible, setMobileVisible] = useState(false);
-
-  // Animate mobile menu open/close
-  useEffect(() => {
-    if (mobileOpen) {
-      setMobileVisible(true);
-    } else {
-      // Keep in DOM during exit animation (250ms)
-      const t = setTimeout(() => setMobileVisible(false), 260);
-      return () => clearTimeout(t);
-    }
-  }, [mobileOpen]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -426,22 +414,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu — floating overlay, does not push content */}
-      {mobileVisible && (
-        <div
-          className={`md:hidden absolute top-full left-0 right-0 z-50 transition-all duration-300 ease-out ${
-            mobileOpen
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 -translate-y-1 pointer-events-none"
-          }`}
-        >
-          {/* Backdrop blur overlay */}
-          <div
-            className={`absolute inset-0 bg-white/80 backdrop-blur-xl border-b border-gray-100/80 shadow-lg shadow-gray-200/40 transition-opacity duration-300 ${
-              mobileOpen ? "opacity-100" : "opacity-0"
-            }`}
-          />
-          <div className="relative px-4 py-4 space-y-0.5">
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-1">
           <Link href="/compounds">
             <div
               className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
@@ -520,7 +495,6 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
-          </div>
           </div>
         </div>
       )}
