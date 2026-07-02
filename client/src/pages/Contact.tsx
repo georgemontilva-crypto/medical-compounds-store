@@ -63,7 +63,7 @@ export default function Contact() {
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-10 items-start">
           {/* ── Left: Form ────────────────────────────────────────────── */}
           <div className="flex-1 min-w-0">
             {submitted ? (
@@ -211,45 +211,45 @@ export default function Contact() {
           </div>
 
           {/* ── Right: Info panels ────────────────────────────────────── */}
-          <div className="w-full lg:w-80 shrink-0 flex flex-col gap-5">
+          <div className="w-full lg:w-[420px] shrink-0 flex flex-col gap-6">
             {/* Direct Contact */}
-            <div className="bg-[#eef0f7] rounded-2xl p-6">
-              <h3 className="font-semibold text-gray-900 text-base mb-4">Direct Contact</h3>
-              <div className="space-y-3">
+            <div className="bg-[#f1f3f8] rounded-2xl p-10">
+              <h3 className="font-semibold text-gray-900 text-lg mb-7">Direct Contact</h3>
+              <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
                     <Mail size={15} className="text-violet-600" />
                   </div>
-                  <span className="text-sm text-gray-700">support@biolabcompounds.com</span>
+                  <span className="text-sm text-gray-700 break-all">support@biolabcompounds.com</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
                     <MapPin size={15} className="text-violet-600" />
                   </div>
                   <span className="text-sm text-gray-700">United States</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
                     <Clock size={15} className="text-violet-600" />
                   </div>
                   <span className="text-sm text-gray-700">Mon–Fri, 9am–6pm EST</span>
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 mt-5 pt-4">
-                <p className="text-[10px] font-semibold text-gray-400 tracking-widest uppercase mb-2">
+              <div className="border-t border-gray-200 mt-8 pt-6">
+                <p className="text-[10px] font-semibold text-gray-400 tracking-widest uppercase mb-3">
                   Company Information
                 </p>
-                <p className="text-xs text-gray-500 leading-relaxed">
+                <p className="text-sm text-gray-500 leading-relaxed">
                   BioLab Compounds is a research-grade peptide supplier · United States · support@biolabcompounds.com
                 </p>
               </div>
             </div>
 
             {/* Quick Links */}
-            <div className="bg-[#eef0f7] rounded-2xl p-6">
-              <h3 className="font-semibold text-gray-900 text-base mb-4">Quick Links</h3>
-              <div className="space-y-2">
+            <div className="bg-[#f1f3f8] rounded-2xl p-10">
+              <h3 className="font-semibold text-gray-900 text-lg mb-7">Quick Links</h3>
+              <div>
                 {[
                   { label: "Browse Products", href: "/compounds" },
                   { label: "COA Library", href: "/compounds" },
@@ -257,7 +257,10 @@ export default function Contact() {
                   { label: "FAQ", href: "/compounds" },
                 ].map((link) => (
                   <Link key={link.label} href={link.href}>
-                    <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 text-sm text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors cursor-pointer group">
+                    <div
+                      className="flex items-center justify-between bg-white rounded-lg text-sm text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors cursor-pointer group"
+                      style={{ padding: "12px 16px", marginBottom: "10px" }}
+                    >
                       <span>{link.label}</span>
                       <ChevronRight size={15} className="text-gray-400 group-hover:text-violet-500 transition-colors" />
                     </div>
