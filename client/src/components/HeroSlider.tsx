@@ -7,6 +7,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 const SLIDES = [
   {
     id: 1,
+    bgImage: "/manus-storage/lab-scientist_de975453.jpg",
     gradient: "from-[#0d1a18] via-[#0f2420] to-[#071510]",
     overlay: "bg-[#0d1a18]/65",
     badge: "Research Grade · ≥99% Purity",
@@ -22,6 +23,7 @@ const SLIDES = [
   },
   {
     id: 2,
+    bgImage: "/manus-storage/peptide-synthesis_a782e21c.jpg",
     gradient: "from-[#1a1408] via-[#2a1f0a] to-[#1a1005]",
     overlay: "bg-[#1a1408]/65",
     badge: "Cellular Research · Neural Peptides",
@@ -37,6 +39,7 @@ const SLIDES = [
   },
   {
     id: 3,
+    bgImage: "/manus-storage/modern-lab_a86acfc6.jpg",
     gradient: "from-[#0d1a18] via-[#163028] to-[#0a1f18]",
     overlay: "bg-[#0a1f18]/60",
     badge: "Metabolic Research · Energy Metabolism",
@@ -52,6 +55,7 @@ const SLIDES = [
   },
   {
     id: 4,
+    bgImage: "/manus-storage/lab-vials_614fc4e8.jpg",
     gradient: "from-[#1a1408] via-[#241a06] to-[#1a1005]",
     overlay: "bg-[#1a1408]/65",
     badge: "Endocrine Research · Growth Peptides",
@@ -134,21 +138,26 @@ export default function HeroSlider() {
 
       {/* ── Current slide background with Ken Burns ── */}
       <div key={`bg-${current}-${animKey}`} className="absolute inset-0 z-0 overflow-hidden">
-        {/* Gradient bg (placeholder — swap for real image) */}
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} ${
-            current % 2 === 0 ? "kb-anim" : "kb-anim-alt"
-          }`}
-          style={{ willChange: "transform" }}
-        />
-        {/* Subtle noise texture overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          }}
-        />
-        {/* Dark overlay */}
+        {/* Real photo background */}
+        {slide.bgImage ? (
+          <img
+            src={slide.bgImage}
+            alt=""
+            aria-hidden="true"
+            className={`absolute inset-0 w-full h-full object-cover object-center ${
+              current % 2 === 0 ? "kb-anim" : "kb-anim-alt"
+            }`}
+            style={{ willChange: "transform" }}
+          />
+        ) : (
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} ${
+              current % 2 === 0 ? "kb-anim" : "kb-anim-alt"
+            }`}
+            style={{ willChange: "transform" }}
+          />
+        )}
+        {/* Dark overlay for text readability */}
         <div className={`absolute inset-0 ${slide.overlay}`} />
         {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/40 to-transparent" />

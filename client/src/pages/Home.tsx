@@ -567,6 +567,44 @@ export default function Home() {
       {/* ── RESEARCH COMPOUNDS CATALOG (Nulumin-style) ───────────────────── */}
       <ResearchCatalogSection />
 
+
+      {/* ── LAB QUALITY BANNER ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden h-72 sm:h-80 lg:h-96">
+        <img
+          src="/manus-storage/modern-lab_a86acfc6.jpg"
+          alt="Modern research laboratory"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d1a18]/80 via-[#0d1a18]/50 to-transparent" />
+        <div className="absolute inset-0 flex items-center">
+          <div className="container">
+            <div className="max-w-lg">
+              <p className="text-xs font-semibold tracking-widest uppercase text-[#7ECDC4] mb-3">Quality Assurance</p>
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-4">
+                Manufactured to the
+                <br />
+                <span className="text-[#7ECDC4]">Highest Standards</span>
+              </h2>
+              <p className="text-white/70 text-sm leading-relaxed mb-6 max-w-sm">
+                Every compound is produced in GMP-compliant facilities, lyophilized for maximum stability, and verified by third-party HPLC analysis.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                {[
+                  { label: "GMP Compliant", icon: "✓" },
+                  { label: "HPLC Verified", icon: "✓" },
+                  { label: "COA Included", icon: "✓" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5">
+                    <span className="text-[#7ECDC4] font-bold text-xs">{item.icon}</span>
+                    <span className="text-white text-xs font-semibold">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── COMPOUND SPOTLIGHT ───────────────────────────────────────────── */}
       <section className="py-20 hex-section">
         <div className="container">
@@ -578,8 +616,8 @@ export default function Home() {
             {/* BPC-157 spotlight */}
             <div className="bg-white border border-gray-100 rounded-2xl p-8 hover:shadow-md transition-all">
               <div className="flex items-start gap-6">
-                <div className="w-24 h-32 shrink-0 bg-gradient-to-b from-gray-50 to-gray-100 rounded-xl overflow-hidden">
-                  <VialPlaceholder label="BPC-157" size="10mg" color="#7c3aed" />
+                <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden">
+                  <img src="/manus-storage/peptide-vials_f93d16cf.webp" alt="Research peptide vials" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -607,8 +645,8 @@ export default function Home() {
             {/* NAD+ spotlight */}
             <div className="bg-white border border-gray-100 rounded-2xl p-8 hover:shadow-md transition-all">
               <div className="flex items-start gap-6">
-                <div className="w-24 h-32 shrink-0 bg-gradient-to-b from-gray-50 to-gray-100 rounded-xl overflow-hidden">
-                  <VialPlaceholder label="NAD+" size="500mg" color="#db2777" />
+                <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden">
+                  <img src="/manus-storage/lab-vials_614fc4e8.jpg" alt="Lab quality vials" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -639,25 +677,43 @@ export default function Home() {
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
       <section className="py-20 hex-section">
         <div className="container">
-          <div className="text-center mb-14">
-            <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Process</p>
-            <h2 className="text-3xl font-extrabold text-gray-950">How It Works</h2>
-            <p className="text-gray-400 mt-2 max-w-md mx-auto">From catalog to your laboratory in a few simple steps.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-            {[
-              { step: "01", title: "Browse & Select", desc: "Explore our catalog of research compounds, filter by category or mechanism, and select your compound and dosage." },
-              { step: "02", title: "Secure Checkout", desc: "Register, apply any discount coupon, complete your shipping details and proceed through our secure payment flow." },
-              { step: "03", title: "Fast Dispatch", desc: "Orders are processed same-day. Each vial ships with a Certificate of Analysis confirming purity and identity." },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className="w-12 h-12 rounded-2xl bg-[#E8F7F6] flex items-center justify-center mx-auto mb-4">
-                  <span className="text-sm font-extrabold text-[#3A9E94]">{item.step}</span>
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: image */}
+            <div className="relative rounded-3xl overflow-hidden shadow-xl h-80 lg:h-[420px]">
+              <img
+                src="/manus-storage/lab-scientist_de975453.jpg"
+                alt="Scientist working in research laboratory"
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d1a18]/60 via-transparent to-transparent" />
+              <div className="absolute bottom-6 left-6 right-6">
+                <p className="text-white font-bold text-lg leading-tight">GMP-Compliant Manufacturing</p>
+                <p className="text-white/70 text-sm mt-1">Every batch produced under strict quality controls</p>
               </div>
-            ))}
+            </div>
+            {/* Right: steps */}
+            <div>
+              <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Process</p>
+              <h2 className="text-3xl font-extrabold text-gray-950 mb-3">How It Works</h2>
+              <p className="text-gray-400 mb-10 max-w-md">From catalog to your laboratory in a few simple steps.</p>
+              <div className="flex flex-col gap-6">
+                {[
+                  { step: "01", title: "Browse & Select", desc: "Explore our catalog of research compounds, filter by category or mechanism, and select your compound and dosage." },
+                  { step: "02", title: "Secure Checkout", desc: "Register, apply any discount coupon, complete your shipping details and proceed through our secure payment flow." },
+                  { step: "03", title: "Fast Dispatch", desc: "Orders are processed same-day. Each vial ships with a Certificate of Analysis confirming purity and identity." },
+                ].map((item) => (
+                  <div key={item.step} className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F7F6] flex items-center justify-center shrink-0">
+                      <span className="text-sm font-extrabold text-[#3A9E94]">{item.step}</span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
+                      <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>

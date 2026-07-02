@@ -84,3 +84,11 @@
 - [x] Navbar.tsx: todos los colores violeta reemplazados por teal
 - [x] Home.tsx: sección CTA y trust badges en teal
 - [x] AdminDashboard, AdminOrders, AdminOrderDetail, AdminUsers, AdminLabReports: colores teal aplicados
+
+## Fase 9: Imágenes y textura en Home
+
+- [x] Cambiar textura de fondo de hexágonos rellenos a líneas finas (outline/wireframe)
+- [x] Añadir imágenes reales de laboratorio al Hero Slider (4 slides con fotos de lab)
+- [x] Añadir imagen real en sección "Research Highlights" (Compound Spotlight)
+- [x] Añadir sección "Lab Quality Banner" con imagen de laboratorio moderno
+- [x] Añadir imagen de laboratorio en sección "How It Works" (layout 2 columnas)
