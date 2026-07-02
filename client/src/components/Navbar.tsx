@@ -403,20 +403,39 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Mobile hamburger */}
+            {/* Mobile hamburger — 3 bars animated to X */}
             <button
-              className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-expanded={mobileOpen}
+              aria-label="Toggle menu"
+              className="md:hidden flex flex-col gap-[5px] p-2 rounded-xl hover:bg-gray-100 transition-colors"
               onClick={() => setMobileOpen((v) => !v)}
             >
-              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+              <span
+                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-transform duration-300 ease-in-out"
+                style={mobileOpen ? { transform: "translateY(7.5px) rotate(45deg)" } : {}}
+              />
+              <span
+                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-opacity duration-300 ease-in-out"
+                style={mobileOpen ? { opacity: 0 } : {}}
+              />
+              <span
+                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-transform duration-300 ease-in-out"
+                style={mobileOpen ? { transform: "translateY(-7.5px) rotate(-45deg)" } : {}}
+              />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-1">
+      {/* Mobile menu — max-height slide down, pushes content like the reference */}
+      <div
+        className="md:hidden bg-white border-t border-gray-100 overflow-hidden"
+        style={{
+          maxHeight: mobileOpen ? "800px" : "0",
+          transition: "max-height 0.35s ease",
+        }}
+      >
+        <div className="px-4 py-4 space-y-1">
           <Link href="/compounds">
             <div
               className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
@@ -497,7 +516,7 @@ export default function Navbar() {
             )}
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }
