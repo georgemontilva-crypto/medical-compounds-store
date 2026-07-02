@@ -126,6 +126,18 @@ export default function Navbar() {
   const { user, isAuthenticated, isAdmin } = useAuthContext();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileVisible, setMobileVisible] = useState(false);
+
+  // Animate mobile menu open/close
+  useEffect(() => {
+    if (mobileOpen) {
+      setMobileVisible(true);
+    } else {
+      // Keep in DOM during exit animation (250ms)
+      const t = setTimeout(() => setMobileVisible(false), 260);
+      return () => clearTimeout(t);
+    }
+  }, [mobileOpen]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -414,9 +426,16 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-1">
+      {/* Mobile menu — always in DOM when visible, animated open/close */}
+      {mobileVisible && (
+        <div
+          className={`md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-1 overflow-hidden transition-all duration-[260ms] ${
+            mobileOpen
+              ? "max-h-[600px] opacity-100 translate-y-0"
+              : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+          }`}
+          style={{ transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)" }}
+        >
           <Link href="/compounds">
             <div
               className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
