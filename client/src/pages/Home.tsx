@@ -1,8 +1,8 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
-import { ArrowRight, FlaskConical, Shield, Microscope, Award, ChevronRight, Plus, Check, Search, ChevronDown, Beaker, Dna, Zap, Activity, X } from "lucide-react";
+import { ArrowRight, FlaskConical, Shield, Microscope, Award, Plus, Check, Search, ChevronDown, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
 
@@ -47,13 +47,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   Endocrine: "#B8943A",
   Misc: "#8a9ba8",
 };
-
-const RESEARCH_CATEGORIES = [
-  { icon: Dna, label: "Tissue Repair", desc: "BPC-157, TB-500, GHK-Cu, KPV", color: "from-[#E8F7F6] to-[#F0FAF9]", accent: "#7ECDC4" },
-  { icon: Zap, label: "Metabolic", desc: "NAD+, MOTS-C, SS-31", color: "from-[#FBF6E8] to-[#FDF9F0]", accent: "#C8A84B" },
-  { icon: Activity, label: "Neural", desc: "Semax, Selank, PT-141", color: "from-[#E8F7F6] to-[#EEF8F7]", accent: "#3A9E94" },
-  { icon: Beaker, label: "Endocrine", desc: "Sermorelin, Tesamorelin, CJC-1295", color: "from-[#FBF6E8] to-[#FEF8EC]", accent: "#B8943A" },
-];
 
 // ── ProductCard ───────────────────────────────────────────────────────────────
 function ProductCard({ product }: { product: typeof FEATURED_PRODUCTS[0] }) {
@@ -456,6 +449,174 @@ function CompoundSpotlightSection() {
               image={imageBySlot[m.imageSlot] ?? m.imageFallback}
               accentIndex={(liveSpotlight.length + i) === 0 ? 0 : 1}
             />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Category Showcase (sticky horizontal scroll) ─────────────────────────────
+type ShowcaseCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  color?: string | null;
+  heroImageUrl?: string | null;
+  badgeCode?: string | null;
+  tagline?: string | null;
+  ctaText?: string | null;
+  sortOrder?: number | null;
+};
+
+function CategorySlideContent({ category, index, total }: {
+  category: ShowcaseCategory;
+  index: number;
+  total: number;
+}) {
+  const { data: products = [] } = trpc.products.list.useQuery({ categoryId: category.id, limit: 30 });
+  const accent = category.color || "#6366f1";
+  const badge = category.badgeCode || category.name.slice(0, 3).toUpperCase();
+  const counter = `${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+
+  return (
+    <div
+      className="relative h-full w-full flex items-center overflow-hidden"
+      style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
+    >
+      <div className="container relative z-10 grid md:grid-cols-2 gap-10 items-center py-10">
+        {/* Left */}
+        <div>
+          <div className="flex items-center gap-3 mb-6">
+            <span
+              className="text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap"
+              style={{ backgroundColor: `${accent}25`, color: accent }}
+            >
+              {badge} · {products.length} COMPOUND{products.length !== 1 ? "S" : ""}
+            </span>
+            <span className="text-xs font-mono text-white/30">{counter}</span>
+          </div>
+          <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4">
+            {category.name}
+          </h2>
+          {category.tagline && (
+            <p className="text-white/60 text-base leading-relaxed mb-6 max-w-md">{category.tagline}</p>
+          )}
+          {products.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-8">
+              {products.slice(0, 8).map((p) => (
+                <span key={p.id} className="text-xs text-white/70 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
+                  {p.name}
+                </span>
+              ))}
+            </div>
+          )}
+          <Link href={`/compounds?category=${category.id}`}>
+            <button
+              className="inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-xl text-[#0a0a0f] transition-transform active:scale-[0.97]"
+              style={{ backgroundColor: accent }}
+            >
+              {category.ctaText || "Explore Category"}
+              <ArrowRight size={16} />
+            </button>
+          </Link>
+        </div>
+
+        {/* Right: hero image */}
+        <div className="hidden md:block relative rounded-3xl overflow-hidden h-[70vh] max-h-[560px]">
+          {category.heroImageUrl ? (
+            <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-cover" />
+          ) : (
+            <div
+              className="w-full h-full flex items-center justify-center"
+              style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
+            >
+              <FlaskConical size={64} style={{ color: accent }} className="opacity-40" />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoryShowcase() {
+  const { data: categories = [] } = trpc.categories.list.useQuery();
+  const sorted = useMemo(
+    () => [...categories].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [categories]
+  );
+  const n = sorted.length;
+
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop || n <= 1) return;
+    let rafId = 0;
+    function measure() {
+      rafId = 0;
+      const el = sectionRef.current;
+      if (!el) return;
+      const scrollable = el.offsetHeight - window.innerHeight;
+      if (scrollable <= 0) return;
+      const raw = -el.getBoundingClientRect().top / scrollable;
+      setProgress(Math.min(1, Math.max(0, raw)));
+    }
+    function onScroll() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(measure);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [isDesktop, n]);
+
+  if (n === 0) return null;
+
+  if (!isDesktop) {
+    // Mobile fallback: plain horizontal scroll-snap, no sticky/JS transform.
+    return (
+      <section className="bg-[#0a0a0f]">
+        <div className="flex overflow-x-auto snap-x snap-mandatory" style={{ height: "80vh" }}>
+          {sorted.map((cat, i) => (
+            <div key={cat.id} className="w-screen shrink-0 snap-center h-full">
+              <CategorySlideContent category={cat} index={i} total={n} />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section ref={sectionRef} className="relative" style={{ height: `${n * 100}vh` }}>
+      <div className="sticky top-0 h-screen w-full overflow-hidden">
+        <div
+          className="flex h-full"
+          style={{
+            width: `${n * 100}%`,
+            transform: `translateX(-${(progress * (n - 1) * 100) / n}%)`,
+          }}
+        >
+          {sorted.map((cat, i) => (
+            <div key={cat.id} className="h-full shrink-0" style={{ width: `${100 / n}%` }}>
+              <CategorySlideContent category={cat} index={i} total={n} />
+            </div>
           ))}
         </div>
       </div>
@@ -903,32 +1064,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── RESEARCH CATEGORIES ──────────────────────────────────────────── */}
-      <section className="py-20 hex-cream">
-        <div className="container">
-          <div className="mb-12">
-            <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Research Areas</p>
-            <h2 className="text-3xl font-extrabold text-gray-950">Explore by Category</h2>
-            <p className="text-gray-400 mt-2 max-w-lg">Our catalog spans five research categories, each with compounds selected for their scientific relevance and purity profile.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {RESEARCH_CATEGORIES.map((cat) => (
-              <Link key={cat.label} href="/compounds">
-                <div className={`group bg-gradient-to-br ${cat.color} border border-white rounded-2xl p-6 cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.01]`}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: cat.accent + "20" }}>
-                    <cat.icon size={20} style={{ color: cat.accent }} />
-                  </div>
-                  <h3 className="font-bold text-gray-900 mb-1">{cat.label}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">{cat.desc}</p>
-                  <div className="flex items-center gap-1 mt-4 text-xs font-semibold" style={{ color: cat.accent }}>
-                    View compounds <ChevronRight size={12} />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── RESEARCH CATEGORIES (sticky horizontal showcase) ──────────────── */}
+      <CategoryShowcase />
 
       {/* ── RESEARCH COMPOUNDS CATALOG (Nulumin-style) ───────────────────── */}
       <ResearchCatalogSection />

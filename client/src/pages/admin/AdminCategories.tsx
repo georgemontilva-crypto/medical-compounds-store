@@ -1,11 +1,17 @@
 import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
-import { Plus, Pencil, Trash2, Tag, Check, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, Check, Loader2, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
-type CatForm = { name: string; slug: string; description: string; color: string };
-const emptyForm: CatForm = { name: "", slug: "", description: "", color: "#6366f1" };
+type CatForm = {
+  name: string; slug: string; description: string; color: string;
+  badgeCode: string; tagline: string; ctaText: string; sortOrder: string;
+};
+const emptyForm: CatForm = {
+  name: "", slug: "", description: "", color: "#6366f1",
+  badgeCode: "", tagline: "", ctaText: "Explore Category", sortOrder: "0",
+};
 
 const PRESET_COLORS = [
   "#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#64748b",
@@ -34,12 +40,33 @@ export default function AdminCategories() {
     onError: (e) => toast.error(e.message),
   });
 
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const uploadHeroImage = trpc.categories.uploadHeroImage.useMutation({
+    onSuccess: () => { utils.categories.list.invalidate(); toast.success("Hero image updated"); },
+    onError: (e) => toast.error(e.message),
+    onSettled: () => setUploadingHero(false),
+  });
+
+  function handleHeroUpload(file: File) {
+    if (!editingId) return;
+    setUploadingHero(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = (e.target?.result as string).split(",")[1];
+      uploadHeroImage.mutate({ categoryId: editingId, fileBase64: base64, fileName: file.name, mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  const editingCategory = editingId ? categories?.find((c) => c.id === editingId) : undefined;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const data = { ...form, sortOrder: Number(form.sortOrder) || 0 };
     if (editingId) {
-      updateCategory.mutate({ id: editingId, ...form });
+      updateCategory.mutate({ id: editingId, ...data });
     } else {
-      createCategory.mutate(form);
+      createCategory.mutate(data);
     }
   };
 
@@ -120,6 +147,82 @@ export default function AdminCategories() {
                   />
                 </div>
               </div>
+
+              {/* Category Showcase fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Badge Code</label>
+                  <input
+                    className="lab-input"
+                    value={form.badgeCode}
+                    onChange={(e) => setForm({ ...form, badgeCode: e.target.value.toUpperCase() })}
+                    placeholder="TIS"
+                    maxLength={10}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">CTA Text</label>
+                  <input
+                    className="lab-input"
+                    value={form.ctaText}
+                    onChange={(e) => setForm({ ...form, ctaText: e.target.value })}
+                    placeholder="Explore Category"
+                    maxLength={50}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Sort Order</label>
+                  <input
+                    className="lab-input"
+                    type="number"
+                    value={form.sortOrder}
+                    onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Tagline</label>
+                <textarea
+                  className="lab-input resize-none"
+                  rows={2}
+                  value={form.tagline}
+                  onChange={(e) => setForm({ ...form, tagline: e.target.value })}
+                  placeholder="Long description shown under the title in the category showcase"
+                  maxLength={300}
+                />
+              </div>
+
+              {/* Hero image — only once the category exists */}
+              {editingId && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Hero Image (Category Showcase)</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-20 rounded-xl bg-secondary overflow-hidden shrink-0 flex items-center justify-center">
+                      {editingCategory?.heroImageUrl ? (
+                        <img src={editingCategory.heroImageUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon size={20} className="text-muted-foreground/40" />
+                      )}
+                    </div>
+                    <label className="lab-btn-secondary text-xs py-2 px-3 cursor-pointer">
+                      <Upload size={13} />
+                      {uploadingHero ? "Uploading..." : "Upload Hero Image"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingHero}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleHeroUpload(file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
@@ -185,6 +288,10 @@ export default function AdminCategories() {
                         slug: cat.slug,
                         description: cat.description ?? "",
                         color: cat.color ?? "#6366f1",
+                        badgeCode: cat.badgeCode ?? "",
+                        tagline: cat.tagline ?? "",
+                        ctaText: cat.ctaText ?? "Explore Category",
+                        sortOrder: String(cat.sortOrder ?? 0),
                       });
                       setShowForm(true);
                     }}

@@ -173,6 +173,10 @@ export const appRouter = router({
           slug: z.string().min(1).max(120),
           description: z.string().optional(),
           color: z.string().optional(),
+          badgeCode: z.string().max(10).optional(),
+          tagline: z.string().max(300).optional(),
+          ctaText: z.string().max(50).optional(),
+          sortOrder: z.number().optional(),
         })
       )
       .mutation(({ input }) => createCategory(input)),
@@ -185,6 +189,10 @@ export const appRouter = router({
           slug: z.string().min(1).max(120).optional(),
           description: z.string().optional(),
           color: z.string().optional(),
+          badgeCode: z.string().max(10).optional(),
+          tagline: z.string().max(300).optional(),
+          ctaText: z.string().max(50).optional(),
+          sortOrder: z.number().optional(),
         })
       )
       .mutation(({ input }) => {
@@ -195,6 +203,22 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(({ input }) => deleteCategory(input.id)),
+
+    uploadHeroImage: adminProcedure
+      .input(
+        z.object({
+          categoryId: z.number(),
+          fileBase64: z.string(),
+          fileName: z.string(),
+          mimeType: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.fileBase64, "base64");
+        const relKey = `categories/${input.categoryId}/${nanoid(10)}_${input.fileName}`;
+        const { key: heroImageKey, url: heroImageUrl } = await storagePut(relKey, buffer, input.mimeType);
+        return updateCategory(input.categoryId, { heroImageUrl, heroImageKey });
+      }),
   }),
 
   // ─── Products ──────────────────────────────────────────────────────────────

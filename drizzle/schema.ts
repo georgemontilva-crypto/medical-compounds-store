@@ -33,6 +33,12 @@ export const categories = mysqlTable("categories", {
   slug: varchar("slug", { length: 120 }).notNull().unique(),
   description: text("description"),
   color: varchar("color", { length: 20 }).default("#6366f1"),
+  heroImageUrl: varchar("heroImageUrl", { length: 500 }),
+  heroImageKey: varchar("heroImageKey", { length: 500 }),
+  badgeCode: varchar("badgeCode", { length: 10 }),
+  tagline: varchar("tagline", { length: 300 }),
+  ctaText: varchar("ctaText", { length: 50 }).default("Explore Category"),
+  sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

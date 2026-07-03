@@ -43,6 +43,13 @@
       "when": 1783056718230,
       "tag": "0005_cool_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1783057005871,
+      "tag": "0006_adorable_patch",
+      "breakpoints": true
     }
   ]
 }
