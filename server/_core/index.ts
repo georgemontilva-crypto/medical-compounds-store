@@ -46,13 +46,19 @@ async function startServer() {
       res.status(404).send("Not found");
       return;
     }
+    const accessKeyId = process.env.R2_ACCESS_KEY_ID ?? "";
+    const runtimeConfig = {
+      r2AccessKeyIdPrefix: accessKeyId.slice(0, 6),
+      r2AccessKeyIdLength: accessKeyId.length,
+      r2Endpoint: process.env.R2_ENDPOINT ?? null,
+    };
     try {
       const { key, url } = await storagePut(
         `debug/${Date.now()}_r2-test.txt`,
         Buffer.from("r2 debug test"),
         "text/plain",
       );
-      res.json({ ok: true, key, url });
+      res.json({ ok: true, key, url, runtimeConfig });
     } catch (err: any) {
       res.status(500).json({
         ok: false,
@@ -61,6 +67,7 @@ async function startServer() {
         Code: err?.Code,
         metadata: err?.$metadata,
         stack: err?.stack,
+        runtimeConfig,
       });
     }
   });
