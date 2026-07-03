@@ -8,6 +8,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
+import { sendEmail, escapeHtml } from "./email";
 import { notifyOwner } from "./_core/notification";
 import {
   addProductImage,
@@ -67,6 +68,9 @@ import {
   setSiteSetting,
   getDocIntegritySection,
   updateDocIntegritySection,
+  createWholesaleApplication,
+  getWholesaleApplications,
+  updateWholesaleApplicationStatus,
 } from "./db";
 import { storagePut } from "./storage";
 
@@ -791,6 +795,105 @@ export const appRouter = router({
         const { key: heroImageKey, url: heroImageUrl } = await storagePut(relKey, buffer, input.mimeType);
         return updateDocIntegritySection({ heroImageUrl, heroImageKey });
       }),
+  }),
+
+  // ─── Wholesale Applications ─────────────────────────────────────────────────
+  wholesaleApplications: router({
+    create: publicProcedure
+      .input(
+        z.object({
+          fullName: z.string().min(1).max(150),
+          workEmail: z.string().email().max(255),
+          phone: z.string().min(1).max(50),
+          roleTitle: z.string().min(1).max(150),
+          organization: z.string().min(1).max(200),
+          researchDomains: z.array(z.string()).optional(),
+          expectedMonthlyVolume: z.enum(["under_1000", "1000_5000", "5000_25000", "25000_plus"]),
+          taxExempt: z.boolean().optional(),
+          shippingStreet: z.string().min(1).max(255),
+          shippingCity: z.string().min(1).max(150),
+          shippingState: z.string().min(1).max(100),
+          shippingZip: z.string().min(1).max(20),
+          notes: z.string().max(2000).optional(),
+          wantsUpdates: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const application = await createWholesaleApplication({
+          fullName: input.fullName,
+          workEmail: input.workEmail,
+          phone: input.phone,
+          roleTitle: input.roleTitle,
+          organization: input.organization,
+          researchDomains: input.researchDomains?.join(",") || null,
+          expectedMonthlyVolume: input.expectedMonthlyVolume,
+          taxExempt: input.taxExempt ?? false,
+          shippingStreet: input.shippingStreet,
+          shippingCity: input.shippingCity,
+          shippingState: input.shippingState,
+          shippingZip: input.shippingZip,
+          notes: input.notes || null,
+          wantsUpdates: input.wantsUpdates ?? false,
+        });
+
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+        const domainsLabel = input.researchDomains?.length ? input.researchDomains.join(", ") : "—";
+
+        await Promise.all([
+          sendEmail({
+            to: input.workEmail,
+            subject: "We've received your wholesale application — Brighter Days Labs",
+            html: `
+              <p>Hi ${escapeHtml(input.fullName)},</p>
+              <p>Thanks for applying for wholesale access at Brighter Days Labs. Our team is reviewing your application and will follow up at this address within 1-2 business days.</p>
+              <p><strong>Organization:</strong> ${escapeHtml(input.organization)}<br/>
+              <strong>Expected monthly volume:</strong> ${escapeHtml(input.expectedMonthlyVolume)}</p>
+              <p>— Brighter Days Labs</p>
+            `,
+          }),
+          adminEmail
+            ? sendEmail({
+                to: adminEmail,
+                subject: `New wholesale application: ${input.organization}`,
+                html: `
+                  <p>New wholesale application received.</p>
+                  <ul>
+                    <li><strong>Name:</strong> ${escapeHtml(input.fullName)}</li>
+                    <li><strong>Email:</strong> ${escapeHtml(input.workEmail)}</li>
+                    <li><strong>Phone:</strong> ${escapeHtml(input.phone)}</li>
+                    <li><strong>Role:</strong> ${escapeHtml(input.roleTitle)}</li>
+                    <li><strong>Organization:</strong> ${escapeHtml(input.organization)}</li>
+                    <li><strong>Research domains:</strong> ${escapeHtml(domainsLabel)}</li>
+                    <li><strong>Expected monthly volume:</strong> ${escapeHtml(input.expectedMonthlyVolume)}</li>
+                    <li><strong>Tax exempt:</strong> ${input.taxExempt ? "Yes" : "No"}</li>
+                    <li><strong>Shipping:</strong> ${escapeHtml(input.shippingStreet)}, ${escapeHtml(input.shippingCity)}, ${escapeHtml(input.shippingState)} ${escapeHtml(input.shippingZip)}</li>
+                    <li><strong>Notes:</strong> ${input.notes ? escapeHtml(input.notes) : "—"}</li>
+                    <li><strong>Wants updates:</strong> ${input.wantsUpdates ? "Yes" : "No"}</li>
+                  </ul>
+                `,
+              })
+            : Promise.resolve(false),
+        ]);
+
+        return application;
+      }),
+
+    adminList: adminProcedure
+      .input(
+        z
+          .object({ status: z.enum(["pending", "approved", "rejected", "contacted"]).optional() })
+          .optional()
+      )
+      .query(({ input }) => getWholesaleApplications(input?.status)),
+
+    updateStatus: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["pending", "approved", "rejected", "contacted"]),
+        })
+      )
+      .mutation(({ input }) => updateWholesaleApplicationStatus(input.id, input.status)),
   }),
 });
 

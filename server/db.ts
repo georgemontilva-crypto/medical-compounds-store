@@ -15,6 +15,7 @@ import {
   InsertProductVariation,
   InsertSiteImage,
   InsertUser,
+  InsertWholesaleApplication,
   Order,
   cartItems,
   categories,
@@ -29,6 +30,7 @@ import {
   siteImages,
   siteSettings,
   users,
+  wholesaleApplications,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -579,4 +581,35 @@ export async function updateDocIntegritySection(data: Partial<InsertDocIntegrity
     .values({ id: 1, ...data })
     .onDuplicateKeyUpdate({ set: { ...data, updatedAt: new Date() } });
   return getDocIntegritySection();
+}
+
+// ─── Wholesale Applications ─────────────────────────────────────────────────────
+export async function createWholesaleApplication(data: InsertWholesaleApplication) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(wholesaleApplications).values(data);
+  const insertId = result[0].insertId;
+  const [row] = await db.select().from(wholesaleApplications).where(eq(wholesaleApplications.id, insertId)).limit(1);
+  return row;
+}
+
+export async function getWholesaleApplications(status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const query = db.select().from(wholesaleApplications).orderBy(desc(wholesaleApplications.createdAt));
+  if (status) {
+    return query.where(eq(wholesaleApplications.status, status as any));
+  }
+  return query;
+}
+
+export async function updateWholesaleApplicationStatus(id: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(wholesaleApplications)
+    .set({ status: status as any, updatedAt: new Date() })
+    .where(eq(wholesaleApplications.id, id));
+  const [row] = await db.select().from(wholesaleApplications).where(eq(wholesaleApplications.id, id)).limit(1);
+  return row;
 }

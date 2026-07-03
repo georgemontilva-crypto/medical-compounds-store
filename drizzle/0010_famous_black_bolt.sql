@@ -1,0 +1,21 @@
+CREATE TABLE `wholesale_applications` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`status` enum('pending','approved','rejected','contacted') NOT NULL DEFAULT 'pending',
+	`fullName` varchar(150) NOT NULL,
+	`workEmail` varchar(255) NOT NULL,
+	`phone` varchar(50) NOT NULL,
+	`roleTitle` varchar(150) NOT NULL,
+	`organization` varchar(200) NOT NULL,
+	`researchDomains` varchar(300),
+	`expectedMonthlyVolume` enum('under_1000','1000_5000','5000_25000','25000_plus') NOT NULL,
+	`taxExempt` boolean NOT NULL DEFAULT false,
+	`shippingStreet` varchar(255) NOT NULL,
+	`shippingCity` varchar(150) NOT NULL,
+	`shippingState` varchar(100) NOT NULL,
+	`shippingZip` varchar(20) NOT NULL,
+	`notes` text,
+	`wantsUpdates` boolean NOT NULL DEFAULT false,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `wholesale_applications_id` PRIMARY KEY(`id`)
+);

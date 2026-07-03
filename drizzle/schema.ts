@@ -275,3 +275,38 @@ export const docIntegritySection = mysqlTable("doc_integrity_section", {
 
 export type DocIntegritySection = typeof docIntegritySection.$inferSelect;
 export type InsertDocIntegritySection = typeof docIntegritySection.$inferInsert;
+
+// ─── Wholesale Applications ───────────────────────────────────────────────────
+export const wholesaleApplications = mysqlTable("wholesale_applications", {
+  id: int("id").autoincrement().primaryKey(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "contacted"])
+    .default("pending")
+    .notNull(),
+  fullName: varchar("fullName", { length: 150 }).notNull(),
+  workEmail: varchar("workEmail", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }).notNull(),
+  roleTitle: varchar("roleTitle", { length: 150 }).notNull(),
+  organization: varchar("organization", { length: 200 }).notNull(),
+  // Comma-separated slugs (e.g. "tissue_repair,cellular,neural") — simpler
+  // to read/write with Drizzle than a json() column given no existing
+  // precedent for that type in this schema, and it's just a multi-select.
+  researchDomains: varchar("researchDomains", { length: 300 }),
+  expectedMonthlyVolume: mysqlEnum("expectedMonthlyVolume", [
+    "under_1000",
+    "1000_5000",
+    "5000_25000",
+    "25000_plus",
+  ]).notNull(),
+  taxExempt: boolean("taxExempt").default(false).notNull(),
+  shippingStreet: varchar("shippingStreet", { length: 255 }).notNull(),
+  shippingCity: varchar("shippingCity", { length: 150 }).notNull(),
+  shippingState: varchar("shippingState", { length: 100 }).notNull(),
+  shippingZip: varchar("shippingZip", { length: 20 }).notNull(),
+  notes: text("notes"),
+  wantsUpdates: boolean("wantsUpdates").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WholesaleApplication = typeof wholesaleApplications.$inferSelect;
+export type InsertWholesaleApplication = typeof wholesaleApplications.$inferInsert;

@@ -71,6 +71,13 @@
       "when": 1783101133089,
       "tag": "0009_lyrical_jamie_braddock",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1783110244226,
+      "tag": "0010_famous_black_bolt",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,8 @@ import AdminSiteImages from "./pages/admin/AdminSiteImages";
 import AdminDocIntegrity from "./pages/admin/AdminDocIntegrity";
 import LabReports from "./pages/LabReports";
 import Contact from "./pages/Contact";
+import WholesaleApplication from "./pages/WholesaleApplication";
+import AdminWholesaleApplications from "./pages/admin/AdminWholesaleApplications";
 
 function Router() {
   return (
@@ -51,6 +53,7 @@ function Router() {
       <Route path="/my-orders/:id" component={OrderDetail} />
       <Route path="/lab-reports/:slug" component={LabReports} />
       <Route path="/contact" component={Contact} />
+      <Route path="/wholesale" component={WholesaleApplication} />
 
       {/* Admin routes */}
       <Route path="/admin" component={AdminDashboard} />
@@ -63,6 +66,7 @@ function Router() {
       <Route path="/admin/lab-reports" component={AdminLabReports} />
       <Route path="/admin/site-images" component={AdminSiteImages} />
       <Route path="/admin/doc-integrity" component={AdminDocIntegrity} />
+      <Route path="/admin/wholesale-applications" component={AdminWholesaleApplications} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
