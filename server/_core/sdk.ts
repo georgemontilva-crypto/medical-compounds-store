@@ -155,7 +155,7 @@ class SDKServer {
   }
 
   private getSessionSecret() {
-    const secret = ENV.cookieSecret;
+    const secret = ENV.cookieSecret || "fallback-secret-change-me";
     return new TextEncoder().encode(secret);
   }
 
