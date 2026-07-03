@@ -288,8 +288,8 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         const buffer = Buffer.from(input.fileBase64, "base64");
-        const fileKey = `products/${input.productId}/${nanoid(10)}_${input.fileName}`;
-        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        const relKey = `products/${input.productId}/${nanoid(10)}_${input.fileName}`;
+        const { key: fileKey, url } = await storagePut(relKey, buffer, input.mimeType);
         await addProductImage({
           productId: input.productId,
           url,
@@ -698,8 +698,8 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         const buffer = Buffer.from(input.fileBase64, "base64");
-        const fileKey = `site-images/${input.slotKey}/${nanoid(10)}_${input.fileName}`;
-        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        const relKey = `site-images/${input.slotKey}/${nanoid(10)}_${input.fileName}`;
+        const { key: fileKey, url } = await storagePut(relKey, buffer, input.mimeType);
         return upsertSiteImage({ slotKey: input.slotKey, url, fileKey, label: input.label });
       }),
   }),
