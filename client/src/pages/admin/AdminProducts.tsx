@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
 import {
@@ -59,11 +59,17 @@ export default function AdminProducts() {
   const { data: categories } = trpc.categories.list.useQuery();
 
   const createProduct = trpc.products.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (result) => {
       utils.products.listAdmin.invalidate();
       setForm(emptyForm);
       setShowForm(false);
-      toast.success("Product created");
+      const insertId = (result as unknown as { insertId?: number })?.insertId;
+      if (insertId) {
+        setExpandedId(insertId);
+        toast.success("Product created — scroll down to add images and variations");
+      } else {
+        toast.success("Product created");
+      }
     },
     onError: (e) => toast.error(e.message),
   });
@@ -139,7 +145,7 @@ export default function AdminProducts() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleFileUpload = async (productId: number, file: File) => {
+  const handleFileUpload = async (productId: number, file: File, sortOrder: number) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64 = (e.target?.result as string).split(",")[1];
@@ -148,7 +154,7 @@ export default function AdminProducts() {
         fileBase64: base64,
         fileName: file.name,
         mimeType: file.type,
-        sortOrder: 0,
+        sortOrder,
       });
     };
     reader.readAsDataURL(file);
@@ -339,7 +345,7 @@ export default function AdminProducts() {
                 onDelete={() => {
                   if (confirm("Delete this product?")) deleteProduct.mutate({ id: product.id });
                 }}
-                onUploadImage={(file) => handleFileUpload(product.id, file)}
+                onUploadImage={(file, sortOrder) => handleFileUpload(product.id, file, sortOrder)}
                 onDeleteImage={(id) => deleteImage.mutate({ id })}
                 variationForm={variationForm}
                 setVariationForm={setVariationForm}
@@ -391,7 +397,7 @@ function ProductRow({
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onUploadImage: (file: File) => void;
+  onUploadImage: (file: File, sortOrder: number) => void;
   onDeleteImage: (id: number) => void;
   variationForm: VariationForm;
   setVariationForm: (v: VariationForm) => void;
@@ -406,6 +412,11 @@ function ProductRow({
   const { data: images } = trpc.products.images.useQuery({ productId: product.id }, { enabled: expanded });
   const { data: variations } = trpc.products.variations.useQuery({ productId: product.id }, { enabled: expanded });
   const category = categories?.find((c) => c.id === product.categoryId);
+
+  const [nextOrder, setNextOrder] = useState(0);
+  useEffect(() => {
+    if (images) setNextOrder(images.length);
+  }, [images]);
 
   return (
     <div className="lab-card overflow-hidden">
@@ -451,20 +462,32 @@ function ProductRow({
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold">Images</p>
-              <label className="lab-btn-secondary text-xs py-1.5 px-3 cursor-pointer">
-                <Upload size={12} />
-                Upload Image
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) { setUploadingFor(product.id); onUploadImage(file); }
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+              <div className="flex items-center gap-2">
+                <div>
+                  <label className="block text-[10px] text-muted-foreground mb-0.5">Order</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="lab-input py-1 text-xs w-16"
+                    value={nextOrder}
+                    onChange={(e) => setNextOrder(Number(e.target.value))}
+                  />
+                </div>
+                <label className="lab-btn-secondary text-xs py-1.5 px-3 cursor-pointer">
+                  <Upload size={12} />
+                  Upload Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) { setUploadingFor(product.id); onUploadImage(file, nextOrder); }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
             </div>
             {isUploading && uploadingFor === product.id && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -480,6 +503,9 @@ function ProductRow({
                       alt={img.altText ?? ""}
                       className="w-16 h-16 rounded-xl object-cover border border-border"
                     />
+                    <span className="absolute -bottom-1.5 -left-1.5 w-5 h-5 bg-card border border-border text-[10px] font-bold rounded-full flex items-center justify-center text-muted-foreground">
+                      {img.sortOrder}
+                    </span>
                     <button
                       onClick={() => onDeleteImage(img.id)}
                       className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
