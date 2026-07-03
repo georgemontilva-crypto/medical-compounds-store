@@ -495,7 +495,7 @@ function CategorySlideContent({ category, index, total }: {
           maskImage: "radial-gradient(circle at 30% 45%, black 0%, transparent 70%)",
         }}
       />
-      <div className="container relative z-10 grid md:grid-cols-2 gap-10 items-center py-10">
+      <div className="container relative z-10 grid md:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] gap-10 items-center py-10">
         {/* Left */}
         <div>
           <div className="flex items-center gap-3 mb-6">
@@ -534,14 +534,14 @@ function CategorySlideContent({ category, index, total }: {
         </div>
 
         {/* Right: hero image */}
-        <div className="hidden md:block relative rounded-3xl overflow-hidden h-[70vh] max-h-[560px]">
+        <div
+          className="hidden md:block relative rounded-3xl overflow-hidden h-[70vh] max-h-[560px]"
+          style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
+        >
           {category.heroImageUrl ? (
-            <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-cover" />
+            <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-contain" />
           ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
-            >
+            <div className="w-full h-full flex items-center justify-center">
               <FlaskConical size={64} style={{ color: accent }} className="opacity-40" />
             </div>
           )}
