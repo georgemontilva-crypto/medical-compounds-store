@@ -5,6 +5,7 @@ import { Link, useSearch } from "wouter";
 import { Search, FlaskConical, Plus, Check, SlidersHorizontal, ChevronDown, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ProductCard, { VialPlaceholder } from "@/components/ProductCard";
+import Reveal from "@/components/Reveal";
 
 // ── Category color map ────────────────────────────────────────────────────────
 const CAT_COLORS: Record<string, string> = {
@@ -346,7 +347,9 @@ export default function Compounds() {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                   {filteredStatic.map((p) => (
-                    <StaticCard key={p.id} product={p} onAdd={() => handleStaticAdd(p)} added={addedIds.has(`static-${p.id}`)} />
+                    <Reveal key={p.id}>
+                      <StaticCard product={p} onAdd={() => handleStaticAdd(p)} added={addedIds.has(`static-${p.id}`)} />
+                    </Reveal>
                   ))}
                 </div>
               )
@@ -359,13 +362,14 @@ export default function Compounds() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {dbProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    categories={categories}
-                    onAdd={handleLiveAdd}
-                    added={addedIds.has(`card-${product.id}`)}
-                  />
+                  <Reveal key={product.id}>
+                    <ProductCard
+                      product={product}
+                      categories={categories}
+                      onAdd={handleLiveAdd}
+                      added={addedIds.has(`card-${product.id}`)}
+                    />
+                  </Reveal>
                 ))}
               </div>
             )}

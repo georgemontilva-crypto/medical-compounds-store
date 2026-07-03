@@ -1,10 +1,12 @@
 import { trpc } from "@/lib/trpc";
+import { getLenis } from "@/lib/lenis";
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
 import { ArrowRight, FlaskConical, Shield, Microscope, Award, Plus, Check, Search, ChevronDown, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
+import Reveal from "@/components/Reveal";
 import ProductCard from "@/components/ProductCard";
 
 // ── Placeholder image component ──────────────────────────────────────────────
@@ -499,11 +501,27 @@ function CategoryShowcase() {
       rafId = requestAnimationFrame(measure);
     }
 
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // Lenis drives the real document scroll position itself (not a virtual
+    // transform), so getBoundingClientRect() above stays accurate — but the
+    // documented, supported way to react to that scroll (mirroring Lenis's
+    // own GSAP ScrollTrigger integration example) is lenis.on("scroll", ...),
+    // not assuming native window scroll events still fire the same way
+    // during smoothing. Falls back to the native listener if Lenis hasn't
+    // initialized yet for some reason.
+    const lenis = getLenis();
+    if (lenis) {
+      lenis.on("scroll", onScroll);
+    } else {
+      window.addEventListener("scroll", onScroll, { passive: true });
+    }
     window.addEventListener("resize", onScroll);
     onScroll();
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      if (lenis) {
+        lenis.off("scroll", onScroll);
+      } else {
+        window.removeEventListener("scroll", onScroll);
+      }
       window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
@@ -856,7 +874,9 @@ export default function Home() {
       <Navbar />
 
       {/* ── HERO SLIDER ──────────────────────────────────────────────────── */}
-      <HeroSlider />
+      <Reveal>
+        <HeroSlider />
+      </Reveal>
 
       {/* ── HERO STATIC (hidden - replaced by slider) ─────────────────────── */}
       <section className="relative overflow-hidden bg-white hidden">
@@ -1001,6 +1021,7 @@ export default function Home() {
 
       {/* ── LAB QUALITY BANNER ─────────────────────────────────────────────── */}
       {/* Mobile (<768px): stacked image + solid card, dark text on light bg */}
+      <Reveal>
       <section className="md:hidden">
         <div className="relative aspect-[16/10] overflow-hidden">
           <img
@@ -1031,8 +1052,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </Reveal>
 
       {/* Desktop (≥768px): image with text overlay — unchanged */}
+      <Reveal>
       <section className="hidden md:block relative overflow-hidden h-80 lg:h-96">
         <img
           src={imageBySlot["home_lab_banner"] ?? "/manus-storage/modern-lab_a86acfc6.jpg"}
@@ -1068,9 +1091,12 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </Reveal>
 
       {/* ── DOCUMENTATION BY DESIGN ──────────────────────────────────────── */}
-      <DocIntegritySection />
+      <Reveal>
+        <DocIntegritySection />
+      </Reveal>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
       <section className="py-20">
