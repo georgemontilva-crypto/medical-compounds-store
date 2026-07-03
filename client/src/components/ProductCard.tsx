@@ -84,7 +84,7 @@ export default function ProductCard({
       style={{ "--cat-glow": catGlow } as React.CSSProperties}
     >
       <Link href={`/compounds/${product.slug}`}>
-        <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed] p-3">
+        <div className="relative h-48 cursor-pointer overflow-hidden bg-white p-2">
           {image ? (
             <img src={image.url} alt={product.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
           ) : (
