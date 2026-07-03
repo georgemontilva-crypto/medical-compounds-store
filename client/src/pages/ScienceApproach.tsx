@@ -85,6 +85,9 @@ function PurityBarChart() {
 export default function ScienceApproach() {
   const { data: categories = [] } = trpc.categories.list.useQuery();
   const { data: products = [] } = trpc.products.list.useQuery();
+  const { data: documentationImage } = trpc.siteImages.getBySlot.useQuery({
+    slotKey: "approach_documentation_image",
+  });
 
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
@@ -270,9 +273,19 @@ export default function ScienceApproach() {
                 can trace a given vial back to its batch data instead of relying on a generic product page.
               </p>
             </div>
-            <div className="w-40 mx-auto">
-              <VialPlaceholder label="BPC-157" size="10mg" color="#7ECDC4" />
-            </div>
+            {documentationImage?.url ? (
+              <div className="w-full max-w-sm mx-auto h-72 lg:h-96 rounded-3xl overflow-hidden">
+                <img
+                  src={documentationImage.url}
+                  alt="Batch documentation and lot-specific labeling"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-40 mx-auto">
+                <VialPlaceholder label="BPC-157" size="10mg" color="#7ECDC4" />
+              </div>
+            )}
           </div>
         </section>
       </Reveal>
