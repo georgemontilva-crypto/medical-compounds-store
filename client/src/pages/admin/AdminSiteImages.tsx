@@ -15,6 +15,7 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "hero_slide_4", label: "Hero Slider — Slide 4 (Endocrine)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "home_lab_banner", label: "Home — Lab Quality Banner", section: "Home", recommended: "Landscape, ≥1600×500, wide banner" },
   { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home", recommended: "≥900×900, square to slightly portrait" },
+  { slotKey: "manufacturing_hero_image", label: "Science → Manufacturing — Hero image", section: "Science Pages", recommended: "Portrait or square, ≥900×900, lab/manufacturing photo" },
 ];
 
 // Known editable text settings (site_settings table) — shown on this same screen.

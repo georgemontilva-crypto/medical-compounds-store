@@ -39,6 +39,7 @@ import Contact from "./pages/Contact";
 import WholesaleApplication from "./pages/WholesaleApplication";
 import AdminWholesaleApplications from "./pages/admin/AdminWholesaleApplications";
 import ScienceApproach from "./pages/ScienceApproach";
+import ScienceManufacturing from "./pages/ScienceManufacturing";
 
 function Router() {
   return (
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/wholesale" component={WholesaleApplication} />
       <Route path="/science/approach" component={ScienceApproach} />
+      <Route path="/science/manufacturing" component={ScienceManufacturing} />
 
       {/* Admin routes */}
       <Route path="/admin" component={AdminDashboard} />
