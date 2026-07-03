@@ -466,6 +466,7 @@ type ShowcaseCategory = {
   badgeCode?: string | null;
   tagline?: string | null;
   ctaText?: string | null;
+  questionText?: string | null;
   sortOrder?: number | null;
 };
 
@@ -542,6 +543,36 @@ function CategorySlideContent({ category, index, total }: {
               style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
             >
               <FlaskConical size={64} style={{ color: accent }} className="opacity-40" />
+            </div>
+          )}
+
+          {/* Floating question card, bottom corner of the hero image */}
+          {category.questionText && (
+            <div
+              className="absolute bottom-4 left-4 right-4 rounded-2xl p-5 border-t-2"
+              style={{ backgroundColor: "rgba(10,10,15,0.55)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTopColor: accent }}
+            >
+              <p className="text-white font-semibold text-sm leading-snug mb-3">{category.questionText}</p>
+              {products.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {products.slice(0, 4).map((p) => (
+                    <span key={p.id} className="text-[10px] text-white/80 bg-white/10 px-2 py-1 rounded-full">
+                      {p.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {category.tagline && (
+                <p className="text-[11px] text-gray-400 mb-3 leading-relaxed line-clamp-2">{category.tagline}</p>
+              )}
+              <Link href={`/compounds?category=${category.id}`}>
+                <button
+                  className="text-xs font-bold tracking-wide px-4 py-2 rounded-lg transition-transform active:scale-[0.97]"
+                  style={{ backgroundColor: accent, color: "#0a0a0f" }}
+                >
+                  EXPLORE {category.name.toUpperCase()} COMPOUNDS
+                </button>
+              </Link>
             </div>
           )}
         </div>

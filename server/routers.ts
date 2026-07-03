@@ -176,6 +176,7 @@ export const appRouter = router({
           badgeCode: z.string().max(10).optional(),
           tagline: z.string().max(300).optional(),
           ctaText: z.string().max(50).optional(),
+          questionText: z.string().max(200).optional(),
           sortOrder: z.number().optional(),
         })
       )
@@ -192,6 +193,7 @@ export const appRouter = router({
           badgeCode: z.string().max(10).optional(),
           tagline: z.string().max(300).optional(),
           ctaText: z.string().max(50).optional(),
+          questionText: z.string().max(200).optional(),
           sortOrder: z.number().optional(),
         })
       )

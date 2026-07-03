@@ -6,11 +6,11 @@ import { toast } from "sonner";
 
 type CatForm = {
   name: string; slug: string; description: string; color: string;
-  badgeCode: string; tagline: string; ctaText: string; sortOrder: string;
+  badgeCode: string; tagline: string; ctaText: string; sortOrder: string; questionText: string;
 };
 const emptyForm: CatForm = {
   name: "", slug: "", description: "", color: "#6366f1",
-  badgeCode: "", tagline: "", ctaText: "Explore Category", sortOrder: "0",
+  badgeCode: "", tagline: "", ctaText: "Explore Category", sortOrder: "0", questionText: "",
 };
 
 const PRESET_COLORS = [
@@ -191,6 +191,16 @@ export default function AdminCategories() {
                   maxLength={300}
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Question Text (floating card on hero image)</label>
+                <input
+                  className="lab-input"
+                  value={form.questionText}
+                  onChange={(e) => setForm({ ...form, questionText: e.target.value })}
+                  placeholder="How do GLP-pathway peptides regulate energy homeostasis?"
+                  maxLength={200}
+                />
+              </div>
 
               {/* Hero image — only once the category exists */}
               {editingId && (
@@ -292,6 +302,7 @@ export default function AdminCategories() {
                         tagline: cat.tagline ?? "",
                         ctaText: cat.ctaText ?? "Explore Category",
                         sortOrder: String(cat.sortOrder ?? 0),
+                        questionText: cat.questionText ?? "",
                       });
                       setShowForm(true);
                     }}

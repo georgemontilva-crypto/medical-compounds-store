@@ -38,6 +38,7 @@ export const categories = mysqlTable("categories", {
   badgeCode: varchar("badgeCode", { length: 10 }),
   tagline: varchar("tagline", { length: 300 }),
   ctaText: varchar("ctaText", { length: 50 }).default("Explore Category"),
+  questionText: varchar("questionText", { length: 200 }),
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

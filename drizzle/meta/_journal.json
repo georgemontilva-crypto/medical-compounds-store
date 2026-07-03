@@ -50,6 +50,13 @@
       "when": 1783057005871,
       "tag": "0006_adorable_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1783059373525,
+      "tag": "0007_stormy_the_call",
+      "breakpoints": true
     }
   ]
 }
