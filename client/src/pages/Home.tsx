@@ -482,7 +482,7 @@ function CategorySlideContent({ category, index, total }: {
 
   return (
     <div
-      className="relative h-full w-full flex items-center overflow-hidden"
+      className="relative h-full w-full flex items-center overflow-hidden rounded-3xl"
       style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
     >
       {/* Subtle grid pattern tinted with the category accent, fading out via a radial mask */}
@@ -632,10 +632,10 @@ function CategoryShowcase() {
   if (!isDesktop) {
     // Mobile fallback: plain horizontal scroll-snap, no sticky/JS transform.
     return (
-      <section className="bg-[#0a0a0f]">
+      <section className="bg-white">
         <div className="flex overflow-x-auto snap-x snap-mandatory" style={{ height: "80vh" }}>
           {sorted.map((cat, i) => (
-            <div key={cat.id} className="w-screen shrink-0 snap-center h-full">
+            <div key={cat.id} className="w-screen shrink-0 snap-center h-full px-4 py-4">
               <CategorySlideContent category={cat} index={i} total={n} />
             </div>
           ))}
@@ -645,8 +645,8 @@ function CategoryShowcase() {
   }
 
   return (
-    <section ref={sectionRef} className="relative" style={{ height: `${n * 100}vh` }}>
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
+    <section ref={sectionRef} className="relative bg-white" style={{ height: `${n * 100}vh` }}>
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-white">
         <div
           className="flex h-full"
           style={{
@@ -655,7 +655,7 @@ function CategoryShowcase() {
           }}
         >
           {sorted.map((cat, i) => (
-            <div key={cat.id} className="h-full shrink-0" style={{ width: `${100 / n}%` }}>
+            <div key={cat.id} className="h-full shrink-0 px-6 sm:px-10 py-6" style={{ width: `${100 / n}%` }}>
               <CategorySlideContent category={cat} index={i} total={n} />
             </div>
           ))}
