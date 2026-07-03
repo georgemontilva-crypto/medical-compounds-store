@@ -20,7 +20,7 @@ const PURITY_DATA = [
   { label: "Unverified samples", value: 62, fill: "#d1d5db" },
   { label: "Typical lab-grade", value: 91, fill: "#9ca3af" },
   { label: "Premium peer batch", value: 95, fill: "#7ECDC4" },
-  { label: "Brighter Days Labs batch", value: 98, fill: "#3A9E94" },
+  { label: "Brighter Days Labs batch", value: 99, fill: "#3A9E94" },
 ];
 
 function CategoryDonut({ categories, total }: { categories: Array<{ name: string; color: string; count: number }>; total: number }) {
@@ -134,7 +134,7 @@ export default function ScienceApproach() {
                   { label: "Categories", value: String(sortedCategories.length) },
                   { label: "Compounds", value: String(totalCompounds) },
                   { label: "Direct purchase", value: "Yes" },
-                  { label: "Purity floor", value: "≥98%" },
+                  { label: "Purity floor", value: "≥99%" },
                 ].map((m) => (
                   <div key={m.label}>
                     <p className="text-2xl font-extrabold text-gray-950">{m.value}</p>
@@ -300,7 +300,7 @@ export default function ScienceApproach() {
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">The purity standard</h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-xl">
-              Purity floors vary widely across suppliers. Brighter Days Labs sets ≥98% HPLC-verified purity as the
+              Purity floors vary widely across suppliers. Brighter Days Labs sets ≥99% HPLC-verified purity as the
               minimum bar for every batch that ships — illustrated below against typical benchmarks.
             </p>
             <PurityBarChart />

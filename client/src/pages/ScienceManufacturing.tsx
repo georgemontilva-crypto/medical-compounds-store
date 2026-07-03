@@ -30,7 +30,7 @@ const TRACEABILITY_EVENTS = [
 
 const CLOSING_STATS = [
   { label: "Made in USA" },
-  { label: "≥98% purity" },
+  { label: "≥99% purity" },
   { label: "Per-batch COA" },
   { label: "cGMP-aligned facility" },
 ];

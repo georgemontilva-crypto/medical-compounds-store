@@ -213,7 +213,7 @@ function DocIntegritySection() {
   const cardBadge = data?.cardBadge || "COA-LINKED";
   const cardSubtext = data?.cardSubtext || "Lot-traceable";
   const cardTitle = data?.cardTitle || "Batch-specific documentation";
-  const cardDetail = data?.cardDetail || "QR access on every vial · ≥98% HPLC verified · US-made, GMP-aligned";
+  const cardDetail = data?.cardDetail || "QR access on every vial · ≥99% HPLC verified · US-made, GMP-aligned";
 
   return (
     <section className="py-20 bg-[#0a0a0f]">

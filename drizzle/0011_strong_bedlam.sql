@@ -1,0 +1,1 @@
+ALTER TABLE `doc_integrity_section` MODIFY COLUMN `cardDetail` varchar(300) DEFAULT 'QR access on every vial · ≥99% HPLC verified · US-made, GMP-aligned';

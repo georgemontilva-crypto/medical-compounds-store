@@ -258,7 +258,7 @@ export const docIntegritySection = mysqlTable("doc_integrity_section", {
   cardBadge: varchar("cardBadge", { length: 50 }).default("COA-LINKED"),
   cardSubtext: varchar("cardSubtext", { length: 100 }).default("Lot-traceable"),
   cardTitle: varchar("cardTitle", { length: 150 }).default("Batch-specific documentation"),
-  cardDetail: varchar("cardDetail", { length: 300 }).default("QR access on every vial · ≥98% HPLC verified · US-made, GMP-aligned"),
+  cardDetail: varchar("cardDetail", { length: 300 }).default("QR access on every vial · ≥99% HPLC verified · US-made, GMP-aligned"),
   heroImageUrl: varchar("heroImageUrl", { length: 500 }),
   heroImageKey: varchar("heroImageKey", { length: 500 }),
   callout1Position: mysqlEnum("callout1Position", ["top", "middle", "bottom"]).default("top"),

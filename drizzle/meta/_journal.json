@@ -78,6 +78,13 @@
       "when": 1783110244226,
       "tag": "0010_famous_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1783122636602,
+      "tag": "0011_strong_bedlam",
+      "breakpoints": true
     }
   ]
 }
