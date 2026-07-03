@@ -17,6 +17,13 @@ function getR2Config() {
     );
   }
 
+  const endpointPath = new URL(endpoint).pathname;
+  if (endpointPath !== "" && endpointPath !== "/") {
+    throw new Error(
+      `R2_ENDPOINT no debe incluir el nombre del bucket, solo el host: "https://<account-id>.r2.cloudflarestorage.com" (recibido: "${endpoint}")`,
+    );
+  }
+
   return {
     endpoint,
     accessKeyId,
