@@ -71,8 +71,10 @@ function App() {
   useEffect(() => {
     if (bgPattern?.url) {
       document.documentElement.style.setProperty("--hex-bg-pattern", `url("${bgPattern.url}")`);
+      document.documentElement.style.setProperty("--hex-bg-size", "auto");
     } else {
       document.documentElement.style.removeProperty("--hex-bg-pattern");
+      document.documentElement.style.removeProperty("--hex-bg-size");
     }
   }, [bgPattern]);
 
