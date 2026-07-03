@@ -484,6 +484,16 @@ function CategorySlideContent({ category, index, total }: {
       className="relative h-full w-full flex items-center overflow-hidden"
       style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
     >
+      {/* Subtle grid pattern tinted with the category accent, fading out via a radial mask */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(${accent}30 1px, transparent 1px), linear-gradient(90deg, ${accent}30 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
+          WebkitMaskImage: "radial-gradient(circle at 30% 45%, black 0%, transparent 70%)",
+          maskImage: "radial-gradient(circle at 30% 45%, black 0%, transparent 70%)",
+        }}
+      />
       <div className="container relative z-10 grid md:grid-cols-2 gap-10 items-center py-10">
         {/* Left */}
         <div>
