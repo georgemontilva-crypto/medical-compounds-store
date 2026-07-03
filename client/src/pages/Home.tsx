@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
 import { ArrowRight, FlaskConical, Shield, Microscope, Award, Plus, Check, Search, ChevronDown, X } from "lucide-react";
@@ -264,7 +264,7 @@ function CategorySlideContent({ category, index, total }: {
 
   return (
     <div
-      className="relative h-full w-full flex items-center overflow-hidden rounded-3xl"
+      className="relative h-full w-full flex items-start md:items-center overflow-hidden rounded-3xl p-6 md:p-0"
       style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
     >
       {/* Subtle grid pattern tinted with the category accent, fading out via a radial mask */}
@@ -277,10 +277,10 @@ function CategorySlideContent({ category, index, total }: {
           maskImage: "radial-gradient(circle at 30% 45%, black 0%, transparent 70%)",
         }}
       />
-      <div className="container relative z-10 grid md:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] gap-10 items-center py-10">
+      <div className="container relative z-10 grid md:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] gap-6 md:gap-10 items-start md:items-center md:py-10">
         {/* Left */}
         <div>
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-3 md:mb-6">
             <span
               className="text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap"
               style={{ backgroundColor: `${accent}25`, color: accent }}
@@ -289,14 +289,14 @@ function CategorySlideContent({ category, index, total }: {
             </span>
             <span className="text-xs font-mono text-white/30">{counter}</span>
           </div>
-          <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4">
+          <h2 className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 md:mb-4">
             {category.name}
           </h2>
           {category.tagline && (
-            <p className="text-white/60 text-base leading-relaxed mb-6 max-w-md">{category.tagline}</p>
+            <p className="text-white/60 text-sm md:text-base leading-relaxed mb-3 md:mb-6 max-w-md line-clamp-2 md:line-clamp-none">{category.tagline}</p>
           )}
           {products.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-8">
+            <div className="flex flex-wrap gap-2 mb-4 md:mb-8">
               {products.slice(0, 8).map((p) => (
                 <span key={p.id} className="text-xs text-white/70 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
                   {p.name}
@@ -317,7 +317,7 @@ function CategorySlideContent({ category, index, total }: {
 
         {/* Hero image — shorter on mobile (stacked in the same card), full size at md+ */}
         <div
-          className="relative rounded-3xl overflow-hidden h-48 md:h-[70vh] md:max-h-[560px]"
+          className="relative rounded-3xl overflow-hidden h-36 md:h-[70vh] md:max-h-[560px]"
           style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
         >
           {category.heroImageUrl ? (
@@ -372,7 +372,8 @@ function CategoryShowcase() {
   const n = sorted.length;
 
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
@@ -383,11 +384,38 @@ function CategoryShowcase() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  // Same scroll-progress tracking for both breakpoints — only the transform
-  // recipe applied to each card (horizontal slide vs. stacked deck) differs.
-  useEffect(() => {
+  // Scroll-progress writes transforms straight to the DOM via refs instead of
+  // React state. Driving this through setState re-rendered the whole
+  // CategoryShowcase tree (and every CategorySlideContent's own data hooks)
+  // on every scroll tick, which is what caused the visible jank on mobile.
+  // useLayoutEffect (not useEffect) so the first transform is applied before
+  // paint — otherwise cards briefly flash at their untransformed position.
+  useLayoutEffect(() => {
     if (n <= 1) return;
     let rafId = 0;
+    const MAX_STACK_DEPTH = 3;
+
+    function applyTransforms(progress: number) {
+      const activeIndex = progress * (n - 1);
+      if (isDesktop) {
+        const track = trackRef.current;
+        if (track) {
+          track.style.transform = `translateX(-${(progress * (n - 1) * 100) / n}%)`;
+        }
+      } else {
+        cardRefs.current.forEach((el, i) => {
+          if (!el) return;
+          const raw = activeIndex - i;
+          const isUpcoming = raw <= 0;
+          const t = Math.max(0, Math.min(1, raw + 1));
+          const depth = Math.max(0, Math.min(raw, MAX_STACK_DEPTH));
+          el.style.transform = isUpcoming
+            ? `translateY(${(1 - t) * 100}%) scale(1)`
+            : `translateY(${-depth * 10}px) scale(${1 - depth * 0.02})`;
+        });
+      }
+    }
+
     function measure() {
       rafId = 0;
       const el = sectionRef.current;
@@ -400,12 +428,14 @@ function CategoryShowcase() {
       const scrollable = el.offsetHeight - stickyHeight;
       if (scrollable <= 0) return;
       const raw = (NAVBAR_HEIGHT - el.getBoundingClientRect().top) / scrollable;
-      setProgress(Math.min(1, Math.max(0, raw)));
+      applyTransforms(Math.min(1, Math.max(0, raw)));
     }
+
     function onScroll() {
       if (rafId) return;
       rafId = requestAnimationFrame(measure);
     }
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     onScroll();
@@ -414,12 +444,9 @@ function CategoryShowcase() {
       window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [n]);
+  }, [n, isDesktop]);
 
   if (n === 0) return null;
-
-  const activeIndex = progress * (n - 1);
-  const MAX_STACK_DEPTH = 3;
 
   return (
     <section ref={sectionRef} className="relative bg-white" style={{ height: `${n * 100}vh` }}>
@@ -429,11 +456,9 @@ function CategoryShowcase() {
       >
         {isDesktop ? (
           <div
+            ref={trackRef}
             className="flex h-full"
-            style={{
-              width: `${n * 100}%`,
-              transform: `translateX(-${(progress * (n - 1) * 100) / n}%)`,
-            }}
+            style={{ width: `${n * 100}%`, willChange: "transform" }}
           >
             {sorted.map((cat, i) => (
               <div key={cat.id} className="h-full shrink-0 px-6 sm:px-10 py-14" style={{ width: `${100 / n}%` }}>
@@ -447,24 +472,16 @@ function CategoryShowcase() {
           // Cards not yet reached slide up from below; cards already passed
           // settle into a shallow, capped-depth stack peeking out above.
           <div className="relative w-full h-full">
-            {sorted.map((cat, i) => {
-              const raw = activeIndex - i;
-              const isUpcoming = raw <= 0;
-              const t = Math.max(0, Math.min(1, raw + 1));
-              const depth = Math.max(0, Math.min(raw, MAX_STACK_DEPTH));
-              const transform = isUpcoming
-                ? `translateY(${(1 - t) * 100}%) scale(1)`
-                : `translateY(${-depth * 14}px) scale(${1 - depth * 0.04})`;
-              return (
-                <div
-                  key={cat.id}
-                  className="absolute inset-4"
-                  style={{ zIndex: 10 + i, transform, transition: "transform 0.05s linear" }}
-                >
-                  <CategorySlideContent category={cat} index={i} total={n} />
-                </div>
-              );
-            })}
+            {sorted.map((cat, i) => (
+              <div
+                key={cat.id}
+                ref={(el) => { cardRefs.current[i] = el; }}
+                className="absolute inset-5"
+                style={{ zIndex: 10 + i, willChange: "transform" }}
+              >
+                <CategorySlideContent category={cat} index={i} total={n} />
+              </div>
+            ))}
           </div>
         )}
       </div>
