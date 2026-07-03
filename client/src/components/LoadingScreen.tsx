@@ -65,7 +65,7 @@ function runParticleField(canvas: HTMLCanvasElement) {
         const b = particles[j];
         const dist = Math.hypot(a.x - b.x, a.y - b.y);
         if (dist < LINK_DISTANCE) {
-          ctx!.strokeStyle = `rgba(126, 205, 196, ${0.18 * (1 - dist / LINK_DISTANCE)})`;
+          ctx!.strokeStyle = `rgba(58, 158, 148, ${0.22 * (1 - dist / LINK_DISTANCE)})`;
           ctx!.lineWidth = 1;
           ctx!.beginPath();
           ctx!.moveTo(a.x, a.y);
@@ -76,7 +76,7 @@ function runParticleField(canvas: HTMLCanvasElement) {
     }
 
     for (const p of particles) {
-      ctx!.fillStyle = "rgba(255, 255, 255, 0.25)";
+      ctx!.fillStyle = "rgba(58, 158, 148, 0.35)";
       ctx!.beginPath();
       ctx!.arc(p.x, p.y, 1.4, 0, Math.PI * 2);
       ctx!.fill();
@@ -138,7 +138,7 @@ export default function LoadingScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0a0a0f] transition-opacity ${
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#f8f8fa] transition-opacity ${
         fadingOut ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       style={{ transitionDuration: `${FADE_MS}ms` }}
@@ -157,14 +157,14 @@ export default function LoadingScreen() {
               <FlaskConical size={28} className="text-white" />
             </div>
             <div className="leading-none text-left">
-              <span className="font-extrabold text-white text-2xl tracking-tight">BioLab</span>
-              <p className="text-xs font-semibold tracking-[0.2em] uppercase text-white/40 leading-none mt-1">
+              <span className="font-extrabold text-gray-950 text-2xl tracking-tight">BioLab</span>
+              <p className="text-xs font-semibold tracking-[0.2em] uppercase text-gray-400 leading-none mt-1">
                 Compounds
               </p>
             </div>
           </div>
         )}
-        <p className="text-white/50 text-sm font-mono tracking-widest">{percent}%</p>
+        <p className="text-gray-400 text-sm font-mono tracking-widest">{percent}%</p>
       </div>
     </div>
   );
