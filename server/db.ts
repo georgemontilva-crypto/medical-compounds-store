@@ -12,6 +12,7 @@ import {
   InsertProduct,
   InsertProductImage,
   InsertProductVariation,
+  InsertSiteImage,
   InsertUser,
   Order,
   cartItems,
@@ -23,6 +24,7 @@ import {
   productImages,
   productVariations,
   products,
+  siteImages,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -514,4 +516,28 @@ export async function updateLabReport(id: number, data: Partial<InsertLabReport>
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.update(labReports).set(data).where(eq(labReports.id, id));
+}
+
+// ─── Site Images ────────────────────────────────────────────────────────────────
+export async function getAllSiteImages() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(siteImages);
+}
+
+export async function getSiteImageBySlot(slotKey: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(siteImages).where(eq(siteImages.slotKey, slotKey)).limit(1);
+  return result[0];
+}
+
+export async function upsertSiteImage(data: InsertSiteImage) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .insert(siteImages)
+    .values(data)
+    .onDuplicateKeyUpdate({ set: { url: data.url, fileKey: data.fileKey, label: data.label, updatedAt: new Date() } });
+  return getSiteImageBySlot(data.slotKey);
 }

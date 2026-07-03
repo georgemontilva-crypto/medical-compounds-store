@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useState, ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/lab-reports", label: "Lab Reports", icon: FileText },
+  { href: "/admin/site-images", label: "Site Images", icon: ImageIcon },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

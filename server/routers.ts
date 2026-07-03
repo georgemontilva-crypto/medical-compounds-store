@@ -60,6 +60,9 @@ import {
   createLabReport,
   deleteLabReport,
   updateLabReport,
+  getAllSiteImages,
+  getSiteImageBySlot,
+  upsertSiteImage,
 } from "./db";
 import { storagePut } from "./storage";
 
@@ -673,6 +676,32 @@ export const appRouter = router({
     users: adminProcedure
       .input(z.object({ limit: z.number().optional(), offset: z.number().optional() }).optional())
       .query(({ input }) => getAllUsers(input?.limit, input?.offset)),
+  }),
+
+  // ─── Site Images (admin-managed static content) ───────────────────────────
+  siteImages: router({
+    list: publicProcedure.query(() => getAllSiteImages()),
+
+    getBySlot: publicProcedure
+      .input(z.object({ slotKey: z.string() }))
+      .query(({ input }) => getSiteImageBySlot(input.slotKey)),
+
+    upload: adminProcedure
+      .input(
+        z.object({
+          slotKey: z.string().min(1).max(100),
+          label: z.string().min(1).max(200),
+          fileBase64: z.string(),
+          fileName: z.string(),
+          mimeType: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.fileBase64, "base64");
+        const fileKey = `site-images/${input.slotKey}/${nanoid(10)}_${input.fileName}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        return upsertSiteImage({ slotKey: input.slotKey, url, fileKey, label: input.label });
+      }),
   }),
 });
 

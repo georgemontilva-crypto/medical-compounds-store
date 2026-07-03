@@ -2,7 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useState, useMemo } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
-import { ArrowRight, FlaskConical, Shield, Microscope, Award, ChevronRight, Plus, Check, Search, ChevronDown, Beaker, Dna, Zap, Activity } from "lucide-react";
+import { ArrowRight, FlaskConical, Shield, Microscope, Award, ChevronRight, Plus, Check, Search, ChevronDown, Beaker, Dna, Zap, Activity, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
 
@@ -116,7 +116,7 @@ const CAT_BG_MAP: Record<string, string> = {
   Metabolic: "bg-[#FBF6E8]", Endocrine: "bg-[#FBF6E8]", Misc: "bg-gray-50",
 };
 
-const CATALOG_PRODUCTS = [
+const CATALOG_PRODUCTS_RAW = [
   { id: 1, name: "BPC-157", slug: "bpc-157", category: "Tissue", sizes: ["10mg", "20mg"], color: "#7ECDC4", price: 55, popular: true },
   { id: 2, name: "TB-500", slug: "tb-500", category: "Tissue", sizes: ["10mg"], color: "#7ECDC4", price: 60, popular: true },
   { id: 3, name: "KPV", slug: "kpv", category: "Tissue", sizes: ["5mg", "10mg"], color: "#7ECDC4", price: 40, popular: false },
@@ -137,6 +137,10 @@ const CATALOG_PRODUCTS = [
   { id: 18, name: "Tesamorelin", slug: "tesamorelin", category: "Endocrine", sizes: ["10mg"], color: "#B8943A", price: 80, popular: false },
   { id: 19, name: "CJC-1295", slug: "cjc-1295", category: "Endocrine", sizes: ["2mg"], color: "#B8943A", price: 60, popular: false },
 ];
+
+// isMock ids (1-19) don't exist in `products` — checkout would fail the order_items FK.
+// Flagged so cards can disable "Add to cart" instead of letting users reach Checkout with them.
+const CATALOG_PRODUCTS = CATALOG_PRODUCTS_RAW.map((p) => ({ ...p, isMock: true as const }));
 
 const CATALOG_CATS = [
   { name: "Tissue", count: 6 }, { name: "Cellular", count: 4 },
@@ -174,13 +178,17 @@ function CatalogVialCard({ product, onAdd, added }: {
             </svg>
           </div>
           <button
-            onClick={(e) => { e.preventDefault(); onAdd(); }}
+            onClick={(e) => { e.preventDefault(); if (!product.isMock) onAdd(); }}
+            disabled={product.isMock}
+            title={product.isMock ? "Coming soon — demo product, not yet purchasable" : undefined}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
-              added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
-                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
+              product.isMock
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed opacity-0 group-hover:opacity-100"
+                : added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
+                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
             }`}
           >
-            {added ? <Check size={13} /> : <Plus size={13} />}
+            {product.isMock ? <X size={13} /> : added ? <Check size={13} /> : <Plus size={13} />}
           </button>
         </div>
       </Link>
@@ -188,7 +196,9 @@ function CatalogVialCard({ product, onAdd, added }: {
         <div className="flex items-center gap-2 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
-          {product.popular && (
+          {product.isMock ? (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Coming soon</span>
+          ) : product.popular && (
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
           )}
         </div>
@@ -206,9 +216,119 @@ function CatalogVialCard({ product, onAdd, added }: {
   );
 }
 
+// ── Live product card (real DB data) ─────────────────────────────────────────
+type LiveProduct = {
+  id: number;
+  name: string;
+  slug: string;
+  basePrice: string;
+  categoryId?: number | null;
+  featured?: boolean | null;
+};
+
+function LiveVialCard({
+  product,
+  categories,
+  onAdd,
+  added,
+}: {
+  product: LiveProduct;
+  categories?: Array<{ id: number; name: string; color?: string | null }>;
+  onAdd: (payload: {
+    productId: number; variationId?: number; productName: string;
+    variationLabel?: string; unitPrice: number; image?: string; slug: string;
+  }) => void;
+  added: boolean;
+}) {
+  const { data: images } = trpc.products.images.useQuery({ productId: product.id });
+  const { data: variations } = trpc.products.variations.useQuery({ productId: product.id });
+
+  const category = categories?.find((c) => c.id === product.categoryId);
+  const catName = category?.name ?? "Misc";
+  const catColor = CAT_COLORS_MAP[catName] ?? "#6b7280";
+  const catText = CAT_TEXT_MAP[catName] ?? "text-gray-500";
+  const catBg = CAT_BG_MAP[catName] ?? "bg-gray-50";
+  const image = images?.[0];
+  const minPrice = variations && variations.length > 0
+    ? Math.min(...variations.map((v) => Number(v.price)))
+    : Number(product.basePrice);
+  const hasVariations = !!variations && variations.length > 1;
+  const mainSize = variations?.[0] ? `${variations[0].value}${variations[0].unit}` : "";
+  const shortLabel = product.name.length > 9 ? product.name.slice(0, 9) : product.name;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (hasVariations) { window.location.href = `/compounds/${product.slug}`; return; }
+    const variation = variations?.[0];
+    onAdd({
+      productId: product.id, variationId: variation?.id, productName: product.name,
+      variationLabel: variation ? `${variation.value}${variation.unit}` : undefined,
+      unitPrice: variation ? Number(variation.price) : Number(product.basePrice),
+      image: image?.url, slug: product.slug,
+    });
+  };
+
+  return (
+    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+      <Link href={`/compounds/${product.slug}`}>
+        <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
+          {image ? (
+            <img src={image.url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <svg viewBox="0 0 80 120" className="w-16 h-24 drop-shadow" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="28" y="2" width="24" height="14" rx="4" fill={catColor} opacity="0.85" />
+                <rect x="32" y="14" width="16" height="6" rx="2" fill="#d1d5db" />
+                <rect x="20" y="20" width="40" height="70" rx="8" fill="white" stroke="#e5e7eb" strokeWidth="1.5" />
+                <rect x="24" y="32" width="32" height="46" rx="4" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1" />
+                <text x="40" y="50" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="#374151" fontFamily="system-ui">{shortLabel}</text>
+                <text x="40" y="59" textAnchor="middle" fontSize="4" fill="#9ca3af" fontFamily="system-ui">LYOPHILIZED POWDER</text>
+                <text x="40" y="69" textAnchor="middle" fontSize="7" fontWeight="800" fill={catColor} fontFamily="system-ui">{mainSize || "—"}</text>
+                <rect x="20" y="88" width="40" height="8" rx="0" fill={catColor} opacity="0.25" />
+                <text x="40" y="95" textAnchor="middle" fontSize="3.5" fill="#6b7280" fontFamily="system-ui">FOR RESEARCH USE ONLY</text>
+                <rect x="20" y="90" width="40" height="8" rx="4" fill="#e5e7eb" />
+              </svg>
+            </div>
+          )}
+          <button
+            onClick={handleClick}
+            className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
+              added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
+                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
+            }`}
+          >
+            {added ? <Check size={13} /> : <Plus size={13} />}
+          </button>
+        </div>
+      </Link>
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
+          <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{catName}</span>
+          {product.featured && (
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
+          )}
+        </div>
+        <Link href={`/compounds/${product.slug}`}>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#3A9E94] transition-colors">{product.name}</h3>
+        </Link>
+        {variations && variations.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {variations.slice(0, 3).map((v) => (
+              <span key={v.id} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono">{v.value}{v.unit}</span>
+            ))}
+          </div>
+        )}
+        <p className="font-semibold text-gray-900 text-sm">{hasVariations ? "From " : ""}${minPrice.toFixed(2)}</p>
+      </div>
+    </div>
+  );
+}
+
 function ResearchCatalogSection() {
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined);
   const [sortBy, setSortBy] = useState<HomeSortOption>("featured");
   const [sortOpen, setSortOpen] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
@@ -221,7 +341,13 @@ function ResearchCatalogSection() {
   };
   const { addItem } = useCart();
 
-  const filtered = useMemo(() => {
+  const { data: categories = [] } = trpc.categories.list.useQuery();
+  const { data: liveProducts = [], isLoading } = trpc.products.list.useQuery({ featured: true, limit: 8 });
+
+  // Show the mock catalog only when the DB has no featured products yet.
+  const useStaticData = liveProducts.length === 0 && !isLoading;
+
+  const filteredStatic = useMemo(() => {
     let list = [...CATALOG_PRODUCTS];
     if (selectedCat) list = list.filter((p) => p.category === selectedCat);
     if (search.trim()) {
@@ -235,7 +361,28 @@ function ResearchCatalogSection() {
     return list;
   }, [search, selectedCat, sortBy]);
 
+  const filteredLive = useMemo(() => {
+    let list = [...liveProducts];
+    if (selectedCategoryId) list = list.filter((p) => p.categoryId === selectedCategoryId);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    if (sortBy === "price_asc") list.sort((a, b) => Number(a.basePrice) - Number(b.basePrice));
+    else if (sortBy === "price_desc") list.sort((a, b) => Number(b.basePrice) - Number(a.basePrice));
+    else if (sortBy === "name_asc") list.sort((a, b) => a.name.localeCompare(b.name));
+    else list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+    return list;
+  }, [liveProducts, search, selectedCategoryId, sortBy]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    liveProducts.forEach((p) => { if (p.categoryId) counts[p.categoryId] = (counts[p.categoryId] ?? 0) + 1; });
+    return counts;
+  }, [liveProducts]);
+
   const handleAdd = (product: typeof CATALOG_PRODUCTS[0]) => {
+    if (product.isMock) return;
     addItem({
       productId: product.id, productName: product.name,
       unitPrice: product.price, quantity: 1,
@@ -249,7 +396,33 @@ function ResearchCatalogSection() {
     });
   };
 
-  const totalCount = CATALOG_PRODUCTS.length;
+  const handleLiveAdd = (payload: {
+    productId: number; variationId?: number; productName: string;
+    variationLabel?: string; unitPrice: number; image?: string; slug: string;
+  }) => {
+    addItem({ ...payload, quantity: 1 });
+    setAddedIds((prev) => {
+      const next = new Set(prev); next.add(payload.productId);
+      setTimeout(() => setAddedIds((p) => { const n = new Set(p); n.delete(payload.productId); return n; }), 2000);
+      return next;
+    });
+  };
+
+  const totalCount = useStaticData ? CATALOG_PRODUCTS.length : liveProducts.length;
+
+  const sidebarCats = useStaticData
+    ? CATALOG_CATS.map((c) => ({ key: c.name as string | number, name: c.name, color: CAT_COLORS_MAP[c.name] ?? "#6b7280", count: c.count }))
+    : categories
+        .filter((c) => (categoryCounts[c.id] ?? 0) > 0)
+        .map((c) => ({ key: c.id as string | number, name: c.name, color: c.color ?? CAT_COLORS_MAP[c.name] ?? "#6b7280", count: categoryCounts[c.id] ?? 0 }));
+
+  const isAllActive = useStaticData ? selectedCat === null : selectedCategoryId === undefined;
+  const isCatActive = (key: string | number) => (useStaticData ? selectedCat === key : selectedCategoryId === key);
+  const handleAllClick = () => { setSelectedCat(null); setSelectedCategoryId(undefined); };
+  const handleCatClick = (key: string | number) => {
+    if (useStaticData) setSelectedCat(selectedCat === key ? null : (key as string));
+    else setSelectedCategoryId(selectedCategoryId === key ? undefined : (key as number));
+  };
 
   return (
     <section className="py-20 bg-white">
@@ -263,7 +436,7 @@ function ResearchCatalogSection() {
           <h2 className="text-4xl font-extrabold text-gray-950 mb-1">Research Compounds</h2>
           <div className="w-16 h-1 rounded-full bg-gradient-to-r from-[#7ECDC4] via-[#C8A84B] to-[#5BB8AE] mb-4" />
           <p className="text-gray-500 text-sm max-w-xl">
-            {totalCount} compounds across {CATALOG_CATS.length} research categories. Click any card to view the full research monograph.
+            {totalCount} compounds across {sidebarCats.length} research categories. Click any card to view the full research monograph.
           </p>
         </div>
 
@@ -272,9 +445,9 @@ function ResearchCatalogSection() {
           {/* Sidebar */}
           <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 bg-white border border-gray-100 rounded-2xl p-4 sticky top-[80px] self-start">
             <button
-              onClick={() => setSelectedCat(null)}
+              onClick={handleAllClick}
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                selectedCat === null ? "bg-[#3A9E94] text-white" : "text-gray-700 hover:bg-[#F5F2EC]"
+                isAllActive ? "bg-[#3A9E94] text-white" : "text-gray-700 hover:bg-[#F5F2EC]"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -282,25 +455,24 @@ function ResearchCatalogSection() {
                 All Compounds
               </span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                selectedCat === null ? "bg-white/20 text-white" : "bg-[#F5F2EC] text-gray-500"
+                isAllActive ? "bg-white/20 text-white" : "bg-[#F5F2EC] text-gray-500"
               }`}>{totalCount}</span>
             </button>
 
             <div className="h-px bg-gray-100 my-2" />
 
-            {CATALOG_CATS.map((cat) => {
-              const color = CAT_COLORS_MAP[cat.name] ?? "#6b7280";
-              const isActive = selectedCat === cat.name;
+            {sidebarCats.map((cat) => {
+              const isActive = isCatActive(cat.key);
               return (
                 <button
-                  key={cat.name}
-                  onClick={() => setSelectedCat(isActive ? null : cat.name)}
+                  key={cat.key}
+                  onClick={() => handleCatClick(cat.key)}
                   className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
                     isActive ? "bg-[#E8F7F6] font-semibold text-gray-900" : "text-gray-600 hover:bg-[#F5F2EC]"
                   }`}
                 >
                   <span className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                     {cat.name}
                   </span>
                   <span className="text-xs text-gray-400">{cat.count}</span>
@@ -366,35 +538,65 @@ function ResearchCatalogSection() {
             {/* Mobile category pills */}
             <div className="flex gap-2 overflow-x-auto pb-2 mb-5 lg:hidden">
               <button
-                onClick={() => setSelectedCat(null)}
+                onClick={handleAllClick}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  selectedCat === null ? "bg-[#3A9E94] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  isAllActive ? "bg-[#3A9E94] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >All ({totalCount})</button>
-              {CATALOG_CATS.map((cat) => (
+              {sidebarCats.map((cat) => (
                 <button
-                  key={cat.name}
-                  onClick={() => setSelectedCat(selectedCat === cat.name ? null : cat.name)}
+                  key={cat.key}
+                  onClick={() => handleCatClick(cat.key)}
                   className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                    selectedCat === cat.name ? "bg-[#3A9E94] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    isCatActive(cat.key) ? "bg-[#3A9E94] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >{cat.name} ({cat.count})</button>
               ))}
             </div>
 
             {/* Product grid */}
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
+                    <div className="h-48 bg-gray-100" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-3 bg-gray-100 rounded w-1/3" /><div className="h-4 bg-gray-100 rounded w-2/3" /><div className="h-3 bg-gray-100 rounded w-1/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : useStaticData ? (
+              filteredStatic.length === 0 ? (
+                <div className="text-center py-20 text-gray-400">
+                  <FlaskConical size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">No compounds found</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {filteredStatic.map((product) => (
+                    <CatalogVialCard
+                      key={product.id}
+                      product={product}
+                      onAdd={() => handleAdd(product)}
+                      added={addedIds.has(product.id)}
+                    />
+                  ))}
+                </div>
+              )
+            ) : filteredLive.length === 0 ? (
               <div className="text-center py-20 text-gray-400">
                 <FlaskConical size={32} className="mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No compounds found</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
-                {filtered.map((product) => (
-                  <CatalogVialCard
+                {filteredLive.map((product) => (
+                  <LiveVialCard
                     key={product.id}
                     product={product}
-                    onAdd={() => handleAdd(product)}
+                    categories={categories}
+                    onAdd={handleLiveAdd}
                     added={addedIds.has(product.id)}
                   />
                 ))}
@@ -418,7 +620,8 @@ function ResearchCatalogSection() {
 
 // ── Main Home ─────────────────────────────────────────────────────────────────
 export default function Home() {
-  const { data: liveProducts } = trpc.products.list.useQuery({ featured: true, limit: 8 });
+  const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
+  const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
 
   return (
     <div className="min-h-screen bg-[#f8f8fa]">
@@ -595,7 +798,7 @@ export default function Home() {
       {/* ── LAB QUALITY BANNER ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden h-72 sm:h-80 lg:h-96">
         <img
-          src="/manus-storage/modern-lab_a86acfc6.jpg"
+          src={imageBySlot["home_lab_banner"] ?? "/manus-storage/modern-lab_a86acfc6.jpg"}
           alt="Modern research laboratory"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
@@ -641,7 +844,7 @@ export default function Home() {
             <div className="bg-white border border-gray-100 rounded-2xl p-8 hover:shadow-md transition-all">
               <div className="flex items-start gap-6">
                 <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden">
-                  <img src="/manus-storage/peptide-vials_f93d16cf.webp" alt="Research peptide vials" className="w-full h-full object-cover" />
+                  <img src={imageBySlot["home_spotlight_bpc157"] ?? "/manus-storage/peptide-vials_f93d16cf.webp"} alt="Research peptide vials" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -670,7 +873,7 @@ export default function Home() {
             <div className="bg-white border border-gray-100 rounded-2xl p-8 hover:shadow-md transition-all">
               <div className="flex items-start gap-6">
                 <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden">
-                  <img src="/manus-storage/lab-vials_614fc4e8.jpg" alt="Lab quality vials" className="w-full h-full object-cover" />
+                  <img src={imageBySlot["home_spotlight_nadplus"] ?? "/manus-storage/lab-vials_614fc4e8.jpg"} alt="Lab quality vials" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -705,7 +908,7 @@ export default function Home() {
             {/* Left: image */}
             <div className="relative rounded-3xl overflow-hidden shadow-xl h-80 lg:h-[420px]">
               <img
-                src="/manus-storage/lab-scientist_de975453.jpg"
+                src={imageBySlot["home_how_it_works"] ?? "/manus-storage/lab-scientist_de975453.jpg"}
                 alt="Scientist working in research laboratory"
                 className="w-full h-full object-cover object-center"
               />

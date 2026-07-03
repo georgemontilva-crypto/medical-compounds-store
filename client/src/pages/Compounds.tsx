@@ -41,7 +41,7 @@ const CAT_BG: Record<string, string> = {
 };
 
 // ── Static fallback products ──────────────────────────────────────────────────
-const STATIC_PRODUCTS = [
+const STATIC_PRODUCTS_RAW = [
   { id: 1, name: "BPC-157", slug: "bpc-157", category: "Tissue", sizes: ["10mg", "20mg"], color: "#7ECDC4", price: 55, popular: true },
   { id: 2, name: "TB-500", slug: "tb-500", category: "Tissue", sizes: ["10mg"], color: "#7ECDC4", price: 60, popular: true },
   { id: 3, name: "KPV", slug: "kpv", category: "Tissue", sizes: ["5mg", "10mg"], color: "#7ECDC4", price: 40, popular: false },
@@ -62,6 +62,10 @@ const STATIC_PRODUCTS = [
   { id: 18, name: "Tesamorelin", slug: "tesamorelin", category: "Endocrine", sizes: ["10mg"], color: "#B8943A", price: 80, popular: false },
   { id: 19, name: "CJC-1295", slug: "cjc-1295", category: "Endocrine", sizes: ["2mg"], color: "#B8943A", price: 60, popular: false },
 ];
+
+// isMock ids (1-19) don't exist in `products` — checkout would fail the order_items FK.
+// Flagged so cards can disable "Add to cart" instead of letting users reach Checkout with them.
+const STATIC_PRODUCTS = STATIC_PRODUCTS_RAW.map((p) => ({ ...p, isMock: true as const }));
 
 const STATIC_CATS = [
   { name: "Tissue", count: 6 }, { name: "Cellular", count: 4 },
@@ -176,13 +180,17 @@ function StaticCard({ product, onAdd, added }: {
         <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
           <VialPlaceholder label={product.name} size={product.sizes[0]} color={product.color} />
           <button
-            onClick={(e) => { e.preventDefault(); onAdd(); }}
+            onClick={(e) => { e.preventDefault(); if (!product.isMock) onAdd(); }}
+            disabled={product.isMock}
+            title={product.isMock ? "Coming soon — demo product, not yet purchasable" : undefined}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
-              added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
-                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
+              product.isMock
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed opacity-0 group-hover:opacity-100"
+                : added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
+                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
             }`}
           >
-            {added ? <Check size={13} /> : <Plus size={13} />}
+            {product.isMock ? <X size={13} /> : added ? <Check size={13} /> : <Plus size={13} />}
           </button>
         </div>
       </Link>
@@ -190,7 +198,9 @@ function StaticCard({ product, onAdd, added }: {
         <div className="flex items-center gap-2 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
-          {product.popular && (
+          {product.isMock ? (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Coming soon</span>
+          ) : product.popular && (
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
           )}
         </div>
@@ -250,6 +260,7 @@ export default function Compounds() {
   const totalCount = useStaticData ? filteredStatic.length : dbProducts.length;
 
   function handleStaticAdd(product: typeof STATIC_PRODUCTS[0]) {
+    if (product.isMock) return;
     addItem({
       productId: product.id, productName: product.name,
       unitPrice: product.price, quantity: 1, slug: product.slug,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 // ── Slide data ─────────────────────────────────────────────────────────────────
 // Using gradient backgrounds as placeholders (replace bg with real images via CSS background-image)
@@ -102,6 +103,9 @@ export default function HeroSlider() {
   const [prev, setPrev] = useState<number | null>(null);
   const [animKey, setAnimKey] = useState(0);
 
+  const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
+  const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
+
   useEffect(() => { injectKBStyle(); }, []);
 
   const goTo = useCallback((idx: number) => {
@@ -122,6 +126,7 @@ export default function HeroSlider() {
 
   const slide = SLIDES[current];
   const prevSlide = prev !== null ? SLIDES[prev] : null;
+  const bgImage = imageBySlot[`hero_slide_${slide.id}`] ?? slide.bgImage;
 
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "100vh", minHeight: 560, maxHeight: 900 }}>
@@ -139,9 +144,9 @@ export default function HeroSlider() {
       {/* ── Current slide background with Ken Burns ── */}
       <div key={`bg-${current}-${animKey}`} className="absolute inset-0 z-0 overflow-hidden">
         {/* Real photo background */}
-        {slide.bgImage ? (
+        {bgImage ? (
           <img
-            src={slide.bgImage}
+            src={bgImage}
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover object-center ${

@@ -215,3 +215,16 @@ export const labReports = mysqlTable("lab_reports", {
 
 export type LabReport = typeof labReports.$inferSelect;
 export type InsertLabReport = typeof labReports.$inferInsert;
+
+// ─── Site Images (admin-managed static content images) ───────────────────────
+export const siteImages = mysqlTable("site_images", {
+  id: int("id").autoincrement().primaryKey(),
+  slotKey: varchar("slotKey", { length: 100 }).notNull().unique(),
+  url: varchar("url", { length: 500 }).notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  label: varchar("label", { length: 200 }).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SiteImage = typeof siteImages.$inferSelect;
+export type InsertSiteImage = typeof siteImages.$inferInsert;
