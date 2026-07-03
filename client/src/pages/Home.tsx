@@ -182,6 +182,25 @@ function DocIntegrityCallout({ position, title, description }: {
   );
 }
 
+// Mobile-only: callouts stack below the image as a plain list instead of
+// overlaying it (position: absolute over a portrait bottle photo left almost
+// no visible product on small screens).
+function DocIntegrityCalloutRow({ title, description }: {
+  title?: string | null;
+  description?: string | null;
+}) {
+  if (!title) return null;
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#7ECDC4] shrink-0" />
+      <div>
+        <p className="text-white font-semibold text-sm mb-0.5">{title}</p>
+        {description && <p className="text-white/60 text-xs leading-snug">{description}</p>}
+      </div>
+    </div>
+  );
+}
+
 function DocIntegritySection() {
   const { data } = trpc.docIntegrity.get.useQuery();
 
@@ -216,17 +235,29 @@ function DocIntegritySection() {
         </div>
 
         {/* Right: hero image + callouts */}
-        <div className="relative rounded-3xl overflow-hidden h-[500px] bg-gradient-to-b from-white/5 to-transparent border border-white/10">
-          {data?.heroImageUrl ? (
-            <img src={data.heroImageUrl} alt="" className="w-full h-full object-contain" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <FlaskConical size={64} className="text-white/10" />
+        <div>
+          <div className="relative rounded-3xl overflow-hidden h-72 md:h-[500px] bg-gradient-to-b from-white/5 to-transparent border border-white/10">
+            {data?.heroImageUrl ? (
+              <img src={data.heroImageUrl} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <FlaskConical size={64} className="text-white/10" />
+              </div>
+            )}
+            {/* Desktop only: callouts overlaid on the image at fixed positions */}
+            <div className="hidden md:block">
+              <DocIntegrityCallout position={data?.callout1Position ?? "top"} title={data?.callout1Title} description={data?.callout1Description} />
+              <DocIntegrityCallout position={data?.callout2Position ?? "middle"} title={data?.callout2Title} description={data?.callout2Description} />
+              <DocIntegrityCallout position={data?.callout3Position ?? "bottom"} title={data?.callout3Title} description={data?.callout3Description} />
             </div>
-          )}
-          <DocIntegrityCallout position={data?.callout1Position ?? "top"} title={data?.callout1Title} description={data?.callout1Description} />
-          <DocIntegrityCallout position={data?.callout2Position ?? "middle"} title={data?.callout2Title} description={data?.callout2Description} />
-          <DocIntegrityCallout position={data?.callout3Position ?? "bottom"} title={data?.callout3Title} description={data?.callout3Description} />
+          </div>
+
+          {/* Mobile only: callouts stacked below the image as a plain list */}
+          <div className="md:hidden mt-6 space-y-4">
+            <DocIntegrityCalloutRow title={data?.callout1Title} description={data?.callout1Description} />
+            <DocIntegrityCalloutRow title={data?.callout2Title} description={data?.callout2Description} />
+            <DocIntegrityCalloutRow title={data?.callout3Title} description={data?.callout3Description} />
+          </div>
         </div>
       </div>
     </section>
