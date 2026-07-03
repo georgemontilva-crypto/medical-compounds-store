@@ -47,7 +47,11 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen hex-cream">
+    <div className="min-h-screen hex-cream relative">
+      {/* Mutes the hex pattern on mobile only — pattern felt too strong there */}
+      <div className="absolute inset-0 bg-white/50 md:hidden pointer-events-none" />
+
+      <div className="relative z-10">
       <Navbar />
 
       <main className="max-w-6xl mx-auto px-4 py-16">
@@ -63,7 +67,7 @@ export default function Contact() {
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-10 items-start">
+        <div className="flex flex-col lg:flex-row gap-10 items-stretch lg:items-start">
           {/* ── Left: Form ────────────────────────────────────────────── */}
           <div className="flex-1 min-w-0">
             {submitted ? (
@@ -268,6 +272,7 @@ export default function Contact() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }
