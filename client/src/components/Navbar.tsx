@@ -427,10 +427,11 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu — max-height slide down, pushes content like the reference */}
+      {/* Mobile menu — absolute overlay, white solid, does not push content */}
       <div
-        className="md:hidden bg-white border-t border-gray-100 overflow-hidden"
+        className="md:hidden absolute left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden z-50"
         style={{
+          top: "100%",
           maxHeight: mobileOpen ? "800px" : "0",
           transition: "max-height 0.35s ease",
         }}
