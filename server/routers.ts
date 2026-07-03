@@ -279,6 +279,7 @@ export const appRouter = router({
       .input(
         z.object({
           productId: z.number(),
+          variationId: z.number().optional(),
           fileBase64: z.string(),
           fileName: z.string(),
           mimeType: z.string(),
@@ -288,10 +289,13 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         const buffer = Buffer.from(input.fileBase64, "base64");
-        const relKey = `products/${input.productId}/${nanoid(10)}_${input.fileName}`;
+        const relKey = input.variationId
+          ? `products/${input.productId}/variations/${input.variationId}/${nanoid(10)}_${input.fileName}`
+          : `products/${input.productId}/${nanoid(10)}_${input.fileName}`;
         const { key: fileKey, url } = await storagePut(relKey, buffer, input.mimeType);
         await addProductImage({
           productId: input.productId,
+          variationId: input.variationId,
           url,
           fileKey,
           altText: input.altText,

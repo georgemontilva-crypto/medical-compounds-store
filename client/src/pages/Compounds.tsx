@@ -96,7 +96,9 @@ function CompoundCard({
   const catColor = CAT_COLORS[catName] ?? "#6b7280";
   const catText = CAT_TEXT[catName] ?? "text-gray-500";
   const catBg = CAT_BG[catName] ?? "bg-gray-50";
-  const image = images?.[0];
+  const primaryVariationId = variations?.[0]?.id;
+  const variationImage = primaryVariationId != null ? images?.find((img) => img.variationId === primaryVariationId) : undefined;
+  const image = variationImage ?? images?.find((img) => img.variationId == null) ?? images?.[0];
   const minPrice = variations && variations.length > 0
     ? Math.min(...variations.map((v) => Number(v.price)))
     : Number(product.basePrice);

@@ -248,7 +248,9 @@ function LiveVialCard({
   const catColor = CAT_COLORS_MAP[catName] ?? "#6b7280";
   const catText = CAT_TEXT_MAP[catName] ?? "text-gray-500";
   const catBg = CAT_BG_MAP[catName] ?? "bg-gray-50";
-  const image = images?.[0];
+  const primaryVariationId = variations?.[0]?.id;
+  const variationImage = primaryVariationId != null ? images?.find((img) => img.variationId === primaryVariationId) : undefined;
+  const image = variationImage ?? images?.find((img) => img.variationId == null) ?? images?.[0];
   const minPrice = variations && variations.length > 0
     ? Math.min(...variations.map((v) => Number(v.price)))
     : Number(product.basePrice);
@@ -397,7 +399,9 @@ function LiveSpotlightCard({ product, categories, accentIndex }: {
   const { data: variations } = trpc.products.variations.useQuery({ productId: product.id });
 
   const catName = categories?.find((c) => c.id === product.categoryId)?.name ?? "Misc";
-  const image = images?.[0]?.url;
+  const primaryVariationId = variations?.[0]?.id;
+  const variationImage = primaryVariationId != null ? images?.find((img) => img.variationId === primaryVariationId) : undefined;
+  const image = (variationImage ?? images?.find((img) => img.variationId == null) ?? images?.[0])?.url;
   const minPrice = variations && variations.length > 0
     ? Math.min(...variations.map((v) => Number(v.price)))
     : Number(product.basePrice);

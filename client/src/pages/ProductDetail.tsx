@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
@@ -44,6 +44,22 @@ export default function ProductDetail({ params }: Props) {
     : Number(product?.basePrice ?? 0);
   const inStock = selectedVariation ? selectedVariation.stock > 0 : true;
 
+  // Prefer images uploaded for the selected variation; fall back to the
+  // product's general (variationId-less) images if that variation has none.
+  const displayImages = useMemo(() => {
+    if (!images) return [];
+    if (selectedVariation) {
+      const variationSpecific = images.filter((img) => img.variationId === selectedVariation.id);
+      if (variationSpecific.length > 0) return variationSpecific;
+    }
+    const productLevel = images.filter((img) => img.variationId == null);
+    return productLevel.length > 0 ? productLevel : images;
+  }, [images, selectedVariation]);
+
+  useEffect(() => {
+    setActiveImage(0);
+  }, [selectedVariation?.id]);
+
   const handleAddToCart = () => {
     if (!product) return;
     if (variations && variations.length > 1 && !selectedVariationId) {
@@ -59,7 +75,7 @@ export default function ProductDetail({ params }: Props) {
         : undefined,
       unitPrice: price,
       quantity,
-      image: images?.[0]?.url,
+      image: displayImages[0]?.url,
       slug: product.slug,
     });
     setAdded(true);
@@ -114,10 +130,10 @@ export default function ProductDetail({ params }: Props) {
           {/* Gallery */}
           <div className="space-y-3">
             <div className="aspect-square rounded-2xl bg-secondary/40 overflow-hidden border border-border">
-              {images && images.length > 0 ? (
+              {displayImages.length > 0 ? (
                 <img
-                  src={images[activeImage]?.url}
-                  alt={images[activeImage]?.altText ?? product.name}
+                  src={displayImages[activeImage]?.url}
+                  alt={displayImages[activeImage]?.altText ?? product.name}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -126,9 +142,9 @@ export default function ProductDetail({ params }: Props) {
                 </div>
               )}
             </div>
-            {images && images.length > 1 && (
+            {displayImages.length > 1 && (
               <div className="flex gap-2">
-                {images.map((img, i) => (
+                {displayImages.map((img, i) => (
                   <button
                     key={img.id}
                     onClick={() => setActiveImage(i)}

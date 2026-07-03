@@ -145,12 +145,13 @@ export default function AdminProducts() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleFileUpload = async (productId: number, file: File, sortOrder: number) => {
+  const handleFileUpload = async (productId: number, file: File, sortOrder: number, variationId?: number) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64 = (e.target?.result as string).split(",")[1];
       uploadImage.mutate({
         productId,
+        variationId,
         fileBase64: base64,
         fileName: file.name,
         mimeType: file.type,
@@ -345,7 +346,7 @@ export default function AdminProducts() {
                 onDelete={() => {
                   if (confirm("Delete this product?")) deleteProduct.mutate({ id: product.id });
                 }}
-                onUploadImage={(file, sortOrder) => handleFileUpload(product.id, file, sortOrder)}
+                onUploadImage={(file, sortOrder, variationId) => handleFileUpload(product.id, file, sortOrder, variationId)}
                 onDeleteImage={(id) => deleteImage.mutate({ id })}
                 variationForm={variationForm}
                 setVariationForm={setVariationForm}
@@ -397,7 +398,7 @@ function ProductRow({
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onUploadImage: (file: File, sortOrder: number) => void;
+  onUploadImage: (file: File, sortOrder: number, variationId?: number) => void;
   onDeleteImage: (id: number) => void;
   variationForm: VariationForm;
   setVariationForm: (v: VariationForm) => void;
@@ -528,22 +529,52 @@ function ProductRow({
             <p className="text-sm font-semibold mb-3">Variations (MG / ML)</p>
             <div className="flex flex-wrap gap-2 mb-3">
               {variations && variations.length > 0 ? (
-                variations.map((v) => (
-                  <div
-                    key={v.id}
-                    className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-1.5"
-                  >
-                    <span className="text-xs font-medium">{v.value}{v.unit}</span>
-                    <span className="text-xs text-muted-foreground">${Number(v.price).toFixed(2)}</span>
-                    <span className="text-xs text-muted-foreground">Stock: {v.stock}</span>
-                    <button
-                      onClick={() => onDeleteVariation(v.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                variations.map((v) => {
+                  const variationImage = images?.find((img) => img.variationId === v.id);
+                  return (
+                    <div
+                      key={v.id}
+                      className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-1.5"
                     >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))
+                      {variationImage ? (
+                        <img
+                          src={variationImage.url}
+                          alt=""
+                          className="w-8 h-8 rounded-lg object-cover border border-border shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                          <ImageIcon size={12} className="text-muted-foreground/40" />
+                        </div>
+                      )}
+                      <span className="text-xs font-medium">{v.value}{v.unit}</span>
+                      <span className="text-xs text-muted-foreground">${Number(v.price).toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground">Stock: {v.stock}</span>
+                      <label
+                        className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                        title="Upload image for this variation"
+                      >
+                        <Upload size={12} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) { setUploadingFor(product.id); onUploadImage(file, nextOrder, v.id); }
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      <button
+                        onClick={() => onDeleteVariation(v.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-xs text-muted-foreground">No variations yet</p>
               )}

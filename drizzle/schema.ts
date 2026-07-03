@@ -66,6 +66,7 @@ export const productImages = mysqlTable("product_images", {
   productId: int("productId")
     .notNull()
     .references(() => products.id),
+  variationId: int("variationId").references(() => productVariations.id),
   url: varchar("url", { length: 500 }).notNull(),
   fileKey: varchar("fileKey", { length: 500 }).notNull(),
   altText: varchar("altText", { length: 200 }),

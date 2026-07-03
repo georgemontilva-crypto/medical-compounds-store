@@ -29,6 +29,13 @@
       "when": 1783045485311,
       "tag": "0003_optimal_brood",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1783055942280,
+      "tag": "0004_loud_jackpot",
+      "breakpoints": true
     }
   ]
 }

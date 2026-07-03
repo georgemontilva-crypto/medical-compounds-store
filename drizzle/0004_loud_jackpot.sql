@@ -1,0 +1,2 @@
+ALTER TABLE `product_images` ADD `variationId` int;--> statement-breakpoint
+ALTER TABLE `product_images` ADD CONSTRAINT `product_images_variationId_product_variations_id_fk` FOREIGN KEY (`variationId`) REFERENCES `product_variations`(`id`) ON DELETE no action ON UPDATE no action;
