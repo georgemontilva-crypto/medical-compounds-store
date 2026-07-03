@@ -903,7 +903,40 @@ export default function Home() {
 
 
       {/* ── LAB QUALITY BANNER ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden h-72 sm:h-80 lg:h-96">
+      {/* Mobile (<768px): stacked image + solid card, dark text on light bg */}
+      <section className="md:hidden">
+        <div className="relative aspect-[16/10] overflow-hidden">
+          <img
+            src={imageBySlot["home_lab_banner"] ?? "/manus-storage/modern-lab_a86acfc6.jpg"}
+            alt="Modern research laboratory"
+            className="w-full h-full object-cover object-center"
+          />
+        </div>
+        <div className="bg-[#F5F2EC] px-6 py-8">
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-3">Quality Assurance</p>
+          <h2 className="text-2xl font-extrabold text-gray-950 leading-tight mb-4">
+            Manufactured to the <span className="text-[#3A9E94]">Highest Standards</span>
+          </h2>
+          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+            Every compound is produced in GMP-compliant facilities, lyophilized for maximum stability, and verified by third-party HPLC analysis.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { label: "GMP Compliant" },
+              { label: "HPLC Verified" },
+              { label: "COA Included" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5">
+                <Check size={12} className="text-[#3A9E94]" />
+                <span className="text-gray-700 text-xs font-semibold">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Desktop (≥768px): image with text overlay — unchanged */}
+      <section className="hidden md:block relative overflow-hidden h-80 lg:h-96">
         <img
           src={imageBySlot["home_lab_banner"] ?? "/manus-storage/modern-lab_a86acfc6.jpg"}
           alt="Modern research laboratory"
