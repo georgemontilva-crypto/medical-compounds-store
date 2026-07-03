@@ -169,7 +169,7 @@ function DocIntegrityCallout({ position, title, description }: {
 }) {
   if (!title) return null;
   return (
-    <div className={`absolute right-4 md:-right-8 ${CALLOUT_POSITION_CLASS[position] ?? "top-8"} max-w-[200px] z-10`}>
+    <div className={`absolute right-4 ${CALLOUT_POSITION_CLASS[position] ?? "top-8"} w-[180px] max-w-[45%] z-10`}>
       <div className="flex items-center gap-2 mb-1.5">
         <span className="w-6 h-px bg-[#7ECDC4]/60" />
         <span className="w-1.5 h-1.5 rounded-full bg-[#7ECDC4]" />
