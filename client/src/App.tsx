@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { useEffect } from "react";
+import { trpc } from "@/lib/trpc";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -64,6 +66,16 @@ function Router() {
 }
 
 function App() {
+  const { data: bgPattern } = trpc.siteImages.getBySlot.useQuery({ slotKey: "global_background_pattern" });
+
+  useEffect(() => {
+    if (bgPattern?.url) {
+      document.documentElement.style.setProperty("--hex-bg-pattern", `url("${bgPattern.url}")`);
+    } else {
+      document.documentElement.style.removeProperty("--hex-bg-pattern");
+    }
+  }, [bgPattern]);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">

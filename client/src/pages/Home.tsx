@@ -325,6 +325,140 @@ function LiveVialCard({
   );
 }
 
+// ── Compound Spotlight ────────────────────────────────────────────────────────
+const SPOTLIGHT_ACCENTS = [
+  { dot: "bg-[#7ECDC4]", catText: "text-[#3A9E94]", catBg: "bg-[#E8F7F6]", link: "text-[#3A9E94] hover:text-[#2A8E84]" },
+  { dot: "bg-[#C8A84B]", catText: "text-[#A07A28]", catBg: "bg-[#FBF6E8]", link: "text-[#A07A28] hover:text-[#8A6A20]" },
+];
+
+const MOCK_SPOTLIGHT = [
+  {
+    slug: "bpc-157", name: "BPC-157", category: "Tissue",
+    description: "Body Protection Compound-157 is a pentadecapeptide derived from a protective protein found in the stomach. Extensively studied for its tissue repair, cytoprotective, and anti-inflammatory properties in preclinical models.",
+    priceLabel: "From $60.00", sizesLabel: "10mg · 20mg",
+    imageSlot: "home_spotlight_bpc157", imageFallback: "/manus-storage/peptide-vials_f93d16cf.webp",
+  },
+  {
+    slug: "nad-plus", name: "NAD+", category: "Metabolic",
+    description: "Nicotinamide Adenine Dinucleotide is an essential coenzyme found in all living cells. Research focuses on its role in cellular energy metabolism, DNA repair, and mitochondrial function as a key regulator of aging pathways.",
+    priceLabel: "From $85.00", sizesLabel: "250mg · 500mg",
+    imageSlot: "home_spotlight_nadplus", imageFallback: "/manus-storage/lab-vials_614fc4e8.jpg",
+  },
+];
+
+function SpotlightCardView({ name, slug, category, description, priceLabel, sizesLabel, image, accentIndex }: {
+  name: string; slug: string; category: string; description: string;
+  priceLabel: string; sizesLabel: string; image?: string; accentIndex: 0 | 1;
+}) {
+  const accent = SPOTLIGHT_ACCENTS[accentIndex];
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl p-8 hover:shadow-md transition-all">
+      <div className="flex items-start gap-6">
+        <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
+          {image ? (
+            <img src={image} alt={name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-300">
+              <FlaskConical size={24} />
+            </div>
+          )}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`w-1.5 h-1.5 rounded-full ${accent.dot}`} />
+            <span className={`text-[10px] font-semibold tracking-widest uppercase ${accent.catText}`}>{category}</span>
+            <span className={`text-[10px] ${accent.catBg} ${accent.catText} font-semibold px-2 py-0.5 rounded-full`}>Popular</span>
+          </div>
+          <h3 className="text-xl font-extrabold text-gray-950 mb-2">{name}</h3>
+          <p className="text-sm text-gray-500 leading-relaxed mb-4 line-clamp-3">{description}</p>
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-bold text-gray-900">{priceLabel}</span>
+            {sizesLabel && (
+              <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded-full">{sizesLabel}</span>
+            )}
+          </div>
+          <Link href={`/compounds/${slug}`}>
+            <button className={`mt-4 inline-flex items-center gap-2 text-sm font-semibold ${accent.link} transition-colors`}>
+              View Research <ArrowRight size={13} />
+            </button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LiveSpotlightCard({ product, categories, accentIndex }: {
+  product: LiveProduct & { description?: string | null; shortDescription?: string | null };
+  categories?: Array<{ id: number; name: string; color?: string | null }>;
+  accentIndex: 0 | 1;
+}) {
+  const { data: images } = trpc.products.images.useQuery({ productId: product.id });
+  const { data: variations } = trpc.products.variations.useQuery({ productId: product.id });
+
+  const catName = categories?.find((c) => c.id === product.categoryId)?.name ?? "Misc";
+  const image = images?.[0]?.url;
+  const minPrice = variations && variations.length > 0
+    ? Math.min(...variations.map((v) => Number(v.price)))
+    : Number(product.basePrice);
+  const hasVariations = !!variations && variations.length > 1;
+  const sizesLabel = variations && variations.length > 0
+    ? variations.slice(0, 4).map((v) => `${v.value}${v.unit}`).join(" · ")
+    : "";
+
+  return (
+    <SpotlightCardView
+      name={product.name}
+      slug={product.slug}
+      category={catName}
+      description={product.shortDescription || product.description || "Research-grade compound manufactured to strict laboratory standards."}
+      priceLabel={`${hasVariations ? "From " : ""}$${minPrice.toFixed(2)}`}
+      sizesLabel={sizesLabel}
+      image={image}
+      accentIndex={accentIndex}
+    />
+  );
+}
+
+function CompoundSpotlightSection() {
+  const { data: categories = [] } = trpc.categories.list.useQuery();
+  const { data: featuredProducts = [] } = trpc.products.list.useQuery({ featured: true, limit: 8 });
+  const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
+  const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
+
+  const liveSpotlight = featuredProducts.slice(0, 2);
+  const mockFill = MOCK_SPOTLIGHT.slice(0, Math.max(0, 2 - liveSpotlight.length));
+
+  return (
+    <section className="py-20 hex-section">
+      <div className="container">
+        <div className="mb-12">
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Compound Spotlight</p>
+          <h2 className="text-3xl font-extrabold text-gray-950">Research Highlights</h2>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          {liveSpotlight.map((product, i) => (
+            <LiveSpotlightCard key={product.id} product={product} categories={categories} accentIndex={i === 0 ? 0 : 1} />
+          ))}
+          {mockFill.map((m, i) => (
+            <SpotlightCardView
+              key={m.slug}
+              name={m.name}
+              slug={m.slug}
+              category={m.category}
+              description={m.description}
+              priceLabel={m.priceLabel}
+              sizesLabel={m.sizesLabel}
+              image={imageBySlot[m.imageSlot] ?? m.imageFallback}
+              accentIndex={(liveSpotlight.length + i) === 0 ? 0 : 1}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ResearchCatalogSection() {
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
@@ -833,73 +967,7 @@ export default function Home() {
       </section>
 
       {/* ── COMPOUND SPOTLIGHT ───────────────────────────────────────────── */}
-      <section className="py-20 hex-section">
-        <div className="container">
-          <div className="mb-12">
-            <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-2">Compound Spotlight</p>
-            <h2 className="text-3xl font-extrabold text-gray-950">Research Highlights</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* BPC-157 spotlight */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-8 hover:shadow-md transition-all">
-              <div className="flex items-start gap-6">
-                <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden">
-                  <img src={imageBySlot["home_spotlight_bpc157"] ?? "/manus-storage/peptide-vials_f93d16cf.webp"} alt="Research peptide vials" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#7ECDC4]" />
-                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[#3A9E94]">Tissue</span>
-                    <span className="text-[10px] bg-[#E8F7F6] text-[#3A9E94] font-semibold px-2 py-0.5 rounded-full">Popular</span>
-                  </div>
-                  <h3 className="text-xl font-extrabold text-gray-950 mb-2">BPC-157</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed mb-4">
-                    Body Protection Compound-157 is a pentadecapeptide derived from a protective protein found in the stomach. Extensively studied for its tissue repair, cytoprotective, and anti-inflammatory properties in preclinical models.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-gray-900">From $60.00</span>
-                    <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded-full">10mg · 20mg</span>
-                  </div>
-                  <Link href="/compounds/bpc-157">
-                    <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#3A9E94] hover:text-[#2A8E84] transition-colors">
-                      View Research <ArrowRight size={13} />
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* NAD+ spotlight */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-8 hover:shadow-md transition-all">
-              <div className="flex items-start gap-6">
-                <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden">
-                  <img src={imageBySlot["home_spotlight_nadplus"] ?? "/manus-storage/lab-vials_614fc4e8.jpg"} alt="Lab quality vials" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8A84B]" />
-                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[#A07A28]">Metabolic</span>
-                    <span className="text-[10px] bg-[#FBF6E8] text-[#A07A28] font-semibold px-2 py-0.5 rounded-full">Popular</span>
-                  </div>
-                  <h3 className="text-xl font-extrabold text-gray-950 mb-2">NAD+</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed mb-4">
-                    Nicotinamide Adenine Dinucleotide is an essential coenzyme found in all living cells. Research focuses on its role in cellular energy metabolism, DNA repair, and mitochondrial function as a key regulator of aging pathways.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-gray-900">From $85.00</span>
-                    <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded-full">250mg · 500mg</span>
-                  </div>
-                  <Link href="/compounds/nad-plus">
-                    <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#A07A28] hover:text-[#8A6A20] transition-colors">
-                      View Research <ArrowRight size={13} />
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <CompoundSpotlightSection />
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
       <section className="py-20 hex-section">

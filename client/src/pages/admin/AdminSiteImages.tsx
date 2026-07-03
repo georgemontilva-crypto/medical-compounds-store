@@ -6,6 +6,7 @@ import { Image as ImageIcon, Upload } from "lucide-react";
 
 // Known content slots — must match the slotKey values read by HeroSlider.tsx / Home.tsx.
 const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; recommended: string }> = [
+  { slotKey: "global_background_pattern", label: "Fondo general del sitio (patrón repetido)", section: "Global", recommended: "Imagen pequeña que se repite en mosaico (tile), idealmente transparente o sin costuras visibles, ~80×92px o similar" },
   { slotKey: "hero_slide_1", label: "Hero Slider — Slide 1 (Tissue Repair)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_2", label: "Hero Slider — Slide 2 (Cellular & Neural)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_3", label: "Hero Slider — Slide 3 (Metabolic)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
