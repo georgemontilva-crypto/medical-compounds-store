@@ -9,6 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import CartDrawer from "./components/CartDrawer";
+import LoadingScreen from "./components/LoadingScreen";
 
 // Pages
 import Home from "./pages/Home";
@@ -86,6 +87,7 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <CartProvider>
+              <LoadingScreen />
               <Toaster position="top-right" />
               <Router />
               <CartDrawer />
