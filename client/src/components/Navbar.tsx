@@ -35,7 +35,7 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 const SCIENCE_ITEMS = [
-  { icon: Target, label: "Approach", desc: "How we organize compounds..." },
+  { icon: Target, label: "Approach", desc: "How we organize compounds...", href: "/science/approach" },
   { icon: Factory, label: "Manufacturing", desc: "US-based cGMP-aligned..." },
   { icon: ShieldCheck, label: "Research Standards", desc: "Compound selection..." },
   { icon: Leaf, label: "Responsible Supply", desc: "Manufacturing discipline an..." },
@@ -215,25 +215,29 @@ export default function Navbar() {
             <NavDropdown label="Science">
               <div className="flex">
                 <div className="p-4 border-r border-gray-50" style={{ width: 260 }}>
-                  {SCIENCE_ITEMS.map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group"
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-[#F5F2EC] flex items-center justify-center shrink-0 group-hover:bg-[#E8F7F6] transition-colors">
-                        <item.icon
-                          size={15}
-                          className="text-gray-500 group-hover:text-[#3A9E94] transition-colors"
-                        />
+                  {SCIENCE_ITEMS.map((item) => {
+                    const content = (
+                      <div className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
+                        <div className="w-9 h-9 rounded-xl bg-[#F5F2EC] flex items-center justify-center shrink-0 group-hover:bg-[#E8F7F6] transition-colors">
+                          <item.icon
+                            size={15}
+                            className="text-gray-500 group-hover:text-[#3A9E94] transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">
-                          {item.label}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                    return item.href ? (
+                      <Link key={item.label} href={item.href}>{content}</Link>
+                    ) : (
+                      <div key={item.label}>{content}</div>
+                    );
+                  })}
                 </div>
                 <div className="p-4" style={{ width: 220 }}>
                   <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-3 px-1">
