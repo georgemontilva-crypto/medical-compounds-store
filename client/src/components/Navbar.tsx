@@ -129,6 +129,8 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  const { data: logoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo" });
+
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => { window.location.href = "/"; },
     onError: () => toast.error("Logout failed"),
@@ -150,17 +152,23 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/">
-            <div className="flex items-center gap-2.5 cursor-pointer shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3A9E94] to-[#5BB8AE] flex items-center justify-center shadow-md shadow-[#3A9E94]/20">
-                <FlaskConical size={17} className="text-white" />
+            {logoImage?.url ? (
+              <div className="flex items-center cursor-pointer shrink-0">
+                <img src={logoImage.url} alt="Logo" className="h-10 w-auto object-contain" />
               </div>
-              <div className="leading-none">
-                <span className="font-extrabold text-gray-950 text-base tracking-tight">BioLab</span>
-                <p className="text-[9px] font-semibold tracking-[0.15em] uppercase text-gray-400 leading-none mt-0.5">
-                  Compounds
-                </p>
+            ) : (
+              <div className="flex items-center gap-2.5 cursor-pointer shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3A9E94] to-[#5BB8AE] flex items-center justify-center shadow-md shadow-[#3A9E94]/20">
+                  <FlaskConical size={17} className="text-white" />
+                </div>
+                <div className="leading-none">
+                  <span className="font-extrabold text-gray-950 text-base tracking-tight">BioLab</span>
+                  <p className="text-[9px] font-semibold tracking-[0.15em] uppercase text-gray-400 leading-none mt-0.5">
+                    Compounds
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </Link>
 
           {/* Desktop nav */}
