@@ -283,10 +283,14 @@ type ShowcaseCategory = {
   sortOrder?: number | null;
 };
 
-function CategorySlideContent({ category, index, total }: {
+function CategorySlideContent({ category, index, total, roundedClassName = "rounded-3xl overflow-hidden" }: {
   category: ShowcaseCategory;
   index: number;
   total: number;
+  // On mobile the stack wrapper (CategoryShowcase) owns rounding + clipping
+  // itself, since it needs to animate the corner radius per scroll frame —
+  // pass "" there to avoid double-rounding/clipping.
+  roundedClassName?: string;
 }) {
   const { data: products = [] } = trpc.products.list.useQuery({ categoryId: category.id, limit: 30 });
   const accent = category.color || "#6366f1";
@@ -295,7 +299,7 @@ function CategorySlideContent({ category, index, total }: {
 
   return (
     <div
-      className="relative h-full w-full flex items-start md:items-center overflow-hidden rounded-3xl p-6 md:p-0"
+      className={`relative h-full w-full flex items-start md:items-center ${roundedClassName} p-6 md:p-0`}
       style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
     >
       {/* Subtle grid pattern tinted with the category accent, fading out via a radial mask */}
@@ -443,6 +447,13 @@ function CategoryShowcase() {
           el.style.transform = isUpcoming
             ? `translateY(${(1 - t) * 100}%) scale(1)`
             : `translateY(${-depth * 10}px) scale(${1 - depth * 0.02})`;
+          // Only the settled, front-most card shows a rounded top edge.
+          // Cards still sliding in or already receded behind it are flat, so
+          // the peeking strip below reads as a plain block of that
+          // category's color instead of a card cut off mid-corner.
+          const activeness = Math.max(0, 1 - Math.abs(raw) / 0.5);
+          const topRadius = Math.round(24 * activeness);
+          el.style.borderRadius = `${topRadius}px ${topRadius}px 0 0`;
         });
       }
     }
@@ -507,10 +518,10 @@ function CategoryShowcase() {
               <div
                 key={cat.id}
                 ref={(el) => { cardRefs.current[i] = el; }}
-                className="absolute inset-5"
-                style={{ zIndex: 10 + i, willChange: "transform" }}
+                className="absolute inset-x-0 top-5 bottom-0 overflow-hidden"
+                style={{ zIndex: 10 + i, willChange: "transform, border-radius" }}
               >
-                <CategorySlideContent category={cat} index={i} total={n} />
+                <CategorySlideContent category={cat} index={i} total={n} roundedClassName="" />
               </div>
             ))}
           </div>
