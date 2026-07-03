@@ -299,7 +299,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
 
   return (
     <div
-      className={`relative h-full w-full flex items-start md:items-center ${roundedClassName} p-6 md:p-0`}
+      className={`relative h-full w-full flex flex-col md:flex-row items-start md:items-center ${roundedClassName} p-6 md:p-0`}
       style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
     >
       {/* Subtle grid pattern tinted with the category accent, fading out via a radial mask */}
@@ -350,9 +350,9 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
           </Link>
         </div>
 
-        {/* Hero image — shorter on mobile (stacked in the same card), full size at md+ */}
+        {/* Hero image (desktop only) — the mobile version renders full-bleed below, outside .container's padding */}
         <div
-          className="relative rounded-3xl overflow-hidden h-36 md:h-[70vh] md:max-h-[560px]"
+          className="hidden md:block relative rounded-3xl overflow-hidden md:h-[70vh] md:max-h-[560px]"
           style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
         >
           {category.heroImageUrl ? (
@@ -393,6 +393,21 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile-only hero image — full-bleed strip flush with the card's own
+          edges. -mx-6 cancels this root's own p-6, and there's no rounding
+          of its own: it's clipped by the outer card wrapper (CategoryShowcase
+          on mobile), so it always matches whatever corner shape the card
+          currently has instead of showing its own separate rounded box. */}
+      <div className="md:hidden relative -mx-6 w-[calc(100%+3rem)] h-40 shrink-0" style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}>
+        {category.heroImageUrl ? (
+          <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-contain" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <FlaskConical size={48} style={{ color: accent }} className="opacity-40" />
+          </div>
+        )}
       </div>
     </div>
   );
