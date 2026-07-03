@@ -63,6 +63,8 @@ import {
   getAllSiteImages,
   getSiteImageBySlot,
   upsertSiteImage,
+  getSiteSetting,
+  setSiteSetting,
 } from "./db";
 import { storagePut } from "./storage";
 
@@ -706,6 +708,17 @@ export const appRouter = router({
         const { key: fileKey, url } = await storagePut(relKey, buffer, input.mimeType);
         return upsertSiteImage({ slotKey: input.slotKey, url, fileKey, label: input.label });
       }),
+  }),
+
+  // ─── Site Settings (admin-editable text values) ───────────────────────────
+  siteSettings: router({
+    get: publicProcedure
+      .input(z.object({ key: z.string() }))
+      .query(({ input }) => getSiteSetting(input.key)),
+
+    set: adminProcedure
+      .input(z.object({ key: z.string().min(1).max(100), value: z.string() }))
+      .mutation(({ input }) => setSiteSetting(input.key, input.value)),
   }),
 });
 

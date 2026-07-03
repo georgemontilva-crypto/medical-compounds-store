@@ -760,6 +760,7 @@ function ResearchCatalogSection() {
 export default function Home() {
   const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
   const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
+  const { data: footerCopyrightSetting } = trpc.siteSettings.get.useQuery({ key: "footer_copyright" });
 
   return (
     <div className="min-h-screen bg-[#f8f8fa]">
@@ -1045,19 +1046,23 @@ export default function Home() {
       <footer className="bg-gray-950 text-gray-400 py-12">
         <div className="container">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#7ECDC4] flex items-center justify-center">
-                <FlaskConical size={15} className="text-white" />
+            {imageBySlot["site_logo_footer"] ? (
+              <img src={imageBySlot["site_logo_footer"]} alt="Logo" className="h-8 w-auto object-contain" />
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#7ECDC4] flex items-center justify-center">
+                  <FlaskConical size={15} className="text-white" />
+                </div>
+                <div>
+                  <span className="font-bold text-white text-sm">BioLab Compounds</span>
+                  <p className="text-[11px] text-gray-500 leading-none mt-0.5">Research Grade · For Scientific Use Only</p>
+                </div>
               </div>
-              <div>
-                <span className="font-bold text-white text-sm">BioLab Compounds</span>
-                <p className="text-[11px] text-gray-500 leading-none mt-0.5">Research Grade · For Scientific Use Only</p>
-              </div>
-            </div>
+            )}
             <p className="text-xs text-gray-600 text-center">
               For research purposes only. Not for human consumption. All compounds are intended for laboratory use.
             </p>
-            <p className="text-xs text-gray-600">© 2026 BioLab Compounds</p>
+            <p className="text-xs text-gray-600">{footerCopyrightSetting?.value ?? "© 2026 BioLab Compounds"}</p>
           </div>
         </div>
       </footer>

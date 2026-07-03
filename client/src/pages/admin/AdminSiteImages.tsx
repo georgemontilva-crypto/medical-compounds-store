@@ -1,12 +1,13 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import AdminLayout from "@/components/AdminLayout";
 import { toast } from "sonner";
-import { Image as ImageIcon, Upload } from "lucide-react";
+import { Image as ImageIcon, Upload, Save } from "lucide-react";
 
 // Known content slots — must match the slotKey values read by HeroSlider.tsx / Home.tsx.
 const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; recommended: string }> = [
-  { slotKey: "site_logo", label: "Logo del sitio", section: "Global", recommended: "PNG/SVG con fondo transparente, ~160×40px o proporción similar (se muestra a max-height 40px)" },
+  { slotKey: "site_logo", label: "Logo del sitio (navbar)", section: "Global", recommended: "PNG/SVG con fondo transparente, ~160×40px o proporción similar (se muestra a max-height 40px)" },
+  { slotKey: "site_logo_footer", label: "Logo del pie de página", section: "Global", recommended: "PNG/SVG con fondo transparente, versión clara/blanca para fondo oscuro" },
   { slotKey: "global_background_pattern", label: "Fondo general del sitio (patrón repetido)", section: "Global", recommended: "Imagen pequeña que se repite en mosaico (tile), idealmente transparente o sin costuras visibles, ~80×92px o similar" },
   { slotKey: "hero_slide_1", label: "Hero Slider — Slide 1 (Tissue Repair)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_2", label: "Hero Slider — Slide 2 (Cellular & Neural)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
@@ -17,6 +18,56 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "home_spotlight_nadplus", label: "Home — Compound Spotlight (NAD+)", section: "Home", recommended: "Portrait 3:4, ≥400×540" },
   { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home", recommended: "≥900×900, square to slightly portrait" },
 ];
+
+// Known editable text settings (site_settings table) — shown on this same screen.
+const KNOWN_TEXT_SETTINGS: Array<{ key: string; label: string; placeholder: string }> = [
+  { key: "footer_copyright", label: "Texto de copyright del footer", placeholder: "© 2026 BioLab Compounds" },
+];
+
+function TextSettingCard({ settingKey, label, placeholder }: { settingKey: string; label: string; placeholder: string }) {
+  const utils = trpc.useUtils();
+  const { data: setting, isLoading } = trpc.siteSettings.get.useQuery({ key: settingKey });
+  const [value, setValue] = useState("");
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    if (!touched && setting) setValue(setting.value);
+  }, [setting, touched]);
+
+  const saveMutation = trpc.siteSettings.set.useMutation({
+    onSuccess: () => {
+      toast.success("Texto actualizado");
+      setTouched(false);
+      utils.siteSettings.get.invalidate({ key: settingKey });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+      <p className="text-sm font-semibold text-gray-900">{label}</p>
+      <p className="text-[11px] text-gray-300 mt-0.5 font-mono">{settingKey}</p>
+      <textarea
+        value={isLoading ? "" : value}
+        onChange={(e) => { setValue(e.target.value); setTouched(true); }}
+        placeholder={placeholder}
+        rows={2}
+        className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4] resize-none"
+      />
+      <p className="text-xs text-gray-400 mt-1">
+        {setting ? "Usando el valor de arriba." : `Vacío — mostrando el texto original: "${placeholder}"`}
+      </p>
+      <button
+        onClick={() => saveMutation.mutate({ key: settingKey, value })}
+        disabled={saveMutation.isPending || isLoading}
+        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-xl transition-colors"
+      >
+        <Save size={13} />
+        {saveMutation.isPending ? "Guardando..." : "Guardar"}
+      </button>
+    </div>
+  );
+}
 
 export default function AdminSiteImages() {
   const utils = trpc.useUtils();
@@ -131,6 +182,21 @@ export default function AdminSiteImages() {
             </div>
           ))
         )}
+
+        {/* Editable text (site_settings) — same screen as the images */}
+        <div className="mb-8">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Textos editables</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {KNOWN_TEXT_SETTINGS.map((setting) => (
+              <TextSettingCard
+                key={setting.key}
+                settingKey={setting.key}
+                label={setting.label}
+                placeholder={setting.placeholder}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </AdminLayout>
   );

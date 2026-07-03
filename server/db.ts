@@ -25,6 +25,7 @@ import {
   productVariations,
   products,
   siteImages,
+  siteSettings,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -540,4 +541,22 @@ export async function upsertSiteImage(data: InsertSiteImage) {
     .values(data)
     .onDuplicateKeyUpdate({ set: { url: data.url, fileKey: data.fileKey, label: data.label, updatedAt: new Date() } });
   return getSiteImageBySlot(data.slotKey);
+}
+
+// ─── Site Settings ──────────────────────────────────────────────────────────────
+export async function getSiteSetting(key: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(siteSettings).where(eq(siteSettings.key, key)).limit(1);
+  return result[0];
+}
+
+export async function setSiteSetting(key: string, value: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .insert(siteSettings)
+    .values({ key, value })
+    .onDuplicateKeyUpdate({ set: { value, updatedAt: new Date() } });
+  return getSiteSetting(key);
 }
