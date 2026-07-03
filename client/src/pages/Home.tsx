@@ -315,9 +315,9 @@ function CategorySlideContent({ category, index, total }: {
           </Link>
         </div>
 
-        {/* Right: hero image */}
+        {/* Hero image — shorter on mobile (stacked in the same card), full size at md+ */}
         <div
-          className="hidden md:block relative rounded-3xl overflow-hidden h-[70vh] max-h-[560px]"
+          className="relative rounded-3xl overflow-hidden h-48 md:h-[70vh] md:max-h-[560px]"
           style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
         >
           {category.heroImageUrl ? (
@@ -383,8 +383,10 @@ function CategoryShowcase() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // Same scroll-progress tracking for both breakpoints — only the transform
+  // recipe applied to each card (horizontal slide vs. stacked deck) differs.
   useEffect(() => {
-    if (!isDesktop || n <= 1) return;
+    if (n <= 1) return;
     let rafId = 0;
     function measure() {
       rafId = 0;
@@ -412,24 +414,12 @@ function CategoryShowcase() {
       window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [isDesktop, n]);
+  }, [n]);
 
   if (n === 0) return null;
 
-  if (!isDesktop) {
-    // Mobile fallback: plain horizontal scroll-snap, no sticky/JS transform.
-    return (
-      <section className="bg-white">
-        <div className="flex overflow-x-auto snap-x snap-mandatory" style={{ height: "80vh" }}>
-          {sorted.map((cat, i) => (
-            <div key={cat.id} className="w-screen shrink-0 snap-center h-full px-4 py-4">
-              <CategorySlideContent category={cat} index={i} total={n} />
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
+  const activeIndex = progress * (n - 1);
+  const MAX_STACK_DEPTH = 3;
 
   return (
     <section ref={sectionRef} className="relative bg-white" style={{ height: `${n * 100}vh` }}>
@@ -437,19 +427,46 @@ function CategoryShowcase() {
         className="sticky w-full overflow-hidden bg-white"
         style={{ top: NAVBAR_HEIGHT, height: `calc(100vh - ${NAVBAR_HEIGHT}px)` }}
       >
-        <div
-          className="flex h-full"
-          style={{
-            width: `${n * 100}%`,
-            transform: `translateX(-${(progress * (n - 1) * 100) / n}%)`,
-          }}
-        >
-          {sorted.map((cat, i) => (
-            <div key={cat.id} className="h-full shrink-0 px-6 sm:px-10 py-14" style={{ width: `${100 / n}%` }}>
-              <CategorySlideContent category={cat} index={i} total={n} />
-            </div>
-          ))}
-        </div>
+        {isDesktop ? (
+          <div
+            className="flex h-full"
+            style={{
+              width: `${n * 100}%`,
+              transform: `translateX(-${(progress * (n - 1) * 100) / n}%)`,
+            }}
+          >
+            {sorted.map((cat, i) => (
+              <div key={cat.id} className="h-full shrink-0 px-6 sm:px-10 py-14" style={{ width: `${100 / n}%` }}>
+                <CategorySlideContent category={cat} index={i} total={n} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          // Mobile "deck of cards": every slide is stacked in the same spot,
+          // z-index rising with index so later categories cover earlier ones.
+          // Cards not yet reached slide up from below; cards already passed
+          // settle into a shallow, capped-depth stack peeking out above.
+          <div className="relative w-full h-full">
+            {sorted.map((cat, i) => {
+              const raw = activeIndex - i;
+              const isUpcoming = raw <= 0;
+              const t = Math.max(0, Math.min(1, raw + 1));
+              const depth = Math.max(0, Math.min(raw, MAX_STACK_DEPTH));
+              const transform = isUpcoming
+                ? `translateY(${(1 - t) * 100}%) scale(1)`
+                : `translateY(${-depth * 14}px) scale(${1 - depth * 0.04})`;
+              return (
+                <div
+                  key={cat.id}
+                  className="absolute inset-4"
+                  style={{ zIndex: 10 + i, transform, transition: "transform 0.05s linear" }}
+                >
+                  <CategorySlideContent category={cat} index={i} total={n} />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
