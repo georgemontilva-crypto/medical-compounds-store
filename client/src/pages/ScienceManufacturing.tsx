@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Navbar from "@/components/Navbar";
@@ -5,7 +6,6 @@ import Reveal from "@/components/Reveal";
 import { VialPlaceholder } from "@/components/ProductCard";
 import { useInView } from "@/hooks/useInView";
 import { ArrowRight, Check, Layers, Link2, Beaker, PackageCheck } from "lucide-react";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
 
 const PROCESS_STEPS = [
   { icon: Layers, title: "Resin load", description: "The first amino acid is anchored to a solid support resin." },
@@ -14,19 +14,10 @@ const PROCESS_STEPS = [
   { icon: PackageCheck, title: "Final product", description: "Purified peptide is lyophilized and staged for batch testing." },
 ];
 
-const HPLC_DATA = [
-  { t: 0, v: 2 },
-  { t: 1, v: 3 },
-  { t: 2, v: 4 },
-  { t: 3, v: 6 },
-  { t: 4, v: 10 },
-  { t: 5, v: 92 },
-  { t: 6, v: 14 },
-  { t: 7, v: 6 },
-  { t: 8, v: 4 },
-  { t: 9, v: 3 },
-  { t: 10, v: 2 },
-];
+// Illustrative single-peak chromatogram trace, plotted in a 440x220 viewBox.
+// Baseline noise on either side of one sharp, well-resolved peak.
+const HPLC_PATH =
+  "M 30,188 L 65,187 L 100,185 L 135,182 L 165,175 L 190,150 L 205,60 L 215,25 L 225,60 L 240,150 L 270,175 L 305,182 L 340,185 L 375,187 L 410,188";
 
 const TRACEABILITY_EVENTS = [
   { time: "Day 1 · 08:14", title: "Synthesis started", description: "Resin loaded and chain assembly begins under a unique batch ID." },
@@ -79,26 +70,50 @@ function ProcessDiagram() {
 
 function HplcChart() {
   const { ref, inView } = useInView<HTMLDivElement>(0.3);
+  const pathRef = useRef<SVGPathElement>(null);
+  const [pathLength, setPathLength] = useState(0);
+
+  useEffect(() => {
+    if (pathRef.current) setPathLength(pathRef.current.getTotalLength());
+  }, []);
+
   return (
-    <div ref={ref} className="relative w-full" style={{ height: 240 }}>
-      {inView && (
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={HPLC_DATA} margin={{ top: 36, right: 16, left: 16, bottom: 10 }}>
-            <Line
-              type="monotone"
-              dataKey="v"
-              stroke="#7ECDC4"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive
-              animationDuration={1400}
-              animationEasing="ease-out"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      )}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none">
-        <span className="text-xs font-bold text-[#7ECDC4]">≥98% purity</span>
+    <div ref={ref} className="relative w-full">
+      <svg viewBox="0 0 440 220" className="w-full h-[240px]">
+        {/* Grid */}
+        {[0, 1, 2, 3, 4].map((i) => (
+          <line key={i} x1={30} x2={410} y1={40 + i * 38} y2={40 + i * 38} stroke="#ffffff" strokeOpacity={0.06} strokeWidth={1} />
+        ))}
+        {/* Axes */}
+        <line x1={30} y1={20} x2={30} y2={196} stroke="#ffffff" strokeOpacity={0.2} strokeWidth={1} />
+        <line x1={30} y1={196} x2={410} y2={196} stroke="#ffffff" strokeOpacity={0.2} strokeWidth={1} />
+
+        {/* Trace — draws left to right via stroke-dasharray/dashoffset */}
+        <path
+          ref={pathRef}
+          d={HPLC_PATH}
+          fill="none"
+          stroke="#7ECDC4"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            strokeDasharray: pathLength || 1,
+            strokeDashoffset: inView ? 0 : pathLength || 1,
+            transition: pathLength ? "stroke-dashoffset 1.8s ease-out" : "none",
+          }}
+        />
+
+        {/* Axis labels */}
+        <text x={220} y={214} textAnchor="middle" fontSize="9" fill="#9ca3af">
+          Retention time
+        </text>
+        <text x={12} y={108} textAnchor="middle" fontSize="9" fill="#9ca3af" transform="rotate(-90, 12, 108)">
+          Absorbance
+        </text>
+      </svg>
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none">
+        <span className="text-xs font-bold text-[#7ECDC4]">≥99% purity</span>
       </div>
     </div>
   );

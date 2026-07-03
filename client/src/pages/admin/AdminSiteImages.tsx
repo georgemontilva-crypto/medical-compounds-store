@@ -1,21 +1,44 @@
 import { useRef, useState, useEffect } from "react";
+import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AdminLayout from "@/components/AdminLayout";
 import { toast } from "sonner";
-import { Image as ImageIcon, Upload, Save } from "lucide-react";
+import { Image as ImageIcon, Upload, Save, ArrowRight } from "lucide-react";
 
-// Known content slots — must match the slotKey values read by HeroSlider.tsx / Home.tsx.
+// Known content slots — must match the slotKey values read across the site.
+// `section` drives the grouping headers below — keep it consistent with the
+// "Página: X" convention when adding a new Science/Research page's images.
 const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; recommended: string }> = [
   { slotKey: "site_logo", label: "Logo del sitio (navbar)", section: "Global", recommended: "PNG/SVG con fondo transparente, ~160×40px o proporción similar (se muestra a max-height 40px)" },
   { slotKey: "site_logo_footer", label: "Logo del pie de página", section: "Global", recommended: "PNG/SVG con fondo transparente, versión clara/blanca para fondo oscuro" },
   { slotKey: "global_background_pattern", label: "Fondo general del sitio (patrón repetido)", section: "Global", recommended: "Imagen pequeña que se repite en mosaico (tile), idealmente transparente o sin costuras visibles, ~80×92px o similar" },
-  { slotKey: "hero_slide_1", label: "Hero Slider — Slide 1 (Tissue Repair)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
-  { slotKey: "hero_slide_2", label: "Hero Slider — Slide 2 (Cellular & Neural)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
-  { slotKey: "hero_slide_3", label: "Hero Slider — Slide 3 (Metabolic)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
-  { slotKey: "hero_slide_4", label: "Hero Slider — Slide 4 (Endocrine)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
-  { slotKey: "home_lab_banner", label: "Home — Lab Quality Banner", section: "Home", recommended: "Landscape, ≥1600×500, wide banner" },
-  { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home", recommended: "≥900×900, square to slightly portrait" },
-  { slotKey: "manufacturing_hero_image", label: "Science → Manufacturing — Hero image", section: "Science Pages", recommended: "Portrait or square, ≥900×900, lab/manufacturing photo" },
+  { slotKey: "hero_slide_1", label: "Home — Hero Slider, slide 1 (Tissue Repair)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
+  { slotKey: "hero_slide_2", label: "Home — Hero Slider, slide 2 (Cellular & Neural)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
+  { slotKey: "hero_slide_3", label: "Home — Hero Slider, slide 3 (Metabolic)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
+  { slotKey: "hero_slide_4", label: "Home — Hero Slider, slide 4 (Endocrine)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
+  { slotKey: "home_lab_banner", label: "Home — Lab Quality Banner", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1600×500, wide banner" },
+  { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home — Hero & Secciones", recommended: "≥900×900, square to slightly portrait" },
+  { slotKey: "manufacturing_hero_image", label: "Hero image", section: "Página: Manufacturing", recommended: "Portrait or square, ≥900×900, lab/manufacturing photo" },
+];
+
+// Pages whose images live in their own dedicated admin screen/table instead
+// of site_images (Categories has its own hero-image fields per row;
+// DocIntegritySection is a singleton row with its own uploader) — shown as
+// link-outs here so this page stays the map of "where is every image", even
+// for the ones it doesn't directly manage.
+const LINKED_SECTIONS: Array<{ section: string; label: string; description: string; href: string }> = [
+  {
+    section: "Categorías",
+    label: "Category hero images, badges & taglines",
+    description: "Cada categoría tiene su propia imagen hero, badge, tagline y CTA — se administran en la pantalla de Categorías.",
+    href: "/admin/categories",
+  },
+  {
+    section: "Documentation Section",
+    label: "Documentation by Design — hero image & callouts",
+    description: "La imagen y los 3 callouts de esa sección del Home tienen su propia pantalla de administración.",
+    href: "/admin/doc-integrity",
+  },
 ];
 
 // Known editable text settings (site_settings table) — shown on this same screen.
@@ -120,7 +143,18 @@ export default function AdminSiteImages() {
     reader.readAsDataURL(file);
   }
 
-  const sections = Array.from(new Set(KNOWN_SLOTS.map((s) => s.section)));
+  // Explicit display order — interleaves the link-out sections (whose images
+  // live on their own admin screens) with the site_images-backed ones. Add a
+  // new "Página: X" entry here (and to KNOWN_SLOTS/LINKED_SECTIONS) once a
+  // page has an image slot of its own — Approach has none yet (its vial
+  // mockups are pure SVG), so it's intentionally not listed.
+  const SECTION_ORDER = [
+    "Global",
+    "Home — Hero & Secciones",
+    "Categorías",
+    "Documentation Section",
+    "Página: Manufacturing",
+  ];
 
   return (
     <AdminLayout>
@@ -142,11 +176,33 @@ export default function AdminSiteImages() {
             ))}
           </div>
         ) : (
-          sections.map((section) => (
+          SECTION_ORDER.map((section) => {
+            const linked = LINKED_SECTIONS.find((l) => l.section === section);
+            if (linked) {
+              return (
+                <div key={section} className="mb-8">
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">{section}</h2>
+                  <Link href={linked.href}>
+                    <div className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl p-5 hover:border-gray-200 cursor-pointer transition-colors group">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{linked.label}</p>
+                        <p className="text-xs text-gray-400 mt-1">{linked.description}</p>
+                      </div>
+                      <ArrowRight size={16} className="text-gray-300 group-hover:text-[#3A9E94] transition-colors shrink-0 ml-4" />
+                    </div>
+                  </Link>
+                </div>
+              );
+            }
+
+            const slotsInSection = KNOWN_SLOTS.filter((s) => s.section === section);
+            if (slotsInSection.length === 0) return null;
+
+            return (
             <div key={section} className="mb-8">
               <h2 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">{section}</h2>
               <div className="grid sm:grid-cols-2 gap-4">
-                {KNOWN_SLOTS.filter((s) => s.section === section).map((slot) => {
+                {slotsInSection.map((slot) => {
                   const current = imageBySlot[slot.slotKey];
                   const isUploading = uploadingSlot === slot.slotKey;
                   return (
@@ -179,7 +235,8 @@ export default function AdminSiteImages() {
                 })}
               </div>
             </div>
-          ))
+            );
+          })
         )}
 
         {/* Editable text (site_settings) — same screen as the images */}
