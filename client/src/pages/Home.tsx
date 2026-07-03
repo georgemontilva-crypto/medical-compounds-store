@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { ArrowRight, FlaskConical, Shield, Microscope, Award, Plus, Check, Search, ChevronDown, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
+import ProductCard from "@/components/ProductCard";
 
 // ── Placeholder image component ──────────────────────────────────────────────
 function VialPlaceholder({ label, size = "10mg", color = "#a78bfa", large = false }: { label: string; size?: string; color?: string; large?: boolean }) {
@@ -38,62 +39,6 @@ const FEATURED_PRODUCTS = [
   { name: "PT-141", category: "Endocrine", size: "10mg", color: "#B8943A", description: "Melanocortin receptor agonist studied for central nervous system effects.", price: "$65.00", slug: "pt-141" },
   { name: "Semax", category: "Neural", size: "10mg", color: "#3A9E94", description: "Synthetic peptide analogue of ACTH with neuroprotective properties.", price: "$70.00", slug: "semax" },
 ];
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Tissue: "#7ECDC4",
-  Cellular: "#5BB8AE",
-  Neural: "#3A9E94",
-  Metabolic: "#C8A84B",
-  Endocrine: "#B8943A",
-  Misc: "#8a9ba8",
-};
-
-// ── ProductCard ───────────────────────────────────────────────────────────────
-function ProductCard({ product }: { product: typeof FEATURED_PRODUCTS[0] }) {
-  const { addItem } = useCart();
-  const catColor = CATEGORY_COLORS[product.category] ?? "#6b7280";
-
-  return (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
-      {/* Image area */}
-      <Link href={`/compounds/${product.slug}`}>
-        <div className="relative h-52 bg-gradient-to-b from-gray-50 to-gray-100 cursor-pointer overflow-hidden">
-          <VialPlaceholder label={product.name} size={product.size} color={product.color} />
-          {/* Add button */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              addItem({ productId: 0, productName: product.name, unitPrice: parseFloat(product.price.replace("$", "")), image: undefined, variationId: undefined, variationLabel: undefined, quantity: 1, slug: product.slug });
-            }}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary hover:text-white"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-      </Link>
-      {/* Info */}
-      <div className="p-4">
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: catColor }} />
-          <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: catColor }}>
-            {product.category}
-          </span>
-        </div>
-        <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-900 text-base mb-1 cursor-pointer hover:text-primary transition-colors">
-            {product.name}
-          </h3>
-        </Link>
-        <p className="text-xs text-gray-400 mb-3 leading-relaxed line-clamp-2">{product.description}</p>
-        <div className="flex items-center justify-between">
-          <span className="font-semibold text-gray-900">{product.price}</span>
-          <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded-full">{product.size}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 // ── Category color maps (shared) ─────────────────────────────────────────────
 const CAT_COLORS_MAP: Record<string, string> = {
@@ -219,106 +164,6 @@ type LiveProduct = {
   featured?: boolean | null;
 };
 
-function LiveVialCard({
-  product,
-  categories,
-  onAdd,
-  added,
-}: {
-  product: LiveProduct;
-  categories?: Array<{ id: number; name: string; color?: string | null }>;
-  onAdd: (payload: {
-    productId: number; variationId?: number; productName: string;
-    variationLabel?: string; unitPrice: number; image?: string; slug: string;
-  }) => void;
-  added: boolean;
-}) {
-  const { data: images } = trpc.products.images.useQuery({ productId: product.id });
-  const { data: variations } = trpc.products.variations.useQuery({ productId: product.id });
-
-  const category = categories?.find((c) => c.id === product.categoryId);
-  const catName = category?.name ?? "Misc";
-  const catColor = CAT_COLORS_MAP[catName] ?? "#6b7280";
-  const catText = CAT_TEXT_MAP[catName] ?? "text-gray-500";
-  const catBg = CAT_BG_MAP[catName] ?? "bg-gray-50";
-  const primaryVariationId = variations?.[0]?.id;
-  const variationImage = primaryVariationId != null ? images?.find((img) => img.variationId === primaryVariationId) : undefined;
-  const image = variationImage ?? images?.find((img) => img.variationId == null) ?? images?.[0];
-  const minPrice = variations && variations.length > 0
-    ? Math.min(...variations.map((v) => Number(v.price)))
-    : Number(product.basePrice);
-  const hasVariations = !!variations && variations.length > 1;
-  const mainSize = variations?.[0] ? `${variations[0].value}${variations[0].unit}` : "";
-  const shortLabel = product.name.length > 9 ? product.name.slice(0, 9) : product.name;
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (hasVariations) { window.location.href = `/compounds/${product.slug}`; return; }
-    const variation = variations?.[0];
-    onAdd({
-      productId: product.id, variationId: variation?.id, productName: product.name,
-      variationLabel: variation ? `${variation.value}${variation.unit}` : undefined,
-      unitPrice: variation ? Number(variation.price) : Number(product.basePrice),
-      image: image?.url, slug: product.slug,
-    });
-  };
-
-  return (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
-      <Link href={`/compounds/${product.slug}`}>
-        <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
-          {image ? (
-            <img src={image.url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <svg viewBox="0 0 80 120" className="w-16 h-24 drop-shadow" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="28" y="2" width="24" height="14" rx="4" fill={catColor} opacity="0.85" />
-                <rect x="32" y="14" width="16" height="6" rx="2" fill="#d1d5db" />
-                <rect x="20" y="20" width="40" height="70" rx="8" fill="white" stroke="#e5e7eb" strokeWidth="1.5" />
-                <rect x="24" y="32" width="32" height="46" rx="4" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1" />
-                <text x="40" y="50" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="#374151" fontFamily="system-ui">{shortLabel}</text>
-                <text x="40" y="59" textAnchor="middle" fontSize="4" fill="#9ca3af" fontFamily="system-ui">LYOPHILIZED POWDER</text>
-                <text x="40" y="69" textAnchor="middle" fontSize="7" fontWeight="800" fill={catColor} fontFamily="system-ui">{mainSize || "—"}</text>
-                <rect x="20" y="88" width="40" height="8" rx="0" fill={catColor} opacity="0.25" />
-                <text x="40" y="95" textAnchor="middle" fontSize="3.5" fill="#6b7280" fontFamily="system-ui">FOR RESEARCH USE ONLY</text>
-                <rect x="20" y="90" width="40" height="8" rx="4" fill="#e5e7eb" />
-              </svg>
-            </div>
-          )}
-          <button
-            onClick={handleClick}
-            className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
-              added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
-                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
-            }`}
-          >
-            {added ? <Check size={13} /> : <Plus size={13} />}
-          </button>
-        </div>
-      </Link>
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
-          <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{catName}</span>
-          {product.featured && (
-            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
-          )}
-        </div>
-        <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#3A9E94] transition-colors">{product.name}</h3>
-        </Link>
-        {variations && variations.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {variations.slice(0, 3).map((v) => (
-              <span key={v.id} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono">{v.value}{v.unit}</span>
-            ))}
-          </div>
-        )}
-        <p className="font-semibold text-gray-900 text-sm">{hasVariations ? "From " : ""}${minPrice.toFixed(2)}</p>
-      </div>
-    </div>
-  );
-}
 
 // ── Compound Spotlight ────────────────────────────────────────────────────────
 const SPOTLIGHT_ACCENTS = [
@@ -945,7 +790,7 @@ function ResearchCatalogSection() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
                 {filteredLive.map((product) => (
-                  <LiveVialCard
+                  <ProductCard
                     key={product.id}
                     product={product}
                     categories={categories}
