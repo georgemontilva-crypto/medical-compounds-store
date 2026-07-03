@@ -18,7 +18,7 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "hero_slide_4", label: "Home — Hero Slider, slide 4 (Endocrine)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "home_lab_banner", label: "Home — Lab Quality Banner", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1600×500, wide banner" },
   { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home — Hero & Secciones", recommended: "≥900×900, square to slightly portrait" },
-  { slotKey: "approach_documentation_image", label: "Documentation trust signal image", section: "Página: Approach", recommended: "Portrait, ≥600×900, product/vial or COA-style photo. Falls back to the vial mockup if empty." },
+  { slotKey: "approach_documentation_image", label: "Documentation trust signal image", section: "Página: Approach", recommended: "662×221 (landscape, ~3:1), product/vial or COA-style photo. Falls back to the vial mockup if empty." },
   { slotKey: "manufacturing_hero_image", label: "Hero image", section: "Página: Manufacturing", recommended: "Portrait or square, ≥900×900, lab/manufacturing photo" },
 ];
 

@@ -274,7 +274,7 @@ export default function ScienceApproach() {
               </p>
             </div>
             {documentationImage?.url ? (
-              <div className="w-full max-w-sm mx-auto h-72 lg:h-96 rounded-3xl overflow-hidden">
+              <div className="w-full aspect-[662/221] rounded-3xl overflow-hidden">
                 <img
                   src={documentationImage.url}
                   alt="Batch documentation and lot-specific labeling"
