@@ -655,7 +655,7 @@ function CategoryShowcase() {
           }}
         >
           {sorted.map((cat, i) => (
-            <div key={cat.id} className="h-full shrink-0 px-6 sm:px-10 py-6" style={{ width: `${100 / n}%` }}>
+            <div key={cat.id} className="h-full shrink-0 px-6 sm:px-10 py-14" style={{ width: `${100 / n}%` }}>
               <CategorySlideContent category={cat} index={i} total={n} />
             </div>
           ))}
