@@ -105,6 +105,7 @@ function CompoundCard({
   const isAdded = addedIds.has(cardKey);
 
   const mainSize = variations?.[0] ? `${variations[0].value}${variations[0].unit}` : "";
+  const catGlow = `0 0 0 2px ${catColor}40, 0 8px 24px -6px ${catColor}66`;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -125,11 +126,14 @@ function CompoundCard({
   };
 
   return (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+    <div
+      className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300"
+      style={{ "--cat-glow": catGlow } as React.CSSProperties}
+    >
       <Link href={`/compounds/${product.slug}`}>
-        <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
+        <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed] p-3">
           {image ? (
-            <img src={image.url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <img src={image.url} alt={product.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <VialPlaceholder label={product.name} size={mainSize || "10mg"} color={catColor} />
           )}
@@ -173,9 +177,13 @@ function StaticCard({ product, onAdd, added }: {
   const catText = CAT_TEXT[product.category] ?? "text-gray-500";
   const catBg = CAT_BG[product.category] ?? "bg-gray-50";
   const hasVariations = product.sizes.length > 1;
+  const catGlow = `0 0 0 2px ${catColor}40, 0 8px 24px -6px ${catColor}66`;
 
   return (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+    <div
+      className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300"
+      style={{ "--cat-glow": catGlow } as React.CSSProperties}
+    >
       <Link href={`/compounds/${product.slug}`}>
         <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
           <VialPlaceholder label={product.name} size={product.sizes[0]} color={product.color} />
@@ -282,7 +290,7 @@ export default function Compounds() {
     : STATIC_CATS.map((c, i) => ({ id: i + 1, name: c.name, color: CAT_COLORS[c.name] ?? "#6b7280", count: c.count }));
 
   return (
-    <div className="min-h-screen hex-cream">
+    <div className="min-h-screen bg-white">
       <Navbar />
       <div className="container py-10">
         {/* Page header */}
