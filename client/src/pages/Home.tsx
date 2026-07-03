@@ -457,6 +457,11 @@ function CompoundSpotlightSection() {
 }
 
 // ── Category Showcase (sticky horizontal scroll) ─────────────────────────────
+// Navbar.tsx renders <header className="sticky top-0 ..."> with an inner h-16
+// (64px) row plus a 1px border-b — the showcase's own sticky pin must start
+// below that, or the navbar overlaps the first ~65px of each slide.
+const NAVBAR_HEIGHT = 65;
+
 type ShowcaseCategory = {
   id: number;
   name: string;
@@ -608,9 +613,14 @@ function CategoryShowcase() {
       rafId = 0;
       const el = sectionRef.current;
       if (!el) return;
-      const scrollable = el.offsetHeight - window.innerHeight;
+      // The sticky child is pinned at top: NAVBAR_HEIGHT with height
+      // calc(100vh - NAVBAR_HEIGHT), so the scrollable pin range is the
+      // section height minus that (smaller) sticky height — not the full
+      // viewport height as it would be for a plain top:0/h-screen sticky.
+      const stickyHeight = window.innerHeight - NAVBAR_HEIGHT;
+      const scrollable = el.offsetHeight - stickyHeight;
       if (scrollable <= 0) return;
-      const raw = -el.getBoundingClientRect().top / scrollable;
+      const raw = (NAVBAR_HEIGHT - el.getBoundingClientRect().top) / scrollable;
       setProgress(Math.min(1, Math.max(0, raw)));
     }
     function onScroll() {
@@ -646,7 +656,10 @@ function CategoryShowcase() {
 
   return (
     <section ref={sectionRef} className="relative bg-white" style={{ height: `${n * 100}vh` }}>
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-white">
+      <div
+        className="sticky w-full overflow-hidden bg-white"
+        style={{ top: NAVBAR_HEIGHT, height: `calc(100vh - ${NAVBAR_HEIGHT}px)` }}
+      >
         <div
           className="flex h-full"
           style={{
