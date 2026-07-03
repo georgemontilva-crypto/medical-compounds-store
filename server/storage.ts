@@ -1,7 +1,7 @@
 // Storage helpers backed by Cloudflare R2 (S3-compatible) via @aws-sdk/client-s3.
 // Uploads via PutObjectCommand; downloads resolve to public R2_PUBLIC_URL links.
 
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 function getR2Config() {
@@ -82,6 +82,14 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
   const { publicUrl } = getR2Config();
   const key = normalizeKey(relKey);
   return { key, url: `${publicUrl}/${key}` };
+}
+
+// Used only by the temporary /api/debug/r2-test route to check bucket
+// visibility independently of write access. Remove alongside that route.
+export async function headBucket(): Promise<void> {
+  const { bucket } = getR2Config();
+  const client = getR2Client();
+  await client.send(new HeadBucketCommand({ Bucket: bucket }));
 }
 
 export async function storageGetSignedUrl(relKey: string): Promise<string> {

@@ -8,7 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { storagePut } from "../storage";
+import { headBucket, storagePut } from "../storage";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -51,14 +51,31 @@ async function startServer() {
       r2AccessKeyIdPrefix: accessKeyId.slice(0, 6),
       r2AccessKeyIdLength: accessKeyId.length,
       r2Endpoint: process.env.R2_ENDPOINT ?? null,
+      r2Bucket: process.env.R2_BUCKET ?? null,
+      r2PublicUrl: process.env.R2_PUBLIC_URL ?? null,
     };
+
+    let headBucketResult: unknown;
+    try {
+      await headBucket();
+      headBucketResult = { ok: true };
+    } catch (err: any) {
+      headBucketResult = {
+        ok: false,
+        name: err?.name,
+        message: err?.message,
+        Code: err?.Code,
+        metadata: err?.$metadata,
+      };
+    }
+
     try {
       const { key, url } = await storagePut(
         `debug/${Date.now()}_r2-test.txt`,
         Buffer.from("r2 debug test"),
         "text/plain",
       );
-      res.json({ ok: true, key, url, runtimeConfig });
+      res.json({ ok: true, key, url, runtimeConfig, headBucketResult });
     } catch (err: any) {
       res.status(500).json({
         ok: false,
@@ -68,6 +85,7 @@ async function startServer() {
         metadata: err?.$metadata,
         stack: err?.stack,
         runtimeConfig,
+        headBucketResult,
       });
     }
   });
