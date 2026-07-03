@@ -299,7 +299,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
 
   return (
     <div
-      className={`relative h-full w-full flex flex-col md:flex-row items-start md:items-center ${roundedClassName} p-6 md:p-0`}
+      className={`relative h-full w-full flex flex-col md:flex-row items-start md:items-center ${roundedClassName}`}
       style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
     >
       {/* Subtle grid pattern tinted with the category accent, fading out via a radial mask */}
@@ -312,7 +312,11 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
           maskImage: "radial-gradient(circle at 30% 45%, black 0%, transparent 70%)",
         }}
       />
-      <div className="container relative z-10 grid md:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] gap-6 md:gap-10 items-start md:items-center md:py-10">
+      {/* Padding used to live on the root, which also wrapped the mobile hero
+          image below — that's why it stayed inset instead of reaching the
+          card's edges. Padding now lives here, on the text container only,
+          so the root itself stays edge-to-edge for the image sibling. */}
+      <div className="container relative z-10 grid md:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] gap-6 md:gap-10 items-start md:items-center p-6 md:px-0 md:py-10">
         {/* Left */}
         <div>
           <div className="flex items-center gap-3 mb-3 md:mb-6">
@@ -395,14 +399,16 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
         </div>
       </div>
 
-      {/* Mobile-only hero image — full-bleed strip flush with the card's own
-          edges. -mx-6 cancels this root's own p-6, and there's no rounding
-          of its own: it's clipped by the outer card wrapper (CategoryShowcase
-          on mobile), so it always matches whatever corner shape the card
-          currently has instead of showing its own separate rounded box. */}
-      <div className="md:hidden relative -mx-6 w-[calc(100%+3rem)] h-40 shrink-0" style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}>
+      {/* Mobile-only hero image — direct child of the (now unpadded) root, so
+          it spans the full card width with zero extra work; flex-1 makes it
+          fill all height left over after the text block, down to the card's
+          bottom edge. No rounding of its own — it's clipped by the outer
+          card wrapper (CategoryShowcase on mobile), which owns the card's
+          real (scroll-driven) corner radius. object-cover (not contain) so
+          it always fills the strip with no empty letterboxed space. */}
+      <div className="md:hidden relative flex-1 w-full min-h-0" style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}>
         {category.heroImageUrl ? (
-          <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-contain" />
+          <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <FlaskConical size={48} style={{ color: accent }} className="opacity-40" />
