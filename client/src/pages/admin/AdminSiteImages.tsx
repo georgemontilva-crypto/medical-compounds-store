@@ -14,8 +14,6 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "hero_slide_3", label: "Hero Slider — Slide 3 (Metabolic)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_4", label: "Hero Slider — Slide 4 (Endocrine)", section: "Hero Slider", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "home_lab_banner", label: "Home — Lab Quality Banner", section: "Home", recommended: "Landscape, ≥1600×500, wide banner" },
-  { slotKey: "home_spotlight_bpc157", label: "Home — Compound Spotlight (BPC-157)", section: "Home", recommended: "Portrait 3:4, ≥400×540" },
-  { slotKey: "home_spotlight_nadplus", label: "Home — Compound Spotlight (NAD+)", section: "Home", recommended: "Portrait 3:4, ≥400×540" },
   { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home", recommended: "≥900×900, square to slightly portrait" },
 ];
 

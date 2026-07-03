@@ -30,6 +30,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminLabReports from "./pages/admin/AdminLabReports";
 import AdminSiteImages from "./pages/admin/AdminSiteImages";
+import AdminDocIntegrity from "./pages/admin/AdminDocIntegrity";
 import LabReports from "./pages/LabReports";
 import Contact from "./pages/Contact";
 
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/admin/coupons" component={AdminCoupons} />
       <Route path="/admin/lab-reports" component={AdminLabReports} />
       <Route path="/admin/site-images" component={AdminSiteImages} />
+      <Route path="/admin/doc-integrity" component={AdminDocIntegrity} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

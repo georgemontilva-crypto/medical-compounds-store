@@ -6,6 +6,7 @@ import {
   InsertCartItem,
   InsertCategory,
   InsertCoupon,
+  InsertDocIntegritySection,
   InsertLabReport,
   InsertOrder,
   InsertOrderItem,
@@ -18,6 +19,7 @@ import {
   cartItems,
   categories,
   coupons,
+  docIntegritySection,
   labReports,
   orderItems,
   orders,
@@ -559,4 +561,22 @@ export async function setSiteSetting(key: string, value: string) {
     .values({ key, value })
     .onDuplicateKeyUpdate({ set: { value, updatedAt: new Date() } });
   return getSiteSetting(key);
+}
+
+// ─── Doc Integrity Section (singleton row, id=1) ───────────────────────────────
+export async function getDocIntegritySection() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(docIntegritySection).where(eq(docIntegritySection.id, 1)).limit(1);
+  return result[0];
+}
+
+export async function updateDocIntegritySection(data: Partial<InsertDocIntegritySection>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .insert(docIntegritySection)
+    .values({ id: 1, ...data })
+    .onDuplicateKeyUpdate({ set: { ...data, updatedAt: new Date() } });
+  return getDocIntegritySection();
 }

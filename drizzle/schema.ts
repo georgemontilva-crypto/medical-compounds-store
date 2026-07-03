@@ -247,3 +247,31 @@ export const siteSettings = mysqlTable("site_settings", {
 
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
+
+// ─── Doc Integrity Section (singleton, admin-editable Home content block) ─────
+export const docIntegritySection = mysqlTable("doc_integrity_section", {
+  id: int("id").autoincrement().primaryKey(),
+  eyebrowText: varchar("eyebrowText", { length: 100 }),
+  headingLine1: varchar("headingLine1", { length: 150 }),
+  headingLine2: varchar("headingLine2", { length: 150 }),
+  bodyText: text("bodyText"),
+  cardBadge: varchar("cardBadge", { length: 50 }),
+  cardSubtext: varchar("cardSubtext", { length: 100 }),
+  cardTitle: varchar("cardTitle", { length: 150 }),
+  cardDetail: varchar("cardDetail", { length: 300 }),
+  heroImageUrl: varchar("heroImageUrl", { length: 500 }),
+  heroImageKey: varchar("heroImageKey", { length: 500 }),
+  callout1Position: mysqlEnum("callout1Position", ["top", "middle", "bottom"]).default("top"),
+  callout1Title: varchar("callout1Title", { length: 100 }),
+  callout1Description: varchar("callout1Description", { length: 300 }),
+  callout2Position: mysqlEnum("callout2Position", ["top", "middle", "bottom"]).default("middle"),
+  callout2Title: varchar("callout2Title", { length: 100 }),
+  callout2Description: varchar("callout2Description", { length: 300 }),
+  callout3Position: mysqlEnum("callout3Position", ["top", "middle", "bottom"]).default("bottom"),
+  callout3Title: varchar("callout3Title", { length: 100 }),
+  callout3Description: varchar("callout3Description", { length: 300 }),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DocIntegritySection = typeof docIntegritySection.$inferSelect;
+export type InsertDocIntegritySection = typeof docIntegritySection.$inferInsert;

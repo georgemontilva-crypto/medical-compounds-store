@@ -65,6 +65,8 @@ import {
   upsertSiteImage,
   getSiteSetting,
   setSiteSetting,
+  getDocIntegritySection,
+  updateDocIntegritySection,
 } from "./db";
 import { storagePut } from "./storage";
 
@@ -745,6 +747,50 @@ export const appRouter = router({
     set: adminProcedure
       .input(z.object({ key: z.string().min(1).max(100), value: z.string() }))
       .mutation(({ input }) => setSiteSetting(input.key, input.value)),
+  }),
+
+  // ─── Doc Integrity Section (singleton Home content block) ─────────────────
+  docIntegrity: router({
+    get: publicProcedure.query(() => getDocIntegritySection()),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          eyebrowText: z.string().max(100).optional(),
+          headingLine1: z.string().max(150).optional(),
+          headingLine2: z.string().max(150).optional(),
+          bodyText: z.string().optional(),
+          cardBadge: z.string().max(50).optional(),
+          cardSubtext: z.string().max(100).optional(),
+          cardTitle: z.string().max(150).optional(),
+          cardDetail: z.string().max(300).optional(),
+          callout1Position: z.enum(["top", "middle", "bottom"]).optional(),
+          callout1Title: z.string().max(100).optional(),
+          callout1Description: z.string().max(300).optional(),
+          callout2Position: z.enum(["top", "middle", "bottom"]).optional(),
+          callout2Title: z.string().max(100).optional(),
+          callout2Description: z.string().max(300).optional(),
+          callout3Position: z.enum(["top", "middle", "bottom"]).optional(),
+          callout3Title: z.string().max(100).optional(),
+          callout3Description: z.string().max(300).optional(),
+        })
+      )
+      .mutation(({ input }) => updateDocIntegritySection(input)),
+
+    uploadImage: adminProcedure
+      .input(
+        z.object({
+          fileBase64: z.string(),
+          fileName: z.string(),
+          mimeType: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.fileBase64, "base64");
+        const relKey = `doc-integrity/${nanoid(10)}_${input.fileName}`;
+        const { key: heroImageKey, url: heroImageUrl } = await storagePut(relKey, buffer, input.mimeType);
+        return updateDocIntegritySection({ heroImageUrl, heroImageKey });
+      }),
   }),
 });
 

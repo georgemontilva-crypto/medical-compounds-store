@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Image as ImageIcon,
+  ShieldCheck,
 } from "lucide-react";
 import { useState, ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/lab-reports", label: "Lab Reports", icon: FileText },
   { href: "/admin/site-images", label: "Site Images", icon: ImageIcon },
+  { href: "/admin/doc-integrity", label: "Doc Integrity", icon: ShieldCheck },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
