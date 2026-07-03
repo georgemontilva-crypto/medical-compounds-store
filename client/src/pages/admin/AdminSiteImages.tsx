@@ -20,6 +20,7 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home — Hero & Secciones", recommended: "≥900×900, square to slightly portrait" },
   { slotKey: "approach_documentation_image", label: "Documentation trust signal image", section: "Página: Approach", recommended: "661×281 (landscape, ~2.35:1), product/vial or COA-style photo. Falls back to the vial mockup if empty." },
   { slotKey: "manufacturing_hero_image", label: "Hero image", section: "Página: Manufacturing", recommended: "Portrait or square, ≥900×900, lab/manufacturing photo" },
+  { slotKey: "research_standards_hero_image", label: "Hero image", section: "Página: Research Standards", recommended: "Portrait or square, ≥900×900, documentation/lab photo" },
 ];
 
 // Pages whose images live in their own dedicated admin screen/table instead
@@ -155,6 +156,7 @@ export default function AdminSiteImages() {
     "Documentation Section",
     "Página: Approach",
     "Página: Manufacturing",
+    "Página: Research Standards",
   ];
 
   return (

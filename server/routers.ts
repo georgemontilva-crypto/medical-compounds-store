@@ -58,6 +58,7 @@ import {
   upsertUser,
   getLabReportsByProduct,
   getAllLabReports,
+  getRecentPublicLabReports,
   createLabReport,
   deleteLabReport,
   updateLabReport,
@@ -647,6 +648,10 @@ export const appRouter = router({
       .query(({ input }) => getLabReportsByProduct(input.productId)),
 
     all: adminProcedure.query(() => getAllLabReports()),
+
+    recent: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(20).optional() }).optional())
+      .query(({ input }) => getRecentPublicLabReports(input?.limit ?? 6)),
 
     upload: adminProcedure
       .input(

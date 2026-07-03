@@ -613,3 +613,23 @@ export async function updateWholesaleApplicationStatus(id: number, status: strin
   const [row] = await db.select().from(wholesaleApplications).where(eq(wholesaleApplications.id, id)).limit(1);
   return row;
 }
+
+// ─── Public recent lab reports (for the Research Standards page) ───────────────
+export async function getRecentPublicLabReports(limit: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: labReports.id,
+      title: labReports.title,
+      batchNumber: labReports.batchNumber,
+      testDate: labReports.testDate,
+      createdAt: labReports.createdAt,
+      productName: products.name,
+    })
+    .from(labReports)
+    .innerJoin(products, eq(labReports.productId, products.id))
+    .where(eq(labReports.active, true))
+    .orderBy(desc(labReports.createdAt))
+    .limit(limit);
+}
