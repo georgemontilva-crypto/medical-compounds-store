@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -15,7 +15,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import AgeVerificationModal from "./components/AgeVerificationModal";
 import ComplianceModal from "./components/ComplianceModal";
 import Footer from "./components/Footer";
-import { initLenis } from "@/lib/lenis";
+import { initLenis, getLenis } from "@/lib/lenis";
 import "lenis/dist/lenis.css";
 
 // Pages
@@ -110,6 +110,21 @@ function Router() {
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const lenis = getLenis();
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [location]);
+
+  return null;
+}
+
 function App() {
   const { data: bgPattern } = trpc.siteImages.getBySlot.useQuery({ slotKey: "global_background_pattern" });
 
@@ -137,6 +152,7 @@ function App() {
                 <AgeVerificationModal />
                 <LoadingScreen />
                 <Toaster position="top-right" />
+                <ScrollToTop />
                 <Router />
                 <CartDrawer />
                 <FloatingCartButton />
