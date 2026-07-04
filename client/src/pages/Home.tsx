@@ -926,6 +926,8 @@ function ResearchCatalogSection() {
 export default function Home() {
   const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
   const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
+  const { data: allProducts = [] } = trpc.products.list.useQuery();
+  const { data: allCategories = [] } = trpc.categories.list.useQuery();
 
   return (
     <div className="min-h-screen bg-[#f8f8fa]">
@@ -1056,9 +1058,9 @@ export default function Home() {
         <div className="container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: "23+", label: "Research Compounds" },
+              { value: String(allProducts.length), label: "Research Compounds" },
               { value: "≥99%", label: "Purity Guaranteed" },
-              { value: "5", label: "Research Categories" },
+              { value: String(allCategories.length), label: "Research Categories" },
               { value: "COA", label: "Every Batch Tested" },
             ].map((stat) => (
               <div key={stat.label}>
