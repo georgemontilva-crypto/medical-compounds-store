@@ -79,7 +79,7 @@ function HplcChart() {
 
   return (
     <div ref={ref} className="relative w-full">
-      <svg viewBox="0 0 440 220" className="w-full h-[240px]">
+      <svg viewBox="0 0 440 220" className="w-full h-auto">
         {/* Grid */}
         {[0, 1, 2, 3, 4].map((i) => (
           <line key={i} x1={30} x2={410} y1={40 + i * 38} y2={40 + i * 38} stroke="#ffffff" strokeOpacity={0.06} strokeWidth={1} />
@@ -240,18 +240,20 @@ export default function ScienceManufacturing() {
       {/* ── 03 · INDEPENDENT ANALYTICAL TESTING ──────────────────────────── */}
       <Reveal>
         <section className="bg-[#0a0a0f] py-20">
-          <div className="container max-w-3xl">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#7ECDC4]">03</span>
-              <span className="text-xs font-semibold tracking-widest uppercase text-white/40">Testing</span>
+          <div className="container grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-sm font-mono text-[#7ECDC4]">03</span>
+                <span className="text-xs font-semibold tracking-widest uppercase text-white/40">Testing</span>
+              </div>
+              <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4">
+                Independent analytical testing
+              </h2>
+              <p className="text-white/60 text-sm leading-relaxed max-w-md">
+                Every batch is run through HPLC analysis to confirm purity before it's cleared to ship. The
+                illustrative trace shows the kind of sharp, well-resolved peak a high-purity batch produces.
+              </p>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4">
-              Independent analytical testing
-            </h2>
-            <p className="text-white/60 text-sm leading-relaxed mb-10 max-w-xl">
-              Every batch is run through HPLC analysis to confirm purity before it's cleared to ship. The
-              illustrative trace below shows the kind of sharp, well-resolved peak a high-purity batch produces.
-            </p>
             <HplcChart />
           </div>
         </section>
