@@ -95,7 +95,7 @@ export default function ProductCard({
             onClick={handleQuickAdd}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
               added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
-                    : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
+                    : "bg-white text-gray-700 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
             }`}
           >
             {added ? <Check size={13} /> : <Plus size={13} />}
