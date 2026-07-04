@@ -12,6 +12,7 @@ import CartDrawer from "./components/CartDrawer";
 import FloatingCartButton from "./components/FloatingCartButton";
 import LoadingScreen from "./components/LoadingScreen";
 import AgeVerificationModal from "./components/AgeVerificationModal";
+import Footer from "./components/Footer";
 import { initLenis } from "@/lib/lenis";
 import "lenis/dist/lenis.css";
 
@@ -46,10 +47,9 @@ import ScienceManufacturing from "./pages/ScienceManufacturing";
 import ScienceResearchStandards from "./pages/ScienceResearchStandards";
 import ScienceResponsibleSupply from "./pages/ScienceResponsibleSupply";
 
-function Router() {
+function PublicRoutes() {
   return (
     <Switch>
-      {/* Public store routes */}
       <Route path="/" component={Home} />
       <Route path="/compounds" component={Compounds} />
       <Route path="/compounds/:slug" component={ProductDetail} />
@@ -67,7 +67,16 @@ function Router() {
       <Route path="/science/research-standards" component={ScienceResearchStandards} />
       <Route path="/science/responsible-supply" component={ScienceResponsibleSupply} />
 
-      {/* Admin routes */}
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      {/* Admin routes — own AdminLayout shell, no public footer */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/products" component={AdminProducts} />
       <Route path="/admin/categories" component={AdminCategories} />
@@ -80,8 +89,11 @@ function Router() {
       <Route path="/admin/doc-integrity" component={AdminDocIntegrity} />
       <Route path="/admin/wholesale-applications" component={AdminWholesaleApplications} />
 
-      <Route path="/404" component={NotFound} />
-      <Route component={NotFound} />
+      {/* Everything else is a public store route, always rendered with the shared Footer */}
+      <Route>
+        <PublicRoutes />
+        <Footer />
+      </Route>
     </Switch>
   );
 }
