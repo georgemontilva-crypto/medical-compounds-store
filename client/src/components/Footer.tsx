@@ -10,15 +10,15 @@ export default function Footer() {
       <div className="container">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {logoImage?.url ? (
-            <img src={logoImage.url} alt="Logo" className="h-8 w-auto object-contain" />
+            <img src={logoImage.url} alt="Logo" className="h-14 w-auto object-contain" />
           ) : (
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#7ECDC4] flex items-center justify-center">
-                <FlaskConical size={15} className="text-white" />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-[#7ECDC4] flex items-center justify-center">
+                <FlaskConical size={22} className="text-white" />
               </div>
               <div>
-                <span className="font-bold text-white text-sm">Brighter Days Labs</span>
-                <p className="text-[11px] text-gray-500 leading-none mt-0.5">Research Grade · For Scientific Use Only</p>
+                <span className="font-bold text-white text-lg">Brighter Days Labs</span>
+                <p className="text-xs text-gray-500 leading-none mt-1">Research Grade · For Scientific Use Only</p>
               </div>
             </div>
           )}
