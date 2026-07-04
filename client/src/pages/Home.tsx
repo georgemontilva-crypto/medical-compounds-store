@@ -299,6 +299,19 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
   const badge = category.badgeCode || category.name.slice(0, 3).toUpperCase();
   const counter = `${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
 
+  // Mobile-only "Read more" for the tagline — measured once (while still
+  // clamped, since this runs before any expansion) via scrollHeight vs
+  // clientHeight, the standard way to detect line-clamp truncation.
+  const [taglineExpanded, setTaglineExpanded] = useState(false);
+  const [taglineOverflows, setTaglineOverflows] = useState(false);
+  const taglineRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = taglineRef.current;
+    if (!el) return;
+    setTaglineOverflows(el.scrollHeight > el.clientHeight + 1);
+  }, [category.tagline]);
+
   return (
     <div
       className={`relative h-full w-full flex flex-col md:flex-row items-start md:items-center ${roundedClassName}`}
@@ -334,7 +347,26 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
             {category.name}
           </h2>
           {category.tagline && (
-            <p className="text-white/60 text-sm md:text-base leading-relaxed mb-3 md:mb-6 max-w-md line-clamp-2 md:line-clamp-none">{category.tagline}</p>
+            <div className="mb-3 md:mb-6 max-w-md">
+              <p
+                ref={taglineRef}
+                className={`text-white/60 text-sm md:text-base leading-relaxed md:line-clamp-none ${
+                  taglineExpanded ? "" : "line-clamp-2"
+                }`}
+              >
+                {category.tagline}
+              </p>
+              {taglineOverflows && (
+                <button
+                  type="button"
+                  onClick={() => setTaglineExpanded((v) => !v)}
+                  className="md:hidden text-xs font-semibold mt-1"
+                  style={{ color: accent }}
+                >
+                  {taglineExpanded ? "Show less" : "Read more"}
+                </button>
+              )}
+            </div>
           )}
           {products.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4 md:mb-8">
