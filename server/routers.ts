@@ -83,6 +83,29 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+// Normalizes an optional text input to undefined when blank, so a cleared
+// form field (e.g. an empty <input type="date">) can never reach a `new
+// Date("")` conversion downstream — defense-in-depth on top of whatever the
+// client already does, since "" is a valid string that passes z.string()
+// but is invalid as a timestamp value.
+const optionalTrimmedString = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim() !== "" ? v : undefined));
+
+// Same idea, but for fields that also accept an explicit `null` to mean
+// "clear this value" (as opposed to `undefined`, meaning "field not sent,
+// leave it alone") — e.g. coupons.update's expiresAt.
+const optionalTrimmedStringNullable = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((v) => {
+    if (v === undefined) return undefined;
+    if (v === null) return null;
+    return v.trim() !== "" ? v : null;
+  });
+
 // ─── JWT helpers ──────────────────────────────────────────────────────────────
 // Sign a session token in the SAME format the SDK.verifySession expects:
 // { openId, appId, name } — this allows authenticateRequest to recognize email-auth users
@@ -472,7 +495,7 @@ export const appRouter = router({
           minOrderAmount: z.string().optional(),
           maxUses: z.number().optional(),
           active: z.boolean().optional(),
-          expiresAt: z.string().optional(),
+          expiresAt: optionalTrimmedString,
         })
       )
       .mutation(({ input }) =>
@@ -493,7 +516,7 @@ export const appRouter = router({
           minOrderAmount: z.string().optional(),
           maxUses: z.number().nullable().optional(),
           active: z.boolean().optional(),
-          expiresAt: z.string().nullable().optional(),
+          expiresAt: optionalTrimmedStringNullable,
         })
       )
       .mutation(({ input }) => {
@@ -658,9 +681,9 @@ export const appRouter = router({
         z.object({
           productId: z.number(),
           title: z.string().min(1),
-          description: z.string().optional(),
-          batchNumber: z.string().optional(),
-          testDate: z.string().optional(),
+          description: optionalTrimmedString,
+          batchNumber: optionalTrimmedString,
+          testDate: optionalTrimmedString,
           fileBase64: z.string(),
           fileName: z.string(),
           fileSize: z.number().optional(),
