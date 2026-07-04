@@ -625,7 +625,10 @@ export async function getRecentPublicLabReports(limit: number) {
       batchNumber: labReports.batchNumber,
       testDate: labReports.testDate,
       createdAt: labReports.createdAt,
+      fileUrl: labReports.fileUrl,
+      fileName: labReports.fileName,
       productName: products.name,
+      productSlug: products.slug,
     })
     .from(labReports)
     .innerJoin(products, eq(labReports.productId, products.id))

@@ -35,6 +35,7 @@ import AdminLabReports from "./pages/admin/AdminLabReports";
 import AdminSiteImages from "./pages/admin/AdminSiteImages";
 import AdminDocIntegrity from "./pages/admin/AdminDocIntegrity";
 import LabReports from "./pages/LabReports";
+import LabTests from "./pages/LabTests";
 import Contact from "./pages/Contact";
 import WholesaleApplication from "./pages/WholesaleApplication";
 import AdminWholesaleApplications from "./pages/admin/AdminWholesaleApplications";
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/my-orders/:id" component={OrderDetail} />
       <Route path="/lab-reports/:slug" component={LabReports} />
+      <Route path="/lab-tests" component={LabTests} />
       <Route path="/contact" component={Contact} />
       <Route path="/wholesale" component={WholesaleApplication} />
       <Route path="/science/approach" component={ScienceApproach} />

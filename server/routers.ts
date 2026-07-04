@@ -650,7 +650,7 @@ export const appRouter = router({
     all: adminProcedure.query(() => getAllLabReports()),
 
     recent: publicProcedure
-      .input(z.object({ limit: z.number().min(1).max(20).optional() }).optional())
+      .input(z.object({ limit: z.number().min(1).max(100).optional() }).optional())
       .query(({ input }) => getRecentPublicLabReports(input?.limit ?? 6)),
 
     upload: adminProcedure

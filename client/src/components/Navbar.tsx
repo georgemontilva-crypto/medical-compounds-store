@@ -9,10 +9,6 @@ import {
   Factory,
   ShieldCheck,
   Leaf,
-  GraduationCap,
-  FileText,
-  Layers,
-  Truck,
   ArrowRight,
   Menu,
   X,
@@ -48,17 +44,6 @@ const SCIENCE_REFS = [
   { label: "Metabolic Research", color: CAT_COLORS.Metabolic },
   { label: "Endocrine Research", color: CAT_COLORS.Endocrine },
   { label: "Combined Research", color: CAT_COLORS.Combined },
-];
-
-const RESEARCH_ITEMS = [
-  { icon: GraduationCap, label: "Peptides 101", desc: "Foundational context for..." },
-  { icon: ShieldCheck, label: "Research Quality 101", desc: "Guide to purity, COAs,..." },
-];
-
-const RESEARCH_ARTICLES = [
-  { icon: FileText, label: "Documentation Standards" },
-  { icon: Layers, label: "Mechanism Categorization" },
-  { icon: Truck, label: "Supply Chain" },
 ];
 
 // ── Dropdown wrapper ───────────────────────────────────────────────────────────
@@ -263,59 +248,16 @@ export default function Navbar() {
               </div>
             </NavDropdown>
 
-            {/* Research dropdown */}
-            <NavDropdown label="Research">
-              <div className="flex">
-                <div className="p-4 border-r border-gray-50" style={{ width: 260 }}>
-                  {RESEARCH_ITEMS.map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group"
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-[#F5F2EC] flex items-center justify-center shrink-0 group-hover:bg-[#E8F7F6] transition-colors">
-                        <item.icon
-                          size={15}
-                          className="text-gray-500 group-hover:text-[#3A9E94] transition-colors"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">
-                          {item.label}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-4" style={{ width: 220 }}>
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-3 px-1">
-                    Featured Articles
-                  </p>
-                  {RESEARCH_ARTICLES.map((art) => (
-                    <div
-                      key={art.label}
-                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group"
-                    >
-                      <art.icon
-                        size={14}
-                        className="text-gray-400 group-hover:text-gray-600 shrink-0"
-                      />
-                      <span className="text-sm text-gray-600 group-hover:text-gray-900">
-                        {art.label}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="mt-2 pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#E8F7F6] cursor-pointer transition-colors group">
-                      <span className="text-sm font-semibold text-[#3A9E94] group-hover:text-[#2A8E84]">
-                        All Research Articles
-                      </span>
-                      <ArrowRight size={13} className="text-[#5BB8AE]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </NavDropdown>
+            {/* Lab Tests — direct link, no dropdown */}
+            <Link href="/lab-tests">
+              <button
+                className={`text-sm font-medium px-2 py-1.5 rounded-lg transition-colors duration-150 ${
+                  location.startsWith("/lab-tests") ? "text-[#3A9E94] font-semibold" : "text-gray-700 hover:text-gray-900"
+                }`}
+              >
+                Lab Tests
+              </button>
+            </Link>
 
             {/* Wholesale */}
             <Link href="/wholesale">
@@ -460,9 +402,14 @@ export default function Navbar() {
           <div className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 cursor-default">
             Science
           </div>
-          <div className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 cursor-default">
-            Research
-          </div>
+          <Link href="/lab-tests">
+            <div
+              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+              onClick={() => setMobileOpen(false)}
+            >
+              Lab Tests
+            </div>
+          </Link>
           <Link href="/wholesale">
             <div
               className="px-3 py-2.5 rounded-xl text-sm font-semibold text-[#3A9E94] hover:bg-[#E8F7F6] cursor-pointer"
