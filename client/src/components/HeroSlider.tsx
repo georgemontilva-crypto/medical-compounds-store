@@ -34,8 +34,9 @@ const SLIDES = [
     sub: "Explore our catalog of cellular and neural research peptides with documented mechanisms.",
     cta: "View Catalog",
     ctaHref: "/compounds?category=cellular-research",
-    stat1: { value: "23+", label: "Compounds" },
-    stat2: { value: "5", label: "Categories" },
+    // stat1/stat2 for this slide are overridden with live counts at render time — see LIVE_STATS_SLIDE_ID below.
+    stat1: { value: "—", label: "Compounds" },
+    stat2: { value: "—", label: "Categories" },
     accent: "#C8A84B",
   },
   {
@@ -59,6 +60,11 @@ const SLIDES = [
   // Neural-Cognitive/Cellular exist), so its CTA had nothing real to link
   // to. Re-add once a real Endocrine category exists.
 ];
+
+// Slide 2's stats are compound/category counts, not qualitative badges like
+// the other slides' (≥99% Purity, COA, GMP, HPLC) — those stay hardcoded,
+// but these two are replaced with live DB counts at render time.
+const LIVE_STATS_SLIDE_ID = 2;
 
 // ── Ken Burns keyframes injected once ─────────────────────────────────────────
 const KB_STYLE = `
@@ -94,6 +100,9 @@ export default function HeroSlider() {
   const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
   const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
 
+  const { data: products = [] } = trpc.products.list.useQuery();
+  const { data: categories = [] } = trpc.categories.list.useQuery();
+
   useEffect(() => { injectKBStyle(); }, []);
 
   const goTo = useCallback((idx: number) => {
@@ -115,6 +124,11 @@ export default function HeroSlider() {
   const slide = SLIDES[current];
   const prevSlide = prev !== null ? SLIDES[prev] : null;
   const bgImage = imageBySlot[`hero_slide_${slide.id}`] ?? slide.bgImage;
+
+  const stat1 =
+    slide.id === LIVE_STATS_SLIDE_ID ? { value: String(products.length), label: "Compounds" } : slide.stat1;
+  const stat2 =
+    slide.id === LIVE_STATS_SLIDE_ID ? { value: String(categories.length), label: "Categories" } : slide.stat2;
 
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "100vh", minHeight: 560, maxHeight: 900 }}>
@@ -230,13 +244,13 @@ export default function HeroSlider() {
               style={{ animation: "fadeSlideUp 0.7s ease-out both", animationDelay: "0.55s" }}
             >
               <div>
-                <p className="text-2xl font-extrabold text-white">{slide.stat1.value}</p>
-                <p className="text-xs text-white/40 font-medium mt-0.5">{slide.stat1.label}</p>
+                <p className="text-2xl font-extrabold text-white">{stat1.value}</p>
+                <p className="text-xs text-white/40 font-medium mt-0.5">{stat1.label}</p>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div>
-                <p className="text-2xl font-extrabold text-white">{slide.stat2.value}</p>
-                <p className="text-xs text-white/40 font-medium mt-0.5">{slide.stat2.label}</p>
+                <p className="text-2xl font-extrabold text-white">{stat2.value}</p>
+                <p className="text-xs text-white/40 font-medium mt-0.5">{stat2.label}</p>
               </div>
             </div>
           </div>
