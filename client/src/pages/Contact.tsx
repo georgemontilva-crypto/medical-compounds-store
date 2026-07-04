@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import Navbar from "@/components/Navbar";
-import { Mail, MapPin, Clock, ChevronRight, Send } from "lucide-react";
+import { Mail, MapPin, ChevronRight, Send } from "lucide-react";
 import { toast } from "sonner";
 
 const SUBJECTS = [
@@ -229,12 +229,6 @@ export default function Contact() {
                   </div>
                   <span className="text-sm text-gray-700">United States</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor:'#E8F7F6'}}>
-                    <Clock size={15} style={{color:'#3A9E94'}} />
-                  </div>
-                  <span className="text-sm text-gray-700">Mon–Fri, 9am–6pm EST</span>
-                </div>
               </div>
 
               <div className="border-t border-gray-200 mt-8 pt-6">
@@ -253,9 +247,9 @@ export default function Contact() {
               <div>
                 {[
                   { label: "Browse Products", href: "/compounds" },
-                  { label: "COA Library", href: "/compounds" },
-                  { label: "Science & Quality", href: "/compounds" },
-                  { label: "FAQ", href: "/compounds" },
+                  { label: "Lab Tests / COAs", href: "/lab-tests" },
+                  { label: "Science & Quality", href: "/science/approach" },
+                  { label: "Apply for Wholesale", href: "/wholesale" },
                 ].map((link) => (
                   <Link key={link.label} href={link.href}>
                     <div

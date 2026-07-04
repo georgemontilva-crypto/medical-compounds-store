@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Plus, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { formatVariationValue } from "@/lib/utils";
 
 // ── Vial SVG placeholder (shown when a product has no uploaded image) ────────
 export function VialPlaceholder({ label, size = "10mg", color = "#a78bfa" }: { label: string; size?: string; color?: string }) {
@@ -62,7 +63,7 @@ export default function ProductCard({
     ? Math.min(...variations.map((v) => Number(v.price)))
     : Number(product.basePrice);
   const hasVariations = !!variations && variations.length > 1;
-  const mainSize = variations?.[0] ? `${variations[0].value}${variations[0].unit}` : "";
+  const mainSize = variations?.[0] ? `${formatVariationValue(variations[0].value)}${variations[0].unit}` : "";
   const catGlow = `0 0 0 2px ${catColor}40, 0 8px 24px -6px ${catColor}66`;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
@@ -72,7 +73,7 @@ export default function ProductCard({
     const variation = variations?.[0];
     onAdd({
       productId: product.id, variationId: variation?.id, productName: product.name,
-      variationLabel: variation ? `${variation.value}${variation.unit}` : undefined,
+      variationLabel: variation ? `${formatVariationValue(variation.value)}${variation.unit}` : undefined,
       unitPrice: variation ? Number(variation.price) : Number(product.basePrice),
       image: image?.url, slug: product.slug,
     });
@@ -120,7 +121,7 @@ export default function ProductCard({
         {variations && variations.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
             {variations.slice(0, 3).map((v) => (
-              <span key={v.id} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono">{v.value}{v.unit}</span>
+              <span key={v.id} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono">{formatVariationValue(v.value)}{v.unit}</span>
             ))}
           </div>
         )}

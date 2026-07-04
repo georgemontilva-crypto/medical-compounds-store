@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { formatVariationValue } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
 import {
@@ -71,7 +72,7 @@ export default function ProductDetail({ params }: Props) {
       variationId: selectedVariation?.id,
       productName: product.name,
       variationLabel: selectedVariation
-        ? `${selectedVariation.value}${selectedVariation.unit}`
+        ? `${formatVariationValue(selectedVariation.value)}${selectedVariation.unit}`
         : undefined,
       unitPrice: price,
       quantity,
@@ -210,7 +211,7 @@ export default function ProductDetail({ params }: Props) {
                           : "border-border hover:border-primary/50 hover:bg-accent"
                       }`}
                     >
-                      {v.value}{v.unit}
+                      {formatVariationValue(v.value)}{v.unit}
                       {v.stock === 0 && <span className="ml-1 text-xs">(Out)</span>}
                     </button>
                   ))}

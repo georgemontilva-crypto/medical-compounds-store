@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
+import { formatVariationValue } from "@/lib/utils";
 import {
   Plus,
   Pencil,
@@ -547,7 +548,7 @@ function ProductRow({
                           <ImageIcon size={12} className="text-muted-foreground/40" />
                         </div>
                       )}
-                      <span className="text-xs font-medium">{v.value}{v.unit}</span>
+                      <span className="text-xs font-medium">{formatVariationValue(v.value)}{v.unit}</span>
                       <span className="text-xs text-muted-foreground">${Number(v.price).toFixed(2)}</span>
                       <span className="text-xs text-muted-foreground">Stock: {v.stock}</span>
                       <label
