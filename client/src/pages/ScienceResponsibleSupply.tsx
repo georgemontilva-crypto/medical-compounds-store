@@ -15,6 +15,7 @@ import {
   PackageCheck,
   Truck,
 } from "lucide-react";
+import ReadyToStartBanner from "@/components/ReadyToStartBanner";
 
 const ORIGIN_STATS = [
   { icon: MapPin, label: "Manufacturing origin", value: "United States" },
@@ -286,6 +287,8 @@ export default function ScienceResponsibleSupply() {
           </div>
         </section>
       </Reveal>
+
+      <ReadyToStartBanner />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Reveal from "@/components/Reveal";
 import { useInView } from "@/hooks/useInView";
 import { ArrowRight, Check, FileCheck, Beaker } from "lucide-react";
+import ReadyToStartBanner from "@/components/ReadyToStartBanner";
 
 // Illustrative — the first four funnel steps aren't backed by real counts.
 // Only the last step ("Live in catalog") is real (active product count).
@@ -352,6 +353,8 @@ export default function ScienceResearchStandards() {
           </div>
         </section>
       </Reveal>
+
+      <ReadyToStartBanner />
     </div>
   );
 }

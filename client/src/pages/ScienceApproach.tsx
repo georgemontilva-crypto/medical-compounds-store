@@ -7,6 +7,7 @@ import { VialPlaceholder } from "@/components/ProductCard";
 import { useInView } from "@/hooks/useInView";
 import { ArrowRight, Check, X } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import ReadyToStartBanner from "@/components/ReadyToStartBanner";
 
 const PROCUREMENT_ROWS: Array<{ step: string; traditional: boolean; brighterDays: boolean }> = [
   { step: "Real-time pricing, no quote request", traditional: false, brighterDays: true },
@@ -308,6 +309,7 @@ export default function ScienceApproach() {
         </section>
       </Reveal>
 
+      <ReadyToStartBanner />
     </div>
   );
 }

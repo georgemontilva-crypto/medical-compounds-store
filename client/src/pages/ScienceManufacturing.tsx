@@ -6,6 +6,7 @@ import Reveal from "@/components/Reveal";
 import { VialPlaceholder } from "@/components/ProductCard";
 import { useInView } from "@/hooks/useInView";
 import { ArrowRight, Check, Layers, Link2, Beaker, PackageCheck } from "lucide-react";
+import ReadyToStartBanner from "@/components/ReadyToStartBanner";
 
 const PROCESS_STEPS = [
   { icon: Layers, title: "Resin load", description: "The first amino acid is anchored to a solid support resin." },
@@ -316,6 +317,8 @@ export default function ScienceManufacturing() {
           </div>
         </section>
       </Reveal>
+
+      <ReadyToStartBanner />
     </div>
   );
 }

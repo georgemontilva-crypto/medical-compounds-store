@@ -48,6 +48,11 @@ import ScienceApproach from "./pages/ScienceApproach";
 import ScienceManufacturing from "./pages/ScienceManufacturing";
 import ScienceResearchStandards from "./pages/ScienceResearchStandards";
 import ScienceResponsibleSupply from "./pages/ScienceResponsibleSupply";
+import FAQ from "./pages/FAQ";
+import LegalResearchUseOnly from "./pages/LegalResearchUseOnly";
+import LegalWebsiteDisclaimer from "./pages/LegalWebsiteDisclaimer";
+import LegalTermsOfService from "./pages/LegalTermsOfService";
+import LegalShippingPolicy from "./pages/LegalShippingPolicy";
 
 function PublicRoutes() {
   return (
@@ -68,6 +73,11 @@ function PublicRoutes() {
       <Route path="/science/manufacturing" component={ScienceManufacturing} />
       <Route path="/science/research-standards" component={ScienceResearchStandards} />
       <Route path="/science/responsible-supply" component={ScienceResponsibleSupply} />
+      <Route path="/faq" component={FAQ} />
+      <Route path="/legal/research-use-only" component={LegalResearchUseOnly} />
+      <Route path="/legal/website-disclaimer" component={LegalWebsiteDisclaimer} />
+      <Route path="/legal/terms-of-service" component={LegalTermsOfService} />
+      <Route path="/legal/shipping-policy" component={LegalShippingPolicy} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
