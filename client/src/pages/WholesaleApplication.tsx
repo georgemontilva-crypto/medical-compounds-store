@@ -11,19 +11,11 @@ const BENEFITS = [
   { icon: UserCheck, title: "Dedicated rep", description: "A single point of contact for orders and COAs." },
 ];
 
-const RESEARCH_DOMAINS = [
-  { value: "tissue_repair", label: "Tissue Repair" },
-  { value: "cellular", label: "Cellular" },
-  { value: "neural", label: "Neural" },
-  { value: "metabolic", label: "Metabolic" },
-  { value: "endocrine", label: "Endocrine" },
-];
-
 const VOLUME_OPTIONS = [
-  { value: "under_1000", label: "Under $1,000", detail: "per month" },
-  { value: "1000_5000", label: "$1,000 – $5,000", detail: "per month" },
-  { value: "5000_25000", label: "$5,000 – $25,000", detail: "per month" },
-  { value: "25000_plus", label: "$25,000+", detail: "per month" },
+  { value: "25k_50k", label: "$25,000 - $50,000", detail: "per month" },
+  { value: "50k_100k", label: "$50,000 - $100,000", detail: "per month" },
+  { value: "100k_500k", label: "$100,000 - $500,000", detail: "per month" },
+  { value: "over_1m", label: "Over $1,000,000", detail: "per month" },
 ];
 
 const inputCls =
@@ -35,8 +27,6 @@ type FormState = {
   workEmail: string;
   phone: string;
   roleTitle: string;
-  organization: string;
-  researchDomains: string[];
   expectedMonthlyVolume: string;
   taxExempt: boolean;
   shippingStreet: string;
@@ -52,8 +42,6 @@ const emptyForm: FormState = {
   workEmail: "",
   phone: "",
   roleTitle: "",
-  organization: "",
-  researchDomains: [],
   expectedMonthlyVolume: "",
   taxExempt: false,
   shippingStreet: "",
@@ -77,15 +65,6 @@ export default function WholesaleApplication() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function toggleDomain(value: string) {
-    setForm((f) => ({
-      ...f,
-      researchDomains: f.researchDomains.includes(value)
-        ? f.researchDomains.filter((d) => d !== value)
-        : [...f.researchDomains, value],
-    }));
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (
@@ -93,7 +72,6 @@ export default function WholesaleApplication() {
       !form.workEmail ||
       !form.phone ||
       !form.roleTitle ||
-      !form.organization ||
       !form.expectedMonthlyVolume ||
       !form.shippingStreet ||
       !form.shippingCity ||
@@ -108,9 +86,7 @@ export default function WholesaleApplication() {
       workEmail: form.workEmail,
       phone: form.phone,
       roleTitle: form.roleTitle,
-      organization: form.organization,
-      researchDomains: form.researchDomains,
-      expectedMonthlyVolume: form.expectedMonthlyVolume as "under_1000" | "1000_5000" | "5000_25000" | "25000_plus",
+      expectedMonthlyVolume: form.expectedMonthlyVolume as "25k_50k" | "50k_100k" | "100k_500k" | "over_1m",
       taxExempt: form.taxExempt,
       shippingStreet: form.shippingStreet,
       shippingCity: form.shippingCity,
@@ -175,16 +151,16 @@ export default function WholesaleApplication() {
                   <input className={inputCls} value={form.fullName} onChange={(e) => set("fullName", e.target.value)} placeholder="Dr. Jane Smith" />
                 </div>
                 <div>
-                  <label className={labelCls}>Work email <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>Email <span className="text-[#3A9E94]">*</span></label>
                   <input type="email" className={inputCls} value={form.workEmail} onChange={(e) => set("workEmail", e.target.value)} placeholder="jane@research-lab.edu" />
                 </div>
                 <div>
-                  <label className={labelCls}>Phone <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>Phone Number <span className="text-[#3A9E94]">*</span></label>
                   <input type="tel" className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(555) 555-5555" />
                 </div>
                 <div>
-                  <label className={labelCls}>Role / title <span className="text-[#3A9E94]">*</span></label>
-                  <input className={inputCls} value={form.roleTitle} onChange={(e) => set("roleTitle", e.target.value)} placeholder="Lab Manager" />
+                  <label className={labelCls}>Company Name <span className="text-[#3A9E94]">*</span></label>
+                  <input className={inputCls} value={form.roleTitle} onChange={(e) => set("roleTitle", e.target.value)} placeholder="Acme Research Labs" />
                 </div>
               </div>
             </div>
@@ -192,34 +168,6 @@ export default function WholesaleApplication() {
             {/* Your Research */}
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">Your Research</h2>
-              <div className="mb-4">
-                <label className={labelCls}>Organization <span className="text-[#3A9E94]">*</span></label>
-                <input className={inputCls} value={form.organization} onChange={(e) => set("organization", e.target.value)} placeholder="University / Lab / Company" />
-              </div>
-
-              <div className="mb-4">
-                <label className={labelCls}>Research domains</label>
-                <div className="flex flex-wrap gap-2">
-                  {RESEARCH_DOMAINS.map((d) => {
-                    const active = form.researchDomains.includes(d.value);
-                    return (
-                      <button
-                        key={d.value}
-                        type="button"
-                        onClick={() => toggleDomain(d.value)}
-                        className={`text-xs font-semibold px-4 py-2 rounded-full border transition-colors ${
-                          active
-                            ? "bg-[#3A9E94] border-[#3A9E94] text-white"
-                            : "bg-white border-gray-200 text-gray-600 hover:border-[#7ECDC4]"
-                        }`}
-                      >
-                        {d.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               <div className="mb-4">
                 <label className={labelCls}>Expected monthly volume <span className="text-[#3A9E94]">*</span></label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -285,17 +285,22 @@ export const wholesaleApplications = mysqlTable("wholesale_applications", {
   fullName: varchar("fullName", { length: 150 }).notNull(),
   workEmail: varchar("workEmail", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 50 }).notNull(),
+  // Reused as "Company Name" in the form/UI — kept as roleTitle at the
+  // column/API level to avoid an extra RENAME COLUMN migration.
   roleTitle: varchar("roleTitle", { length: 150 }).notNull(),
-  organization: varchar("organization", { length: 200 }).notNull(),
-  // Comma-separated slugs (e.g. "tissue_repair,cellular,neural") — simpler
-  // to read/write with Drizzle than a json() column given no existing
-  // precedent for that type in this schema, and it's just a multi-select.
+  // No longer collected on the form (was "Organization / Institution").
+  // Left in place, nullable, rather than dropped — avoids a DROP COLUMN
+  // migration for a field that may still hold historical data later.
+  organization: varchar("organization", { length: 200 }),
+  // No longer collected on the form (was the research-domains multi-select).
+  // Comma-separated slugs, already nullable — left in place for the same
+  // reason as organization above.
   researchDomains: varchar("researchDomains", { length: 300 }),
   expectedMonthlyVolume: mysqlEnum("expectedMonthlyVolume", [
-    "under_1000",
-    "1000_5000",
-    "5000_25000",
-    "25000_plus",
+    "25k_50k",
+    "50k_100k",
+    "100k_500k",
+    "over_1m",
   ]).notNull(),
   taxExempt: boolean("taxExempt").default(false).notNull(),
   shippingStreet: varchar("shippingStreet", { length: 255 }).notNull(),

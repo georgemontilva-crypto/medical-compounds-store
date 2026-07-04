@@ -106,6 +106,13 @@ const optionalTrimmedStringNullable = z
     return v.trim() !== "" ? v : null;
   });
 
+const WHOLESALE_VOLUME_LABELS: Record<string, string> = {
+  "25k_50k": "$25,000 - $50,000",
+  "50k_100k": "$50,000 - $100,000",
+  "100k_500k": "$100,000 - $500,000",
+  over_1m: "Over $1,000,000",
+};
+
 // ─── JWT helpers ──────────────────────────────────────────────────────────────
 // Sign a session token in the SAME format the SDK.verifySession expects:
 // { openId, appId, name } — this allows authenticateRequest to recognize email-auth users
@@ -834,9 +841,7 @@ export const appRouter = router({
           workEmail: z.string().email().max(255),
           phone: z.string().min(1).max(50),
           roleTitle: z.string().min(1).max(150),
-          organization: z.string().min(1).max(200),
-          researchDomains: z.array(z.string()).optional(),
-          expectedMonthlyVolume: z.enum(["under_1000", "1000_5000", "5000_25000", "25000_plus"]),
+          expectedMonthlyVolume: z.enum(["25k_50k", "50k_100k", "100k_500k", "over_1m"]),
           taxExempt: z.boolean().optional(),
           shippingStreet: z.string().min(1).max(255),
           shippingCity: z.string().min(1).max(150),
@@ -852,8 +857,6 @@ export const appRouter = router({
           workEmail: input.workEmail,
           phone: input.phone,
           roleTitle: input.roleTitle,
-          organization: input.organization,
-          researchDomains: input.researchDomains?.join(",") || null,
           expectedMonthlyVolume: input.expectedMonthlyVolume,
           taxExempt: input.taxExempt ?? false,
           shippingStreet: input.shippingStreet,
@@ -865,7 +868,7 @@ export const appRouter = router({
         });
 
         const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-        const domainsLabel = input.researchDomains?.length ? input.researchDomains.join(", ") : "—";
+        const volumeLabel = WHOLESALE_VOLUME_LABELS[input.expectedMonthlyVolume];
 
         await Promise.all([
           sendEmail({
@@ -874,25 +877,23 @@ export const appRouter = router({
             html: `
               <p>Hi ${escapeHtml(input.fullName)},</p>
               <p>Thanks for applying for wholesale access at Brighter Days Labs. Our team is reviewing your application and will follow up at this address within 1-2 business days.</p>
-              <p><strong>Organization:</strong> ${escapeHtml(input.organization)}<br/>
-              <strong>Expected monthly volume:</strong> ${escapeHtml(input.expectedMonthlyVolume)}</p>
+              <p><strong>Company:</strong> ${escapeHtml(input.roleTitle)}<br/>
+              <strong>Expected monthly volume:</strong> ${escapeHtml(volumeLabel)}</p>
               <p>— Brighter Days Labs</p>
             `,
           }),
           adminEmail
             ? sendEmail({
                 to: adminEmail,
-                subject: `New wholesale application: ${input.organization}`,
+                subject: `New wholesale application: ${input.roleTitle}`,
                 html: `
                   <p>New wholesale application received.</p>
                   <ul>
                     <li><strong>Name:</strong> ${escapeHtml(input.fullName)}</li>
                     <li><strong>Email:</strong> ${escapeHtml(input.workEmail)}</li>
-                    <li><strong>Phone:</strong> ${escapeHtml(input.phone)}</li>
-                    <li><strong>Role:</strong> ${escapeHtml(input.roleTitle)}</li>
-                    <li><strong>Organization:</strong> ${escapeHtml(input.organization)}</li>
-                    <li><strong>Research domains:</strong> ${escapeHtml(domainsLabel)}</li>
-                    <li><strong>Expected monthly volume:</strong> ${escapeHtml(input.expectedMonthlyVolume)}</li>
+                    <li><strong>Phone Number:</strong> ${escapeHtml(input.phone)}</li>
+                    <li><strong>Company Name:</strong> ${escapeHtml(input.roleTitle)}</li>
+                    <li><strong>Expected monthly volume:</strong> ${escapeHtml(volumeLabel)}</li>
                     <li><strong>Tax exempt:</strong> ${input.taxExempt ? "Yes" : "No"}</li>
                     <li><strong>Shipping:</strong> ${escapeHtml(input.shippingStreet)}, ${escapeHtml(input.shippingCity)}, ${escapeHtml(input.shippingState)} ${escapeHtml(input.shippingZip)}</li>
                     <li><strong>Notes:</strong> ${input.notes ? escapeHtml(input.notes) : "—"}</li>

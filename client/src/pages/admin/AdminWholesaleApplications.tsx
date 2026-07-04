@@ -19,6 +19,13 @@ const STATUS_BADGE: Record<string, string> = {
   rejected: "bg-red-50 text-red-500",
 };
 
+const VOLUME_LABELS: Record<string, string> = {
+  "25k_50k": "$25,000 - $50,000",
+  "50k_100k": "$50,000 - $100,000",
+  "100k_500k": "$100,000 - $500,000",
+  over_1m: "Over $1,000,000",
+};
+
 export default function AdminWholesaleApplications() {
   const utils = trpc.useUtils();
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -72,7 +79,7 @@ export default function AdminWholesaleApplications() {
                 <thead>
                   <tr className="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
                     <th className="px-5 py-3">Name</th>
-                    <th className="px-5 py-3">Organization</th>
+                    <th className="px-5 py-3">Company</th>
                     <th className="px-5 py-3">Email</th>
                     <th className="px-5 py-3">Expected Volume</th>
                     <th className="px-5 py-3">Date</th>
@@ -84,10 +91,10 @@ export default function AdminWholesaleApplications() {
                   {applications.map((app) => (
                     <tr key={app.id} className="border-b border-gray-50 last:border-0">
                       <td className="px-5 py-3 font-semibold text-gray-900 whitespace-nowrap">{app.fullName}</td>
-                      <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{app.organization}</td>
+                      <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{app.roleTitle}</td>
                       <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{app.workEmail}</td>
                       <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
-                        {app.expectedMonthlyVolume.replace(/_/g, " ")}
+                        {VOLUME_LABELS[app.expectedMonthlyVolume] ?? app.expectedMonthlyVolume}
                       </td>
                       <td className="px-5 py-3 text-gray-400 whitespace-nowrap">
                         {new Date(app.createdAt).toLocaleDateString()}

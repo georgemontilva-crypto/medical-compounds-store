@@ -1,0 +1,2 @@
+ALTER TABLE `wholesale_applications` MODIFY COLUMN `organization` varchar(200);--> statement-breakpoint
+ALTER TABLE `wholesale_applications` MODIFY COLUMN `expectedMonthlyVolume` enum('25k_50k','50k_100k','100k_500k','over_1m') NOT NULL;
