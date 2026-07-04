@@ -44,7 +44,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-dvh hex-cream flex items-center justify-center p-4">
+    <div className="min-h-dvh hex-cream flex items-center justify-center p-4" style={{ minHeight: "100dvh" }}>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

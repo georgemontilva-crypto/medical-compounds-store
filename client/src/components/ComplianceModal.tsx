@@ -33,8 +33,7 @@ export default function ComplianceModal() {
       <div className="absolute inset-0 bg-black/70" onClick={handleDecline} />
 
       <div className="relative z-10 w-full max-w-lg bg-white rounded-3xl border border-gray-100 shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-extrabold text-gray-950 mb-4">Before You Continue</h2>
-        <p className="text-sm text-gray-500 leading-relaxed mb-4">
+        <p className="text-sm font-bold text-gray-950 leading-relaxed mb-4">
           Before proceeding to checkout, please confirm the following:
         </p>
 
