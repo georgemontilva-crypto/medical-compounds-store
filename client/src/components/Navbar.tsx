@@ -38,7 +38,7 @@ const SCIENCE_ITEMS = [
   { icon: Target, label: "Approach", desc: "How we organize compounds...", href: "/science/approach" },
   { icon: Factory, label: "Manufacturing", desc: "US-based cGMP-aligned...", href: "/science/manufacturing" },
   { icon: ShieldCheck, label: "Research Standards", desc: "Compound selection...", href: "/science/research-standards" },
-  { icon: Leaf, label: "Responsible Supply", desc: "Manufacturing discipline an..." },
+  { icon: Leaf, label: "Responsible Supply", desc: "Manufacturing discipline an...", href: "/science/responsible-supply" },
 ];
 
 const SCIENCE_REFS = [

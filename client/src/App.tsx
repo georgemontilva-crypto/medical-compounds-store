@@ -41,6 +41,7 @@ import AdminWholesaleApplications from "./pages/admin/AdminWholesaleApplications
 import ScienceApproach from "./pages/ScienceApproach";
 import ScienceManufacturing from "./pages/ScienceManufacturing";
 import ScienceResearchStandards from "./pages/ScienceResearchStandards";
+import ScienceResponsibleSupply from "./pages/ScienceResponsibleSupply";
 
 function Router() {
   return (
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/science/approach" component={ScienceApproach} />
       <Route path="/science/manufacturing" component={ScienceManufacturing} />
       <Route path="/science/research-standards" component={ScienceResearchStandards} />
+      <Route path="/science/responsible-supply" component={ScienceResponsibleSupply} />
 
       {/* Admin routes */}
       <Route path="/admin" component={AdminDashboard} />

@@ -21,6 +21,7 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "approach_documentation_image", label: "Documentation trust signal image", section: "Página: Approach", recommended: "661×281 (landscape, ~2.35:1), product/vial or COA-style photo. Falls back to the vial mockup if empty." },
   { slotKey: "manufacturing_hero_image", label: "Hero image", section: "Página: Manufacturing", recommended: "Portrait or square, ≥900×900, lab/manufacturing photo" },
   { slotKey: "research_standards_hero_image", label: "Hero image", section: "Página: Research Standards", recommended: "Portrait or square, ≥900×900, documentation/lab photo" },
+  { slotKey: "responsible_supply_hero_image", label: "Hero image", section: "Página: Responsible Supply", recommended: "Portrait or square, ≥900×900, packaging/facility photo" },
 ];
 
 // Pages whose images live in their own dedicated admin screen/table instead
@@ -157,6 +158,7 @@ export default function AdminSiteImages() {
     "Página: Approach",
     "Página: Manufacturing",
     "Página: Research Standards",
+    "Página: Responsible Supply",
   ];
 
   return (
