@@ -283,15 +283,6 @@ export default function ScienceResponsibleSupply() {
               claim clinical indications, and we don't cut corners on documentation to look like one. What we sell
               is a well-documented compound and the paper trail behind it — nothing more, nothing dressed up.
             </p>
-            <div className="border-t border-white/10 pt-8">
-              <p className="text-xs font-semibold tracking-widest uppercase text-white/40 mb-3">
-                Research Use Only
-              </p>
-              <p className="text-white/50 text-sm leading-relaxed">
-                For research purposes only. Not for human consumption. All compounds are intended for laboratory
-                use.
-              </p>
-            </div>
           </div>
         </section>
       </Reveal>

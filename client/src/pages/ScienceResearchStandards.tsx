@@ -349,15 +349,6 @@ export default function ScienceResearchStandards() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-white/10 pt-8 text-center">
-              <p className="text-xs font-semibold tracking-widest uppercase text-white/40 mb-3">
-                Research Use Only
-              </p>
-              <p className="text-white/50 text-sm leading-relaxed">
-                For research purposes only. Not for human consumption. All compounds are intended for laboratory
-                use.
-              </p>
-            </div>
           </div>
         </section>
       </Reveal>

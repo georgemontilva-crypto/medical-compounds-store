@@ -248,6 +248,18 @@ export default function ProductDetail({ params }: Props) {
               </div>
             </div>
 
+            {/* Research use disclaimer */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5">
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                FOR RESEARCH USE ONLY. This product is intended exclusively for laboratory research and analytical
+                purposes by qualified purchasers. Not for human consumption. Not for animal or veterinary use. Not
+                for therapeutic, diagnostic, clinical, cosmetic, wellness, performance-enhancement, household, or
+                personal use. Not approved by the FDA for any medical use. Brighter Days Labs does not provide
+                dosage, administration, reconstitution, dilution, medical, veterinary, or treatment guidance.
+                Purchaser assumes all responsibility for lawful use, storage, handling, and disposal.
+              </p>
+            </div>
+
             {/* Add to Cart */}
             <button
               onClick={handleAddToCart}

@@ -22,9 +22,6 @@ export default function Footer() {
               </div>
             </div>
           )}
-          <p className="text-xs text-gray-600 text-center">
-            For research purposes only. Not for human consumption. All compounds are intended for laboratory use.
-          </p>
           <p className="text-xs text-gray-600">{footerCopyrightSetting?.value ?? "© 2026 Brighter Days Labs"}</p>
         </div>
 

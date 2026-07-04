@@ -308,17 +308,6 @@ export default function ScienceApproach() {
         </section>
       </Reveal>
 
-      {/* ── CIERRE · RESEARCH USE ONLY ───────────────────────────────────── */}
-      <Reveal>
-        <section className="bg-[#0a0a0f] py-16">
-          <div className="container max-w-2xl text-center">
-            <p className="text-xs font-semibold tracking-widest uppercase text-white/40 mb-3">Research Use Only</p>
-            <p className="text-white/50 text-sm leading-relaxed">
-              For research purposes only. Not for human consumption. All compounds are intended for laboratory use.
-            </p>
-          </div>
-        </section>
-      </Reveal>
     </div>
   );
 }
