@@ -8,10 +8,12 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ComplianceProvider } from "./contexts/ComplianceContext";
 import CartDrawer from "./components/CartDrawer";
 import FloatingCartButton from "./components/FloatingCartButton";
 import LoadingScreen from "./components/LoadingScreen";
 import AgeVerificationModal from "./components/AgeVerificationModal";
+import ComplianceModal from "./components/ComplianceModal";
 import Footer from "./components/Footer";
 import { initLenis } from "@/lib/lenis";
 import "lenis/dist/lenis.css";
@@ -121,12 +123,15 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <CartProvider>
-              <AgeVerificationModal />
-              <LoadingScreen />
-              <Toaster position="top-right" />
-              <Router />
-              <CartDrawer />
-              <FloatingCartButton />
+              <ComplianceProvider>
+                <AgeVerificationModal />
+                <LoadingScreen />
+                <Toaster position="top-right" />
+                <Router />
+                <CartDrawer />
+                <FloatingCartButton />
+                <ComplianceModal />
+              </ComplianceProvider>
             </CartProvider>
           </AuthProvider>
         </TooltipProvider>

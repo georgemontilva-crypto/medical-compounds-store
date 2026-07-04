@@ -1,10 +1,11 @@
 import { useCart } from "@/contexts/CartContext";
+import { useCompliance } from "@/contexts/ComplianceContext";
 import { X, Minus, Plus, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
-import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, updateQuantity, removeItem, total, itemCount } = useCart();
+  const { requestCheckout } = useCompliance();
 
   return (
     <AnimatePresence>
@@ -150,12 +151,16 @@ export default function CartDrawer() {
                 <p className="text-xs text-muted-foreground">
                   Shipping and taxes calculated at checkout
                 </p>
-                <Link href="/checkout" onClick={closeCart}>
-                  <button className="lab-btn-primary w-full">
-                    Proceed to Checkout
-                    <ArrowRight size={16} />
-                  </button>
-                </Link>
+                <button
+                  onClick={() => {
+                    closeCart();
+                    requestCheckout();
+                  }}
+                  className="lab-btn-primary w-full"
+                >
+                  Proceed to Checkout
+                  <ArrowRight size={16} />
+                </button>
                 <button
                   onClick={closeCart}
                   className="lab-btn-secondary w-full text-sm"

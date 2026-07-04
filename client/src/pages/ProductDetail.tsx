@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatVariationValue } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
+import { useCompliance } from "@/contexts/ComplianceContext";
 import { Link } from "wouter";
 import {
   FlaskConical,
@@ -35,7 +36,8 @@ export default function ProductDetail({ params }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [added, setAdded] = useState(false);
-  const { addItem } = useCart();
+  const { addItem, closeCart } = useCart();
+  const { requestCheckout } = useCompliance();
 
   const category = categories?.find((c) => c.id === product?.categoryId);
   const selectedVariation =
@@ -61,11 +63,11 @@ export default function ProductDetail({ params }: Props) {
     setActiveImage(0);
   }, [selectedVariation?.id]);
 
-  const handleAddToCart = () => {
-    if (!product) return;
+  const addSelectionToCart = () => {
+    if (!product) return false;
     if (variations && variations.length > 1 && !selectedVariationId) {
       toast.error("Please select a variation");
-      return;
+      return false;
     }
     addItem({
       productId: product.id,
@@ -79,8 +81,19 @@ export default function ProductDetail({ params }: Props) {
       image: displayImages[0]?.url,
       slug: product.slug,
     });
+    return true;
+  };
+
+  const handleAddToCart = () => {
+    if (!addSelectionToCart()) return;
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handleBuyNow = () => {
+    if (!addSelectionToCart()) return;
+    closeCart();
+    requestCheckout();
   };
 
   if (isLoading) {
@@ -259,6 +272,15 @@ export default function ProductDetail({ params }: Props) {
                 Purchaser assumes all responsibility for lawful use, storage, handling, and disposal.
               </p>
             </div>
+
+            {/* Buy Now */}
+            <button
+              onClick={handleBuyNow}
+              disabled={!inStock}
+              className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:text-[#3A9E94] hover:border-[#7ECDC4] hover:bg-[#E8F7F6]/40 text-sm font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Buy Now
+            </button>
 
             {/* Add to Cart */}
             <button
