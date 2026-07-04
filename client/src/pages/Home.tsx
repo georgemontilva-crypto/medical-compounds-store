@@ -1061,7 +1061,7 @@ export default function Home() {
               { value: String(allProducts.length), label: "Research Compounds" },
               { value: "≥99%", label: "Purity Guaranteed" },
               { value: String(allCategories.length), label: "Research Categories" },
-              { value: "COA", label: "Every Batch Tested" },
+              { value: "Lab Tested", label: "Every Batch Verified" },
             ].map((stat) => (
               <div key={stat.label}>
                 <p className="text-2xl font-extrabold text-[#7ECDC4] mb-1">{stat.value}</p>

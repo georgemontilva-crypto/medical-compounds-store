@@ -29,33 +29,47 @@ function CategoryDonut({ categories, total }: { categories: Array<{ name: string
   const data = categories.filter((c) => c.count > 0);
 
   return (
-    <div ref={ref} className="relative w-full max-w-[320px] mx-auto aspect-square">
-      {inView && (
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="count"
-              nameKey="name"
-              innerRadius="58%"
-              outerRadius="88%"
-              paddingAngle={2}
-              startAngle={90}
-              endAngle={450}
-              isAnimationActive
-              animationDuration={900}
-              animationEasing="ease-out"
-            >
-              {data.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} stroke="none" />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-      )}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-4xl font-extrabold text-gray-950">{total}</span>
-        <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 mt-1">Compounds</span>
+    <div>
+      <div ref={ref} className="relative w-full max-w-[320px] mx-auto aspect-square">
+        {inView && (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="count"
+                nameKey="name"
+                innerRadius="58%"
+                outerRadius="88%"
+                paddingAngle={2}
+                startAngle={90}
+                endAngle={450}
+                isAnimationActive
+                animationDuration={900}
+                animationEasing="ease-out"
+              >
+                {data.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} stroke="none" />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-4xl font-extrabold text-gray-950">{total}</span>
+          <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 mt-1">Compounds</span>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-col gap-2.5 max-w-[320px] mx-auto mt-6">
+        {data.map((cat) => (
+          <div key={cat.name} className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+            <span className="text-sm text-gray-600">
+              {cat.name} <span className="text-gray-400">({cat.count})</span>
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
