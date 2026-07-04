@@ -9,6 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import CartDrawer from "./components/CartDrawer";
+import FloatingCartButton from "./components/FloatingCartButton";
 import LoadingScreen from "./components/LoadingScreen";
 import AgeVerificationModal from "./components/AgeVerificationModal";
 import { initLenis } from "@/lib/lenis";
@@ -113,6 +114,7 @@ function App() {
               <Toaster position="top-right" />
               <Router />
               <CartDrawer />
+              <FloatingCartButton />
             </CartProvider>
           </AuthProvider>
         </TooltipProvider>
