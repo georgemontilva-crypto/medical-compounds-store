@@ -15,7 +15,6 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "hero_slide_1", label: "Home — Hero Slider, slide 1 (Tissue Repair)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_2", label: "Home — Hero Slider, slide 2 (Cellular & Neural)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_3", label: "Home — Hero Slider, slide 3 (Metabolic)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
-  { slotKey: "hero_slide_4", label: "Home — Hero Slider, slide 4 (Endocrine)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "home_lab_banner", label: "Home — Lab Quality Banner", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1600×500, wide banner" },
   { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home — Hero & Secciones", recommended: "≥900×900, square to slightly portrait" },
   { slotKey: "approach_documentation_image", label: "Documentation trust signal image", section: "Página: Approach", recommended: "661×281 (landscape, ~2.35:1), product/vial or COA-style photo. Falls back to the vial mockup if empty." },

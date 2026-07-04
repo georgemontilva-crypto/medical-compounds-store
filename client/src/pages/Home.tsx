@@ -377,7 +377,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
               ))}
             </div>
           )}
-          <Link href={`/compounds?category=${category.id}`}>
+          <Link href={`/compounds?category=${category.slug}`}>
             <button
               className="inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-xl text-[#0a0a0f] transition-transform active:scale-[0.97]"
               style={{ backgroundColor: accent }}
@@ -420,7 +420,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
               {category.tagline && (
                 <p className="text-[11px] text-gray-400 mb-3 leading-relaxed line-clamp-2">{category.tagline}</p>
               )}
-              <Link href={`/compounds?category=${category.id}`}>
+              <Link href={`/compounds?category=${category.slug}`}>
                 <button
                   className="text-xs font-bold tracking-wide px-4 py-2 rounded-lg transition-transform active:scale-[0.97]"
                   style={{ backgroundColor: accent, color: "#0a0a0f" }}

@@ -33,7 +33,7 @@ const SLIDES = [
     headline: "Cellular Signaling\nCompounds",
     sub: "Explore our catalog of cellular and neural research peptides with documented mechanisms.",
     cta: "View Catalog",
-    ctaHref: "/compounds?category=Cellular",
+    ctaHref: "/compounds?category=cellular-research",
     stat1: { value: "23+", label: "Compounds" },
     stat2: { value: "5", label: "Categories" },
     accent: "#C8A84B",
@@ -49,27 +49,15 @@ const SLIDES = [
     headline: "Metabolic Research\nGrade Compounds",
     sub: "NAD+, MOTS-C and more — compounds studied for their role in cellular energy and longevity pathways.",
     cta: "Metabolic Compounds",
-    ctaHref: "/compounds?category=Metabolic",
+    ctaHref: "/compounds?category=metabolic-research",
     stat1: { value: "GMP", label: "Compliant" },
     stat2: { value: "HPLC", label: "Verified" },
     accent: "#5BB8AE",
   },
-  {
-    id: 4,
-    bgImage: "/manus-storage/lab-vials_614fc4e8.jpg",
-    gradient: "from-[#1a1408] via-[#241a06] to-[#1a1005]",
-    overlay: "bg-[#1a1408]/65",
-    badge: "Endocrine Research · Growth Peptides",
-    badgeColor: "bg-[#B8943A]/20 border-[#B8943A]/40 text-[#C8A84B]",
-    tag: "04 · ENDOCRINE",
-    headline: "Endocrine & Growth\nResearch Peptides",
-    sub: "Sermorelin, Tesamorelin, CJC-1295 — GHRH analogues and growth-related research compounds.",
-    cta: "Endocrine Compounds",
-    ctaHref: "/compounds?category=Endocrine",
-    stat1: { value: "US-Based", label: "Manufacturing" },
-    stat2: { value: "3rd Party", label: "Tested" },
-    accent: "#C8A84B",
-  },
+  // Slide 4 (Endocrine — Sermorelin/Tesamorelin/CJC-1295) removed: there's no
+  // real "Endocrine" category in the catalog (only Tissue/Metabolic/
+  // Neural-Cognitive/Cellular exist), so its CTA had nothing real to link
+  // to. Re-add once a real Endocrine category exists.
 ];
 
 // ── Ken Burns keyframes injected once ─────────────────────────────────────────

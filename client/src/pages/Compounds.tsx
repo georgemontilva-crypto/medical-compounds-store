@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { Link, useSearch } from "wouter";
@@ -117,10 +117,13 @@ function StaticCard({ product, onAdd, added }: {
 export default function Compounds() {
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
-  const initialCategory = params.get("category") ? Number(params.get("category")) : undefined;
+  // CategoryShowcase/Navbar/HeroSlider all link here with ?category=<slug>
+  // (stable and URL-friendly, unlike a numeric id or a display name that
+  // can drift out of sync with the real catalog).
+  const categorySlug = params.get("category") || undefined;
 
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCategory);
+  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
   const [selectedStaticCat, setSelectedStaticCat] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
@@ -129,6 +132,17 @@ export default function Compounds() {
   const { addItem } = useCart();
 
   const { data: categories = [] } = trpc.categories.list.useQuery();
+
+  // Resolve the URL slug to a real category id once categories have
+  // loaded. If the slug doesn't match any real category (e.g. a stale
+  // link), selectedCategory just stays undefined and the page shows the
+  // full catalog instead of silently rendering empty.
+  useEffect(() => {
+    if (!categorySlug || categories.length === 0) return;
+    const match = categories.find((c) => c.slug === categorySlug);
+    if (match) setSelectedCategory(match.id);
+  }, [categorySlug, categories]);
+
   const { data: dbProducts = [], isLoading } = trpc.products.list.useQuery({
     categoryId: selectedCategory, search: search || undefined, sortBy,
   });

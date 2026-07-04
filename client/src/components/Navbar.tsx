@@ -20,30 +20,11 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
-// ── Category colors ────────────────────────────────────────────────────────────
-const CAT_COLORS: Record<string, string> = {
-  Tissue: "#7c3aed",
-  Cellular: "#0ea5e9",
-  Neural: "#6366f1",
-  Metabolic: "#10b981",
-  Endocrine: "#f59e0b",
-  Combined: "#8b5cf6",
-};
-
 const SCIENCE_ITEMS = [
   { icon: Target, label: "Approach", desc: "How we organize compounds...", href: "/science/approach" },
   { icon: Factory, label: "Manufacturing", desc: "US-based cGMP-aligned...", href: "/science/manufacturing" },
   { icon: ShieldCheck, label: "Research Standards", desc: "Compound selection...", href: "/science/research-standards" },
   { icon: Leaf, label: "Responsible Supply", desc: "Manufacturing discipline an...", href: "/science/responsible-supply" },
-];
-
-const SCIENCE_REFS = [
-  { label: "Tissue Research", color: CAT_COLORS.Tissue },
-  { label: "Cellular Research", color: CAT_COLORS.Cellular },
-  { label: "Neural Research", color: CAT_COLORS.Neural },
-  { label: "Metabolic Research", color: CAT_COLORS.Metabolic },
-  { label: "Endocrine Research", color: CAT_COLORS.Endocrine },
-  { label: "Combined Research", color: CAT_COLORS.Combined },
 ];
 
 // ── Dropdown wrapper ───────────────────────────────────────────────────────────
@@ -131,6 +112,12 @@ export default function Navbar() {
   const { itemCount, openCart } = useCart();
   const { user, isAuthenticated, isAdmin } = useAuthContext();
   const [location] = useLocation();
+  // Real categories for the Shop/Science dropdowns' "Reference" links —
+  // replaces the old hardcoded SCIENCE_REFS list, which drifted out of sync
+  // with the real catalog (it had 6 static entries incl. Endocrine/Combined,
+  // which don't exist as real categories, and slugified names that didn't
+  // match real slugs like "neural-cognitive-rsearch").
+  const { data: realCategories = [] } = trpc.categories.list.useQuery();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileScienceOpen, setMobileScienceOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -188,18 +175,15 @@ export default function Navbar() {
                   Reference
                 </p>
                 <div className="grid grid-cols-2 gap-0.5">
-                  {SCIENCE_REFS.map((cat) => (
-                    <Link
-                      key={cat.label}
-                      href={`/compounds?category=${encodeURIComponent(cat.label.replace(" Research", ""))}`}
-                    >
+                  {realCategories.map((cat) => (
+                    <Link key={cat.id} href={`/compounds?category=${cat.slug}`}>
                       <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: cat.color }}
+                          style={{ backgroundColor: cat.color || "#6b7280" }}
                         />
                         <span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium">
-                          {cat.label}
+                          {cat.name}
                         </span>
                       </div>
                     </Link>
@@ -250,18 +234,15 @@ export default function Navbar() {
                   <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-3 px-1">
                     Reference
                   </p>
-                  {SCIENCE_REFS.map((ref) => (
-                    <Link
-                      key={ref.label}
-                      href={`/compounds?category=${encodeURIComponent(ref.label.replace(" Research", ""))}`}
-                    >
+                  {realCategories.map((cat) => (
+                    <Link key={cat.id} href={`/compounds?category=${cat.slug}`}>
                       <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: ref.color }}
+                          style={{ backgroundColor: cat.color || "#6b7280" }}
                         />
                         <span className="text-sm text-gray-600 group-hover:text-gray-900">
-                          {ref.label}
+                          {cat.name}
                         </span>
                       </div>
                     </Link>
