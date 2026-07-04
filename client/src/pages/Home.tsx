@@ -485,6 +485,21 @@ function CategoryShowcase() {
     let rafId = 0;
     const MAX_STACK_DEPTH = 3;
 
+    // stickyHeight/scrollable only change on resize (or orientation change),
+    // never on scroll — cached here instead of recomputed every frame inside
+    // measure(). The only per-frame DOM read left is getBoundingClientRect()
+    // for the section's live position, which is the one value that actually
+    // changes as the user scrolls.
+    let stickyHeight = 0;
+    let scrollable = 0;
+
+    function recomputeMeasurements() {
+      const el = sectionRef.current;
+      if (!el) return;
+      stickyHeight = window.innerHeight - NAVBAR_HEIGHT;
+      scrollable = el.offsetHeight - stickyHeight;
+    }
+
     function applyTransforms(progress: number) {
       const activeIndex = progress * (n - 1);
       if (isDesktop) {
@@ -516,22 +531,26 @@ function CategoryShowcase() {
     function measure() {
       rafId = 0;
       const el = sectionRef.current;
-      if (!el) return;
+      if (!el || scrollable <= 0) return;
       // The sticky child is pinned at top: NAVBAR_HEIGHT with height
       // calc(100vh - NAVBAR_HEIGHT), so the scrollable pin range is the
       // section height minus that (smaller) sticky height — not the full
       // viewport height as it would be for a plain top:0/h-screen sticky.
-      const stickyHeight = window.innerHeight - NAVBAR_HEIGHT;
-      const scrollable = el.offsetHeight - stickyHeight;
-      if (scrollable <= 0) return;
       const raw = (NAVBAR_HEIGHT - el.getBoundingClientRect().top) / scrollable;
       applyTransforms(Math.min(1, Math.max(0, raw)));
     }
 
-    function onScroll() {
+    function onNativeScroll() {
       if (rafId) return;
       rafId = requestAnimationFrame(measure);
     }
+
+    function onResize() {
+      recomputeMeasurements();
+      measure();
+    }
+
+    recomputeMeasurements();
 
     // Lenis drives the real document scroll position itself (not a virtual
     // transform), so getBoundingClientRect() above stays accurate — but the
@@ -540,21 +559,29 @@ function CategoryShowcase() {
     // not assuming native window scroll events still fire the same way
     // during smoothing. Falls back to the native listener if Lenis hasn't
     // initialized yet for some reason.
+    //
+    // Lenis's own 'scroll' event already fires once per its internal rAF
+    // tick (autoRaf: true), so measure() is called directly here — wrapping
+    // it in another requestAnimationFrame just deferred everything to the
+    // NEXT frame for no throttling benefit, adding ~16ms of avoidable lag on
+    // every scroll update. The rAF guard is kept only for the native
+    // fallback, where it's still needed since native scroll events can fire
+    // more than once per frame.
     const lenis = getLenis();
     if (lenis) {
-      lenis.on("scroll", onScroll);
+      lenis.on("scroll", measure);
     } else {
-      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("scroll", onNativeScroll, { passive: true });
     }
-    window.addEventListener("resize", onScroll);
-    onScroll();
+    window.addEventListener("resize", onResize);
+    measure();
     return () => {
       if (lenis) {
-        lenis.off("scroll", onScroll);
+        lenis.off("scroll", measure);
       } else {
-        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("scroll", onNativeScroll);
       }
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [n, isDesktop]);
