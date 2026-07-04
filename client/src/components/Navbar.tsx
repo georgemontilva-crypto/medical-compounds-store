@@ -132,6 +132,7 @@ export default function Navbar() {
   const { user, isAuthenticated, isAdmin } = useAuthContext();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileScienceOpen, setMobileScienceOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -420,8 +421,34 @@ export default function Navbar() {
               Shop
             </div>
           </Link>
-          <div className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 cursor-default">
-            Science
+          <div>
+            <button
+              onClick={() => setMobileScienceOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Science
+              <ChevronDown
+                size={15}
+                className={`text-gray-400 transition-transform duration-200 ${mobileScienceOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <div
+              className="overflow-hidden transition-all duration-200"
+              style={{ maxHeight: mobileScienceOpen ? `${SCIENCE_ITEMS.length * 44}px` : "0px" }}
+            >
+              <div className="pl-3 pb-1 space-y-0.5">
+                {SCIENCE_ITEMS.map((item) => (
+                  <Link key={item.label} href={item.href ?? "#"}>
+                    <div
+                      className="px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => { setMobileOpen(false); setMobileScienceOpen(false); }}
+                    >
+                      {item.label}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
           <Link href="/lab-tests">
             <div
@@ -433,7 +460,7 @@ export default function Navbar() {
           </Link>
           <Link href="/wholesale">
             <div
-              className="px-3 py-2.5 rounded-xl text-sm font-semibold text-[#3A9E94] hover:bg-[#E8F7F6] cursor-pointer"
+              className="mx-3 my-1 text-center border border-[#7ECDC4] text-[#3A9E94] hover:bg-[#E8F7F6] px-4 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-150"
               onClick={() => setMobileOpen(false)}
             >
               Apply for Wholesale

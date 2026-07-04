@@ -121,6 +121,7 @@ function HplcChart() {
 
 export default function ScienceManufacturing() {
   const { data: heroImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "manufacturing_hero_image" });
+  const { data: lyoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "manufacturing_lyophilization_image" });
 
   return (
     <div className="min-h-screen bg-white">
@@ -230,9 +231,15 @@ export default function ScienceManufacturing() {
                 with its compound, size, and batch reference at the point of formulation.
               </p>
             </div>
-            <div className="w-40 mx-auto">
-              <VialPlaceholder label="NAD+" size="500mg" color="#3A9E94" />
-            </div>
+            {lyoImage?.url ? (
+              <div className="w-full max-w-sm mx-auto h-80 rounded-3xl overflow-hidden">
+                <img src={lyoImage.url} alt="Lyophilized vial formulation" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-40 mx-auto">
+                <VialPlaceholder label="NAD+" size="500mg" color="#3A9E94" />
+              </div>
+            )}
           </div>
         </section>
       </Reveal>
