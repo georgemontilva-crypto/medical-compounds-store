@@ -242,7 +242,7 @@ export default function Contact() {
                   Company Information
                 </p>
                 <p className="text-sm text-gray-500 leading-relaxed">
-                  BioLab Compounds is a research-grade peptide supplier · United States · support@biolabcompounds.com
+                  Brighter Days Labs is a research-grade peptide supplier · United States · support@biolabcompounds.com
                 </p>
               </div>
             </div>

@@ -1178,7 +1178,7 @@ export default function Home() {
                   <FlaskConical size={15} className="text-white" />
                 </div>
                 <div>
-                  <span className="font-bold text-white text-sm">BioLab Compounds</span>
+                  <span className="font-bold text-white text-sm">Brighter Days Labs</span>
                   <p className="text-[11px] text-gray-500 leading-none mt-0.5">Research Grade · For Scientific Use Only</p>
                 </div>
               </div>
@@ -1186,7 +1186,7 @@ export default function Home() {
             <p className="text-xs text-gray-600 text-center">
               For research purposes only. Not for human consumption. All compounds are intended for laboratory use.
             </p>
-            <p className="text-xs text-gray-600">{footerCopyrightSetting?.value ?? "© 2026 BioLab Compounds"}</p>
+            <p className="text-xs text-gray-600">{footerCopyrightSetting?.value ?? "© 2026 Brighter Days Labs"}</p>
           </div>
         </div>
       </footer>

@@ -9,6 +9,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPass, setShowPass] = useState(false);
   const utils = trpc.useUtils();
+  const { data: logoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo" });
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
@@ -32,22 +33,28 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/">
-            <div className="inline-flex items-center gap-2.5 cursor-pointer">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <FlaskConical size={20} className="text-primary-foreground" />
+            {logoImage?.url ? (
+              <div className="inline-flex items-center cursor-pointer">
+                <img src={logoImage.url} alt="Logo" className="h-10 w-auto object-contain" />
               </div>
-              <div className="text-left">
-                <span className="font-bold text-lg block leading-tight">BioLab</span>
-                <span className="text-xs text-muted-foreground">Compounds</span>
+            ) : (
+              <div className="inline-flex items-center gap-2.5 cursor-pointer">
+                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                  <FlaskConical size={20} className="text-primary-foreground" />
+                </div>
+                <div className="text-left">
+                  <span className="font-bold text-lg block leading-tight">Brighter Days Labs</span>
+                  <span className="text-xs text-muted-foreground">Compounds</span>
+                </div>
               </div>
-            </div>
+            )}
           </Link>
         </div>
 
         <div className="lab-card p-8">
           <h1 className="text-2xl font-bold mb-1">Sign In</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Access your BioLab account
+            Access your Brighter Days Labs account
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">

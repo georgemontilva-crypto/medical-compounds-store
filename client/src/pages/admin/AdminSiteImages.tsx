@@ -46,7 +46,7 @@ const LINKED_SECTIONS: Array<{ section: string; label: string; description: stri
 
 // Known editable text settings (site_settings table) — shown on this same screen.
 const KNOWN_TEXT_SETTINGS: Array<{ key: string; label: string; placeholder: string }> = [
-  { key: "footer_copyright", label: "Texto de copyright del footer", placeholder: "© 2026 BioLab Compounds" },
+  { key: "footer_copyright", label: "Texto de copyright del footer", placeholder: "© 2026 Brighter Days Labs" },
 ];
 
 function TextSettingCard({ settingKey, label, placeholder }: { settingKey: string; label: string; placeholder: string }) {

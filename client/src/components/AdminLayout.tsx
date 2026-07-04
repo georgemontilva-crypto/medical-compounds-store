@@ -38,6 +38,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, isAdmin, isLoading } = useAuthContext();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: logoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo" });
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => { window.location.href = "/"; },
     onError: () => toast.error("Logout failed"),
@@ -69,15 +70,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-border">
         <Link href="/">
-          <div className="flex items-center gap-2.5 cursor-pointer">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <FlaskConical size={15} className="text-primary-foreground" />
+          {logoImage?.url ? (
+            <div className="flex items-center cursor-pointer">
+              <img src={logoImage.url} alt="Logo" className="h-8 w-auto object-contain" />
             </div>
-            <div>
-              <p className="font-semibold text-sm">BioLab Admin</p>
-              <p className="text-xs text-muted-foreground">Control Panel</p>
+          ) : (
+            <div className="flex items-center gap-2.5 cursor-pointer">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <FlaskConical size={15} className="text-primary-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Brighter Days Labs</p>
+                <p className="text-xs text-muted-foreground">Control Panel</p>
+              </div>
             </div>
-          </div>
+          )}
         </Link>
       </div>
 
@@ -151,7 +158,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-secondary">
             <Menu size={18} />
           </button>
-          <span className="font-semibold text-sm">BioLab Admin</span>
+          <span className="font-semibold text-sm">Brighter Days Labs</span>
           <div className="w-8" />
         </div>
 

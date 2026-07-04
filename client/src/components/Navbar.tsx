@@ -168,7 +168,7 @@ export default function Navbar() {
                   <FlaskConical size={17} className="text-white" />
                 </div>
                 <div className="leading-none">
-                  <span className="font-extrabold text-gray-950 text-base tracking-tight">BioLab</span>
+                  <span className="font-extrabold text-gray-950 text-base tracking-tight">Brighter Days Labs</span>
                   <p className="text-[9px] font-semibold tracking-[0.15em] uppercase text-gray-400 leading-none mt-0.5">
                     Compounds
                   </p>

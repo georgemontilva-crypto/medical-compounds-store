@@ -157,7 +157,7 @@ export default function LoadingScreen() {
               <FlaskConical size={28} className="text-white" />
             </div>
             <div className="leading-none text-left">
-              <span className="font-extrabold text-gray-950 text-2xl tracking-tight">BioLab</span>
+              <span className="font-extrabold text-gray-950 text-2xl tracking-tight">Brighter Days Labs</span>
               <p className="text-xs font-semibold tracking-[0.2em] uppercase text-gray-400 leading-none mt-1">
                 Compounds
               </p>
