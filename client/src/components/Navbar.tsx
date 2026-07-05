@@ -148,7 +148,7 @@ export default function Navbar() {
           <Link href="/">
             {logoImage?.url ? (
               <div className="flex items-center cursor-pointer shrink-0">
-                <img src={logoImage.url} alt="Logo" className="h-10 w-auto object-contain" />
+                <img src={logoImage.url} alt="Logo" className="h-12 w-auto object-contain" />
               </div>
             ) : (
               <div className="flex items-center gap-2.5 cursor-pointer shrink-0">
