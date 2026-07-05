@@ -35,12 +35,12 @@ export default function Login() {
           <Link href="/">
             {logoImage?.url ? (
               <div className="inline-flex items-center cursor-pointer">
-                <img src={logoImage.url} alt="Logo" className="h-10 w-auto object-contain" />
+                <img src={logoImage.url} alt="Logo" className="h-16 w-auto object-contain" />
               </div>
             ) : (
               <div className="inline-flex items-center gap-2.5 cursor-pointer">
-                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                  <FlaskConical size={20} className="text-primary-foreground" />
+                <div className="w-16 h-16 rounded-xl bg-primary flex items-center justify-center">
+                  <FlaskConical size={30} className="text-primary-foreground" />
                 </div>
                 <div className="text-left">
                   <span className="font-bold text-lg block leading-tight">Brighter Days Labs</span>
