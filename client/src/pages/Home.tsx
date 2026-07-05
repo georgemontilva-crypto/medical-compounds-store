@@ -1087,7 +1087,7 @@ export default function Home() {
           <img
             src={imageBySlot["home_lab_banner"] ?? "/manus-storage/modern-lab_a86acfc6.jpg"}
             alt="Modern research laboratory"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-[85%_center]"
           />
         </div>
         <div className="bg-[#F5F2EC] px-6 py-8">
