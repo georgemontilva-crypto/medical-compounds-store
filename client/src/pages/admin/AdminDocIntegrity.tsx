@@ -110,7 +110,7 @@ export default function AdminDocIntegrity() {
     );
   }
 
-  const inputCls = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4]";
+  const inputCls = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]";
   const labelCls = "block text-xs font-semibold text-gray-600 mb-1.5";
 
   const callouts: Array<{
@@ -189,7 +189,7 @@ export default function AdminDocIntegrity() {
                 <ImageIcon size={24} className="text-gray-300" />
               )}
             </div>
-            <label className="inline-flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer transition-colors">
+            <label className="inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer transition-colors">
               <Upload size={13} />
               {uploadingImage ? "Uploading..." : "Upload Image"}
               <input
@@ -235,7 +235,7 @@ export default function AdminDocIntegrity() {
         <button
           onClick={() => updateMutation.mutate(form)}
           disabled={updateMutation.isPending}
-          className="flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+          className="flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
         >
           <Save size={15} />
           {updateMutation.isPending ? "Saving..." : "Save Changes"}

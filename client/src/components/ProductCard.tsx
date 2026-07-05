@@ -94,8 +94,8 @@ export default function ProductCard({
           <button
             onClick={handleQuickAdd}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
-              added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
-                    : "bg-white text-gray-700 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
+              added ? "bg-[#d3c4ab] text-white opacity-100 scale-110"
+                    : "bg-white text-gray-700 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white"
             }`}
           >
             {added ? <Check size={13} /> : <Plus size={13} />}
@@ -116,7 +116,7 @@ export default function ProductCard({
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#3A9E94] transition-colors">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors">{product.name}</h3>
         </Link>
         {variations && variations.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">

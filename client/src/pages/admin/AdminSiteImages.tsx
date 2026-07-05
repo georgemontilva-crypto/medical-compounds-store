@@ -77,7 +77,7 @@ function TextSettingCard({ settingKey, label, placeholder }: { settingKey: strin
         onChange={(e) => { setValue(e.target.value); setTouched(true); }}
         placeholder={placeholder}
         rows={2}
-        className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4] resize-none"
+        className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] resize-none"
       />
       <p className="text-xs text-gray-400 mt-1">
         {setting ? "Usando el valor de arriba." : `Vacío — mostrando el texto original: "${placeholder}"`}
@@ -85,7 +85,7 @@ function TextSettingCard({ settingKey, label, placeholder }: { settingKey: strin
       <button
         onClick={() => saveMutation.mutate({ key: settingKey, value })}
         disabled={saveMutation.isPending || isLoading}
-        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-xl transition-colors"
+        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-xl transition-colors"
       >
         <Save size={13} />
         {saveMutation.isPending ? "Guardando..." : "Guardar"}
@@ -193,7 +193,7 @@ export default function AdminSiteImages() {
                         <p className="text-sm font-semibold text-gray-900">{linked.label}</p>
                         <p className="text-xs text-gray-400 mt-1">{linked.description}</p>
                       </div>
-                      <ArrowRight size={16} className="text-gray-300 group-hover:text-[#3A9E94] transition-colors shrink-0 ml-4" />
+                      <ArrowRight size={16} className="text-gray-300 group-hover:text-[#d3c4ab] transition-colors shrink-0 ml-4" />
                     </div>
                   </Link>
                 </div>
@@ -229,7 +229,7 @@ export default function AdminSiteImages() {
                         <button
                           onClick={() => triggerUpload(slot.slotKey, slot.label)}
                           disabled={isUploading}
-                          className="mt-3 w-full flex items-center justify-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-xl transition-colors"
+                          className="mt-3 w-full flex items-center justify-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-xl transition-colors"
                         >
                           <Upload size={13} />
                           {isUploading ? "Uploading..." : "Reemplazar imagen"}

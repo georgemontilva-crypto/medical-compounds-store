@@ -8,8 +8,8 @@ import { toast } from "sonner";
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   confirmed: "bg-blue-100 text-blue-700",
-  processing: "bg-[#E8F7F6] text-[#3A9E94]",
-  shipped: "bg-[#d0f0ed] text-[#2A8E84]",
+  processing: "bg-[#f2ede6] text-[#d3c4ab]",
+  shipped: "bg-[#d0f0ed] text-[#baac96]",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
 };

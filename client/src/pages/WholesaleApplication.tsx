@@ -19,7 +19,7 @@ const VOLUME_OPTIONS = [
 ];
 
 const inputCls =
-  "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/40 focus:border-[#7ECDC4] transition";
+  "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition";
 const labelCls = "block text-xs font-semibold text-gray-500 tracking-widest uppercase mb-1.5";
 
 type FormState = {
@@ -104,7 +104,7 @@ export default function WholesaleApplication() {
       <main className="max-w-4xl mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-3">Wholesale Application</p>
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-3">Wholesale Application</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-950 mb-4">
             Built for institutional research at volume
           </h1>
@@ -119,8 +119,8 @@ export default function WholesaleApplication() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {BENEFITS.map((b) => (
             <div key={b.title} className="bg-white border border-gray-100 rounded-2xl p-5">
-              <div className="w-10 h-10 rounded-xl bg-[#E8F7F6] flex items-center justify-center mb-3">
-                <b.icon size={17} className="text-[#3A9E94]" />
+              <div className="w-10 h-10 rounded-xl bg-[#f2ede6] flex items-center justify-center mb-3">
+                <b.icon size={17} className="text-[#d3c4ab]" />
               </div>
               <p className="font-bold text-gray-900 text-sm mb-1">{b.title}</p>
               <p className="text-gray-500 text-xs leading-relaxed">{b.description}</p>
@@ -131,8 +131,8 @@ export default function WholesaleApplication() {
         {/* Form */}
         {submitted ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-[#E8F7F6] flex items-center justify-center mx-auto mb-4">
-              <Check size={24} className="text-[#3A9E94]" />
+            <div className="w-14 h-14 rounded-full bg-[#f2ede6] flex items-center justify-center mx-auto mb-4">
+              <Check size={24} className="text-[#d3c4ab]" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Application received</h2>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
@@ -147,19 +147,19 @@ export default function WholesaleApplication() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">About You</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Full name <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>Full name <span className="text-[#d3c4ab]">*</span></label>
                   <input className={inputCls} value={form.fullName} onChange={(e) => set("fullName", e.target.value)} placeholder="Dr. Jane Smith" />
                 </div>
                 <div>
-                  <label className={labelCls}>Email <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>Email <span className="text-[#d3c4ab]">*</span></label>
                   <input type="email" className={inputCls} value={form.workEmail} onChange={(e) => set("workEmail", e.target.value)} placeholder="jane@research-lab.edu" />
                 </div>
                 <div>
-                  <label className={labelCls}>Phone Number <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>Phone Number <span className="text-[#d3c4ab]">*</span></label>
                   <input type="tel" className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(555) 555-5555" />
                 </div>
                 <div>
-                  <label className={labelCls}>Company Name <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>Company Name <span className="text-[#d3c4ab]">*</span></label>
                   <input className={inputCls} value={form.roleTitle} onChange={(e) => set("roleTitle", e.target.value)} placeholder="Acme Research Labs" />
                 </div>
               </div>
@@ -169,7 +169,7 @@ export default function WholesaleApplication() {
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">Your Research</h2>
               <div className="mb-4">
-                <label className={labelCls}>Expected monthly volume <span className="text-[#3A9E94]">*</span></label>
+                <label className={labelCls}>Expected monthly volume <span className="text-[#d3c4ab]">*</span></label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {VOLUME_OPTIONS.map((v) => {
                     const active = form.expectedMonthlyVolume === v.value;
@@ -179,10 +179,10 @@ export default function WholesaleApplication() {
                         type="button"
                         onClick={() => set("expectedMonthlyVolume", v.value)}
                         className={`text-left rounded-xl border px-4 py-3 transition-colors ${
-                          active ? "border-[#3A9E94] bg-[#E8F7F6]" : "border-gray-200 bg-white hover:border-gray-300"
+                          active ? "border-[#d3c4ab] bg-[#f2ede6]" : "border-gray-200 bg-white hover:border-gray-300"
                         }`}
                       >
-                        <p className={`text-sm font-bold ${active ? "text-[#2A8E84]" : "text-gray-900"}`}>{v.label}</p>
+                        <p className={`text-sm font-bold ${active ? "text-[#baac96]" : "text-gray-900"}`}>{v.label}</p>
                         <p className="text-[11px] text-gray-400">{v.detail}</p>
                       </button>
                     );
@@ -195,7 +195,7 @@ export default function WholesaleApplication() {
                   type="checkbox"
                   checked={form.taxExempt}
                   onChange={(e) => set("taxExempt", e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-[#3A9E94] focus:ring-[#7ECDC4]"
+                  className="w-4 h-4 rounded border-gray-300 text-[#d3c4ab] focus:ring-[#dbcfba]"
                 />
                 <span className="text-sm text-gray-600">My organization is tax-exempt</span>
               </label>
@@ -206,19 +206,19 @@ export default function WholesaleApplication() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">Shipping Address</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className={labelCls}>Street address <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>Street address <span className="text-[#d3c4ab]">*</span></label>
                   <input className={inputCls} value={form.shippingStreet} onChange={(e) => set("shippingStreet", e.target.value)} placeholder="123 Lab Way" />
                 </div>
                 <div>
-                  <label className={labelCls}>City <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>City <span className="text-[#d3c4ab]">*</span></label>
                   <input className={inputCls} value={form.shippingCity} onChange={(e) => set("shippingCity", e.target.value)} placeholder="Boston" />
                 </div>
                 <div>
-                  <label className={labelCls}>State <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>State <span className="text-[#d3c4ab]">*</span></label>
                   <input className={inputCls} value={form.shippingState} onChange={(e) => set("shippingState", e.target.value)} placeholder="MA" />
                 </div>
                 <div>
-                  <label className={labelCls}>ZIP code <span className="text-[#3A9E94]">*</span></label>
+                  <label className={labelCls}>ZIP code <span className="text-[#d3c4ab]">*</span></label>
                   <input className={inputCls} value={form.shippingZip} onChange={(e) => set("shippingZip", e.target.value)} placeholder="02110" />
                 </div>
               </div>
@@ -244,7 +244,7 @@ export default function WholesaleApplication() {
                   type="checkbox"
                   checked={form.wantsUpdates}
                   onChange={(e) => set("wantsUpdates", e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-[#3A9E94] focus:ring-[#7ECDC4]"
+                  className="w-4 h-4 rounded border-gray-300 text-[#d3c4ab] focus:ring-[#dbcfba]"
                 />
                 <span className="text-sm text-gray-600">
                   Send me occasional updates on new compounds, pricing, and lab reports
@@ -255,7 +255,7 @@ export default function WholesaleApplication() {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] disabled:opacity-60 text-white font-semibold text-sm px-7 py-3.5 rounded-full transition-all active:scale-[0.97]"
+              className="flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-60 text-white font-semibold text-sm px-7 py-3.5 rounded-full transition-all active:scale-[0.97]"
             >
               {createMutation.isPending ? "Submitting..." : "Submit application"}
               <Send size={15} />

@@ -31,9 +31,9 @@ function FooterLink({ label, href }: { label: string; href: string }) {
   return (
     <li>
       <Link href={href}>
-        <span className="group relative inline-block text-sm text-gray-400 hover:text-[#7ECDC4] transition-colors cursor-pointer">
+        <span className="group relative inline-block text-sm text-gray-400 hover:text-[#dbcfba] transition-colors cursor-pointer">
           {label}
-          <span className="absolute left-0 -bottom-0.5 h-px w-0 bg-[#7ECDC4] transition-all duration-300 ease-out group-hover:w-full" />
+          <span className="absolute left-0 -bottom-0.5 h-px w-0 bg-[#dbcfba] transition-all duration-300 ease-out group-hover:w-full" />
         </span>
       </Link>
     </li>
@@ -68,8 +68,8 @@ export default function Footer() {
 
   const gradient =
     categories.length > 0
-      ? `linear-gradient(90deg, ${categories.map((c) => c.color ?? "#7ECDC4").join(", ")})`
-      : "linear-gradient(90deg, #7ECDC4, #C8A84B)";
+      ? `linear-gradient(90deg, ${categories.map((c) => c.color ?? "#dbcfba").join(", ")})`
+      : "linear-gradient(90deg, #dbcfba, #C8A84B)";
 
   function handleSubscribe(e: React.FormEvent) {
     e.preventDefault();
@@ -100,7 +100,7 @@ export default function Footer() {
                 <img src={logoImage.url} alt="Logo" className="h-14 w-auto object-contain mb-4" />
               ) : (
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-[#7ECDC4] flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-[#dbcfba] flex items-center justify-center">
                     <FlaskConical size={22} className="text-white" />
                   </div>
                   <span className="font-bold text-white text-lg">Brighter Days Labs</span>
@@ -120,12 +120,12 @@ export default function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@lab.com"
-                  className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7ECDC4]/50 transition-colors"
+                  className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#dbcfba]/50 transition-colors"
                 />
                 <button
                   type="submit"
                   aria-label="Subscribe"
-                  className="shrink-0 bg-[#7ECDC4] text-[#0d1a18] rounded-xl px-4 hover:bg-[#5BB8AE] transition-colors active:scale-[0.98]"
+                  className="shrink-0 bg-[#dbcfba] text-[#0d1a18] rounded-xl px-4 hover:bg-[#d7cab3] transition-colors active:scale-[0.98]"
                 >
                   <ArrowRight size={16} />
                 </button>

@@ -57,10 +57,10 @@ export default function Contact() {
       <main className="max-w-6xl mx-auto px-4 py-16">
         {/* Header */}
         <div className="mb-10">
-          <p className="text-xs font-semibold tracking-widest uppercase mb-2" style={{color:'#3A9E94'}}>
+          <p className="text-xs font-semibold tracking-widest uppercase mb-2" style={{color:'#d3c4ab'}}>
             Get in Touch
           </p>
-          <h1 className="text-5xl font-light mb-4" style={{color:'#3A9E94'}}>Contact Us</h1>
+          <h1 className="text-5xl font-light mb-4" style={{color:'#d3c4ab'}}>Contact Us</h1>
           <p className="text-gray-600 text-base max-w-xl">
             Need a compound we don't list? Want bulk pricing or custom synthesis? Have a question
             about a specific COA? We respond within one business day.
@@ -72,8 +72,8 @@ export default function Contact() {
           <div className="flex-1 min-w-0">
             {submitted ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{backgroundColor:'#E8F7F6'}}>
-                  <Send size={24} style={{color:'#3A9E94'}} />
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{backgroundColor:'#f2ede6'}}>
+                  <Send size={24} style={{color:'#d3c4ab'}} />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Message Sent</h2>
                 <p className="text-gray-500 text-sm mb-6">
@@ -81,7 +81,7 @@ export default function Contact() {
                 </p>
                 <button
                   onClick={() => { setSubmitted(false); setForm({ name: "", email: "", phone: "", organization: "", subject: "", message: "" }); }}
-                  className="text-sm font-medium hover:underline" style={{color:'#3A9E94'}}
+                  className="text-sm font-medium hover:underline" style={{color:'#d3c4ab'}}
                 >
                   Send another message
                 </button>
@@ -92,7 +92,7 @@ export default function Contact() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 tracking-widest uppercase mb-1.5">
-                      Name <span style={{color:'#3A9E94'}}>*</span>
+                      Name <span style={{color:'#d3c4ab'}}>*</span>
                     </label>
                     <input
                       type="text"
@@ -100,12 +100,12 @@ export default function Contact() {
                       value={form.name}
                       onChange={handleChange}
                       placeholder="Dr. Jane Smith"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/40 focus:border-[#7ECDC4] transition"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 tracking-widest uppercase mb-1.5">
-                      Email <span style={{color:'#3A9E94'}}>*</span>
+                      Email <span style={{color:'#d3c4ab'}}>*</span>
                     </label>
                     <input
                       type="email"
@@ -113,7 +113,7 @@ export default function Contact() {
                       value={form.email}
                       onChange={handleChange}
                       placeholder="jane@research-lab.edu"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/40 focus:border-[#7ECDC4] transition"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition"
                     />
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export default function Contact() {
                       value={form.phone}
                       onChange={handleChange}
                       placeholder="(555) 555-5555"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/40 focus:border-[#7ECDC4] transition"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition"
                     />
                   </div>
                   <div>
@@ -144,7 +144,7 @@ export default function Contact() {
                       value={form.organization}
                       onChange={handleChange}
                       placeholder="University / Lab / Company"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/40 focus:border-[#7ECDC4] transition"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition"
                     />
                   </div>
                 </div>
@@ -152,14 +152,14 @@ export default function Contact() {
                 {/* Subject */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 tracking-widest uppercase mb-1.5">
-                    Subject <span style={{color:'#3A9E94'}}>*</span>
+                    Subject <span style={{color:'#d3c4ab'}}>*</span>
                   </label>
                   <div className="relative">
                     <select
                       name="subject"
                       value={form.subject}
                       onChange={handleChange}
-                      className="w-full appearance-none px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/40 focus:border-[#7ECDC4] transition pr-10"
+                      className="w-full appearance-none px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition pr-10"
                     >
                       <option value="" disabled>Select a topic</option>
                       {SUBJECTS.map((s) => (
@@ -177,7 +177,7 @@ export default function Contact() {
                 {/* Message */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 tracking-widest uppercase mb-1.5">
-                    Message <span style={{color:'#3A9E94'}}>*</span>
+                    Message <span style={{color:'#d3c4ab'}}>*</span>
                   </label>
                   <textarea
                     name="message"
@@ -185,7 +185,7 @@ export default function Contact() {
                     onChange={handleChange}
                     rows={6}
                     placeholder="Tell us about your research needs..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/40 focus:border-[#7ECDC4] transition resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition resize-none"
                   />
                 </div>
 
@@ -193,7 +193,7 @@ export default function Contact() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] disabled:opacity-60 text-white font-semibold text-sm px-7 py-3.5 rounded-full transition-all active:scale-[0.97]"
+                  className="flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-60 text-white font-semibold text-sm px-7 py-3.5 rounded-full transition-all active:scale-[0.97]"
                 >
                   {submitting ? (
                     <>
@@ -218,14 +218,14 @@ export default function Contact() {
               <h3 className="font-semibold text-gray-900 text-lg mb-7">Direct Contact</h3>
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor:'#E8F7F6'}}>
-                    <Mail size={15} style={{color:'#3A9E94'}} />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor:'#f2ede6'}}>
+                    <Mail size={15} style={{color:'#d3c4ab'}} />
                   </div>
                   <span className="text-sm text-gray-700 break-all">support@biolabcompounds.com</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor:'#E8F7F6'}}>
-                    <MapPin size={15} style={{color:'#3A9E94'}} />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor:'#f2ede6'}}>
+                    <MapPin size={15} style={{color:'#d3c4ab'}} />
                   </div>
                   <span className="text-sm text-gray-700">United States</span>
                 </div>
@@ -253,11 +253,11 @@ export default function Contact() {
                 ].map((link) => (
                   <Link key={link.label} href={link.href}>
                     <div
-                      className="flex items-center justify-between bg-white rounded-lg text-sm text-gray-700 hover:bg-[#E8F7F6] hover:text-[#3A9E94] transition-colors cursor-pointer group"
+                      className="flex items-center justify-between bg-white rounded-lg text-sm text-gray-700 hover:bg-[#f2ede6] hover:text-[#d3c4ab] transition-colors cursor-pointer group"
                       style={{ padding: "12px 16px", marginBottom: "10px" }}
                     >
                       <span>{link.label}</span>
-                      <ChevronRight size={15} className="text-gray-400 group-hover:text-[#3A9E94] transition-colors" />
+                      <ChevronRight size={15} className="text-gray-400 group-hover:text-[#d3c4ab] transition-colors" />
                     </div>
                   </Link>
                 ))}

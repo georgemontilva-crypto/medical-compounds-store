@@ -13,12 +13,12 @@ export default function ReadyToStartBanner() {
           <FlaskConical size={24} className="text-white" />
         </div>
         <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">Ready to start your research?</h2>
-        <p className="text-[#7ECDC4]/80 text-lg mb-8 max-w-md mx-auto">
+        <p className="text-[#dbcfba]/80 text-lg mb-8 max-w-md mx-auto">
           Browse our catalog of ≥98% HPLC purity compounds with batch-specific COAs.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href="/compounds">
-            <button className="inline-flex items-center gap-2 bg-[#7ECDC4] text-[#0d1a18] font-bold px-8 py-3.5 rounded-xl hover:bg-[#5BB8AE] transition-all duration-200 active:scale-[0.98] shadow-xl shadow-black/20">
+            <button className="inline-flex items-center gap-2 bg-[#dbcfba] text-[#0d1a18] font-bold px-8 py-3.5 rounded-xl hover:bg-[#d7cab3] transition-all duration-200 active:scale-[0.98] shadow-xl shadow-black/20">
               Browse Products <ArrowRight size={16} />
             </button>
           </Link>

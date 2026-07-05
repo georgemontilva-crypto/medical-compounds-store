@@ -153,7 +153,7 @@ export default function LoadingScreen() {
           <img src={logoImage.url} alt="Logo" className="h-14 w-auto object-contain" />
         ) : (
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#3A9E94] to-[#5BB8AE] flex items-center justify-center shadow-lg shadow-[#3A9E94]/30">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#d3c4ab] to-[#d7cab3] flex items-center justify-center shadow-lg shadow-[#d3c4ab]/30">
               <FlaskConical size={28} className="text-white" />
             </div>
             <div className="leading-none text-left">

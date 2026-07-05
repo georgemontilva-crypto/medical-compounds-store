@@ -12,7 +12,7 @@ const SLIDES = [
     gradient: "from-[#0d1a18] via-[#0f2420] to-[#071510]",
     overlay: "bg-[#0d1a18]/65",
     badge: "Research Grade · ≥99% Purity",
-    badgeColor: "bg-[#7ECDC4]/20 border-[#7ECDC4]/40 text-[#7ECDC4]",
+    badgeColor: "bg-[#dbcfba]/20 border-[#dbcfba]/40 text-[#dbcfba]",
     tag: "01 · TISSUE REPAIR",
     headline: "Precision Peptides\nfor Advanced Research",
     sub: "High-purity lyophilized compounds manufactured to the strictest laboratory standards.",
@@ -20,7 +20,7 @@ const SLIDES = [
     ctaHref: "/compounds",
     stat1: { value: "≥99%", label: "Purity Guaranteed" },
     stat2: { value: "COA", label: "Every Batch" },
-    accent: "#7ECDC4",
+    accent: "#dbcfba",
   },
   {
     id: 2,
@@ -45,7 +45,7 @@ const SLIDES = [
     gradient: "from-[#0d1a18] via-[#163028] to-[#0a1f18]",
     overlay: "bg-[#0a1f18]/60",
     badge: "Metabolic Research · Energy Metabolism",
-    badgeColor: "bg-[#5BB8AE]/20 border-[#5BB8AE]/40 text-[#5BB8AE]",
+    badgeColor: "bg-[#d7cab3]/20 border-[#d7cab3]/40 text-[#d7cab3]",
     tag: "03 · METABOLIC",
     headline: "Metabolic Research\nGrade Compounds",
     sub: "NAD+, MOTS-C and more — compounds studied for their role in cellular energy and longevity pathways.",
@@ -53,7 +53,7 @@ const SLIDES = [
     ctaHref: "/compounds?category=metabolic-research",
     stat1: { value: "GMP", label: "Compliant" },
     stat2: { value: "HPLC", label: "Verified" },
-    accent: "#5BB8AE",
+    accent: "#d7cab3",
   },
   // Slide 4 (Endocrine — Sermorelin/Tesamorelin/CJC-1295) removed: there's no
   // real "Endocrine" category in the catalog (only Tissue/Metabolic/

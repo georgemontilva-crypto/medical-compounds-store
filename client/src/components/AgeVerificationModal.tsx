@@ -51,7 +51,7 @@ export default function AgeVerificationModal() {
             <img src={logoImage.url} alt="Logo" className="h-10 w-auto object-contain" />
           ) : (
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3A9E94] to-[#5BB8AE] flex items-center justify-center shadow-md shadow-[#3A9E94]/20">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#d3c4ab] to-[#d7cab3] flex items-center justify-center shadow-md shadow-[#d3c4ab]/20">
                 <FlaskConical size={17} className="text-white" />
               </div>
               <span className="font-extrabold text-gray-950 text-base tracking-tight">Brighter Days Labs</span>
@@ -74,7 +74,7 @@ export default function AgeVerificationModal() {
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 text-sm font-semibold bg-[#3A9E94] hover:bg-[#2A8E84] text-white px-5 py-3 rounded-full transition-colors"
+            className="flex-1 text-sm font-semibold bg-[#d3c4ab] hover:bg-[#baac96] text-white px-5 py-3 rounded-full transition-colors"
           >
             Yes, I am 21 or older
           </button>

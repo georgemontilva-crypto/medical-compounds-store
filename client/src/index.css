@@ -14,7 +14,7 @@
 
   /* ── Lab palette — extracted from Brighter Days Labs label ──────────────
      Beige/cream   : #E8DCC8 / #D4C5A9
-     Teal/mint     : #7ECDC4 / #5BB8AE
+     Accent (tan)  : #dbcfba / #d7cab3
      Gold/amber    : #C8A84B / #B8943A
      Charcoal      : #1A1A1A / #2D2D2D
      Off-white bg  : #F5F2EC
@@ -31,8 +31,8 @@
   --color-popover:             oklch(1    0     0);
   --color-popover-foreground:  oklch(0.13 0.005 240);
 
-  /* Primary: teal/mint from label bottom bar */
-  --color-primary:             oklch(0.73 0.09  185);   /* #7ECDC4 */
+  /* Primary: tan accent from label bottom bar */
+  --color-primary:             oklch(0.86 0.03 82);   /* #dbcfba */
   --color-primary-foreground:  oklch(0.13 0.005 240);
 
   /* Secondary: warm beige from label background */
@@ -52,10 +52,10 @@
 
   --color-border:              oklch(0.88 0.015 80);
   --color-input:               oklch(0.88 0.015 80);
-  --color-ring:                oklch(0.73 0.09  185);
+  --color-ring:                oklch(0.86 0.03 82);
 
   /* Charts */
-  --color-chart-1:             oklch(0.73 0.09  185);
+  --color-chart-1:             oklch(0.86 0.03 82);
   --color-chart-2:             oklch(0.78 0.10  75);
   --color-chart-3:             oklch(0.90 0.022 80);
   --color-chart-4:             oklch(0.55 0.22  25);
@@ -64,12 +64,12 @@
   /* Sidebar */
   --color-sidebar:             oklch(0.97 0.008 80);
   --color-sidebar-foreground:  oklch(0.13 0.005 240);
-  --color-sidebar-primary:     oklch(0.73 0.09  185);
+  --color-sidebar-primary:     oklch(0.86 0.03 82);
   --color-sidebar-primary-foreground: oklch(0.13 0.005 240);
   --color-sidebar-accent:      oklch(0.93 0.015 80);
   --color-sidebar-accent-foreground: oklch(0.30 0.01 80);
   --color-sidebar-border:      oklch(0.88 0.015 80);
-  --color-sidebar-ring:        oklch(0.73 0.09  185);
+  --color-sidebar-ring:        oklch(0.86 0.03 82);
 
   --font-sans: "DM Sans", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -143,7 +143,7 @@
 
 /* Teal accent section */
 .hex-teal {
-  background-color: #7ECDC4;
+  background-color: #dbcfba;
   background-image:
     linear-gradient(135deg, rgba(91,184,174,0.5) 0%, rgba(126,205,196,0) 60%),
     var(--hex-bg-pattern, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,2 78,22 78,70 40,90 2,70 2,22' fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.18'/%3E%3C/svg%3E"));
@@ -182,11 +182,11 @@
   }
 
   /* Teal color utilities */
-  .text-teal { color: #5BB8AE; }
-  .text-teal-dark { color: #3A9E94; }
-  .bg-teal { background-color: #7ECDC4; }
-  .bg-teal-light { background-color: #E8F7F6; }
-  .border-teal { border-color: #7ECDC4; }
+  .text-teal { color: #d7cab3; }
+  .text-teal-dark { color: #d3c4ab; }
+  .bg-teal { background-color: #dbcfba; }
+  .bg-teal-light { background-color: #f2ede6; }
+  .border-teal { border-color: #dbcfba; }
 
   /* Gold/amber utilities */
   .text-gold { color: #C8A84B; }

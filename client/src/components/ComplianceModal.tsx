@@ -50,7 +50,7 @@ export default function ComplianceModal() {
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 w-4 h-4 accent-[#3A9E94]"
+            className="mt-0.5 w-4 h-4 accent-[#d3c4ab]"
           />
           <span className="text-sm font-semibold text-gray-800">I agree to all of the above</span>
         </label>
@@ -65,7 +65,7 @@ export default function ComplianceModal() {
           <button
             onClick={handleAccept}
             disabled={!agreed}
-            className="flex-1 text-sm font-semibold bg-[#3A9E94] hover:bg-[#2A8E84] text-white px-5 py-3 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#3A9E94]"
+            className="flex-1 text-sm font-semibold bg-[#d3c4ab] hover:bg-[#baac96] text-white px-5 py-3 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#d3c4ab]"
           >
             Continue to Checkout
           </button>

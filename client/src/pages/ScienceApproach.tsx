@@ -20,8 +20,8 @@ const PROCUREMENT_ROWS: Array<{ step: string; traditional: boolean; brighterDays
 const PURITY_DATA = [
   { label: "Unverified samples", value: 62, fill: "#d1d5db" },
   { label: "Typical lab-grade", value: 91, fill: "#9ca3af" },
-  { label: "Premium peer batch", value: 95, fill: "#7ECDC4" },
-  { label: "Brighter Days Labs batch", value: 99, fill: "#3A9E94" },
+  { label: "Premium peer batch", value: 95, fill: "#dbcfba" },
+  { label: "Brighter Days Labs batch", value: 99, fill: "#d3c4ab" },
 ];
 
 function CategoryDonut({ categories, total }: { categories: Array<{ name: string; color: string; count: number }>; total: number }) {
@@ -132,7 +132,7 @@ export default function ScienceApproach() {
         <section className="bg-[#f8f8fa] py-16 lg:py-24">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-4">Our Approach</p>
+              <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-4">Our Approach</p>
               <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5">
                 Organized by mechanism.
                 <br />
@@ -164,14 +164,14 @@ export default function ScienceApproach() {
                   "Direct purchase, no purchasing department required",
                 ].map((line) => (
                   <div key={line} className="flex items-start gap-2.5">
-                    <Check size={16} className="text-[#3A9E94] mt-0.5 shrink-0" />
+                    <Check size={16} className="text-[#d3c4ab] mt-0.5 shrink-0" />
                     <span className="text-sm text-gray-600">{line}</span>
                   </div>
                 ))}
               </div>
 
               <Link href="/compounds">
-                <button className="inline-flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] text-white font-semibold text-sm px-6 py-3 rounded-full transition-all active:scale-[0.97]">
+                <button className="inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white font-semibold text-sm px-6 py-3 rounded-full transition-all active:scale-[0.97]">
                   Browse the catalog
                   <ArrowRight size={15} />
                 </button>
@@ -188,7 +188,7 @@ export default function ScienceApproach() {
         <section className="bg-[#0a0a0f] py-20">
           <div className="container">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#7ECDC4]">01</span>
+              <span className="text-sm font-mono text-[#dbcfba]">01</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-white/40">System</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4 max-w-2xl">
@@ -226,7 +226,7 @@ export default function ScienceApproach() {
         <section className="bg-white py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#3A9E94]">02</span>
+              <span className="text-sm font-mono text-[#d3c4ab]">02</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Access</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">
@@ -252,14 +252,14 @@ export default function ScienceApproach() {
                   <div className="px-5 py-4 text-sm text-gray-700">{row.step}</div>
                   <div className="px-5 py-4 flex justify-center">
                     {row.traditional ? (
-                      <Check size={16} className="text-[#3A9E94]" />
+                      <Check size={16} className="text-[#d3c4ab]" />
                     ) : (
                       <X size={16} className="text-gray-300" />
                     )}
                   </div>
                   <div className="px-5 py-4 flex justify-center">
                     {row.brighterDays ? (
-                      <Check size={16} className="text-[#3A9E94]" />
+                      <Check size={16} className="text-[#d3c4ab]" />
                     ) : (
                       <X size={16} className="text-gray-300" />
                     )}
@@ -277,7 +277,7 @@ export default function ScienceApproach() {
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-sm font-mono text-[#7ECDC4]">03</span>
+                <span className="text-sm font-mono text-[#dbcfba]">03</span>
                 <span className="text-xs font-semibold tracking-widest uppercase text-white/40">Documentation</span>
               </div>
               <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4">
@@ -298,7 +298,7 @@ export default function ScienceApproach() {
               </div>
             ) : (
               <div className="w-40 mx-auto">
-                <VialPlaceholder label="BPC-157" size="10mg" color="#7ECDC4" />
+                <VialPlaceholder label="BPC-157" size="10mg" color="#dbcfba" />
               </div>
             )}
           </div>
@@ -310,7 +310,7 @@ export default function ScienceApproach() {
         <section className="bg-white py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#3A9E94]">04</span>
+              <span className="text-sm font-mono text-[#d3c4ab]">04</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Standard</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">The purity standard</h2>

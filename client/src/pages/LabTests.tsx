@@ -15,11 +15,11 @@ export default function LabTests() {
         {/* Header */}
         <div className="bg-white rounded-3xl border border-gray-100 p-8 mb-8 shadow-sm">
           <div className="flex items-start gap-5">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-[#E8F7F6]">
-              <FileText size={24} className="text-[#3A9E94]" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-[#f2ede6]">
+              <FileText size={24} className="text-[#d3c4ab]" />
             </div>
             <div className="flex-1">
-              <p className="text-xs font-bold tracking-widest uppercase text-[#3A9E94] mb-1">
+              <p className="text-xs font-bold tracking-widest uppercase text-[#d3c4ab] mb-1">
                 Laboratory Analysis
               </p>
               <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Lab Tests</h1>
@@ -51,7 +51,7 @@ export default function LabTests() {
               the catalog in the meantime.
             </p>
             <Link href="/compounds">
-              <button className="mt-5 text-sm font-semibold text-[#3A9E94] hover:underline">
+              <button className="mt-5 text-sm font-semibold text-[#d3c4ab] hover:underline">
                 Browse the catalog →
               </button>
             </Link>
@@ -72,7 +72,7 @@ export default function LabTests() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[#3A9E94] uppercase tracking-wide mb-0.5">
+                    <p className="text-xs font-semibold text-[#d3c4ab] uppercase tracking-wide mb-0.5">
                       {report.productName}
                     </p>
                     <h3 className="font-semibold text-gray-900 text-base leading-snug">{report.title}</h3>
@@ -102,7 +102,7 @@ export default function LabTests() {
                       href={report.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors text-[#3A9E94] bg-[#E8F7F6] hover:bg-[#d9f0ee]"
+                      className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors text-[#d3c4ab] bg-[#f2ede6] hover:bg-[#d9f0ee]"
                     >
                       <ExternalLink size={14} />
                       View

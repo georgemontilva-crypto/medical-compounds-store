@@ -42,7 +42,7 @@ function ProcessDiagram() {
     <div ref={ref} className="relative">
       <div className="hidden sm:block absolute top-6 left-[12.5%] right-[12.5%] h-px bg-white/10">
         <div
-          className="h-full bg-[#7ECDC4] transition-all duration-[1400ms] ease-out"
+          className="h-full bg-[#dbcfba] transition-all duration-[1400ms] ease-out"
           style={{ width: inView ? "100%" : "0%" }}
         />
       </div>
@@ -57,8 +57,8 @@ function ProcessDiagram() {
               transitionDelay: inView ? `${i * 150}ms` : "0ms",
             }}
           >
-            <div className="w-12 h-12 rounded-full bg-[#0a0a0f] border-2 border-[#7ECDC4] flex items-center justify-center mx-auto mb-3 relative z-10">
-              <step.icon size={18} className="text-[#7ECDC4]" />
+            <div className="w-12 h-12 rounded-full bg-[#0a0a0f] border-2 border-[#dbcfba] flex items-center justify-center mx-auto mb-3 relative z-10">
+              <step.icon size={18} className="text-[#dbcfba]" />
             </div>
             <p className="font-bold text-white text-sm mb-1">{step.title}</p>
             <p className="text-white/50 text-xs leading-relaxed">{step.description}</p>
@@ -94,7 +94,7 @@ function HplcChart() {
           ref={pathRef}
           d={HPLC_PATH}
           fill="none"
-          stroke="#7ECDC4"
+          stroke="#dbcfba"
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -114,7 +114,7 @@ function HplcChart() {
         </text>
       </svg>
       <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none">
-        <span className="text-xs font-bold text-[#7ECDC4]">≥99% purity</span>
+        <span className="text-xs font-bold text-[#dbcfba]">≥99% purity</span>
       </div>
     </div>
   );
@@ -133,7 +133,7 @@ export default function ScienceManufacturing() {
         <section className="bg-[#f8f8fa] py-16 lg:py-24">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-4">
+              <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-4">
                 Manufacturing Standards
               </p>
               <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5">
@@ -167,21 +167,21 @@ export default function ScienceManufacturing() {
                   "Lot numbers trace back to synthesis and purification records",
                 ].map((line) => (
                   <div key={line} className="flex items-start gap-2.5">
-                    <Check size={16} className="text-[#3A9E94] mt-0.5 shrink-0" />
+                    <Check size={16} className="text-[#d3c4ab] mt-0.5 shrink-0" />
                     <span className="text-sm text-gray-600">{line}</span>
                   </div>
                 ))}
               </div>
 
               <Link href="/compounds">
-                <button className="inline-flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] text-white font-semibold text-sm px-6 py-3 rounded-full transition-all active:scale-[0.97]">
+                <button className="inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white font-semibold text-sm px-6 py-3 rounded-full transition-all active:scale-[0.97]">
                   Browse the catalog
                   <ArrowRight size={15} />
                 </button>
               </Link>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#7ECDC4]/20 to-[#0a0a0f]">
+            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f]">
               {heroImage?.url ? (
                 <img src={heroImage.url} alt="Manufacturing facility" className="w-full h-full object-cover" />
               ) : (
@@ -199,7 +199,7 @@ export default function ScienceManufacturing() {
         <section className="bg-[#0a0a0f] py-20">
           <div className="container">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#7ECDC4]">01</span>
+              <span className="text-sm font-mono text-[#dbcfba]">01</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-white/40">Process</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4 max-w-2xl">
@@ -220,7 +220,7 @@ export default function ScienceManufacturing() {
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-sm font-mono text-[#3A9E94]">02</span>
+                <span className="text-sm font-mono text-[#d3c4ab]">02</span>
                 <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Formulation</span>
               </div>
               <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">
@@ -238,7 +238,7 @@ export default function ScienceManufacturing() {
               </div>
             ) : (
               <div className="w-40 mx-auto">
-                <VialPlaceholder label="NAD+" size="500mg" color="#3A9E94" />
+                <VialPlaceholder label="NAD+" size="500mg" color="#d3c4ab" />
               </div>
             )}
           </div>
@@ -251,7 +251,7 @@ export default function ScienceManufacturing() {
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-sm font-mono text-[#7ECDC4]">03</span>
+                <span className="text-sm font-mono text-[#dbcfba]">03</span>
                 <span className="text-xs font-semibold tracking-widest uppercase text-white/40">Testing</span>
               </div>
               <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4">
@@ -272,7 +272,7 @@ export default function ScienceManufacturing() {
         <section className="bg-white py-20">
           <div className="container max-w-2xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#3A9E94]">04</span>
+              <span className="text-sm font-mono text-[#d3c4ab]">04</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Traceability</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">Lot-level traceability</h2>
@@ -287,7 +287,7 @@ export default function ScienceManufacturing() {
                 {TRACEABILITY_EVENTS.map((event) => (
                   <Reveal key={event.title}>
                     <div className="relative">
-                      <span className="absolute -left-8 top-1 w-3.5 h-3.5 rounded-full bg-[#3A9E94] border-4 border-white ring-1 ring-gray-200" />
+                      <span className="absolute -left-8 top-1 w-3.5 h-3.5 rounded-full bg-[#d3c4ab] border-4 border-white ring-1 ring-gray-200" />
                       <p className="text-xs font-mono text-gray-400 mb-1">{event.time}</p>
                       <p className="font-bold text-gray-900 text-sm mb-1">{event.title}</p>
                       <p className="text-gray-500 text-xs leading-relaxed">{event.description}</p>

@@ -15,7 +15,7 @@ const STATUS_OPTIONS: Array<{ value: "pending" | "approved" | "rejected" | "cont
 const STATUS_BADGE: Record<string, string> = {
   pending: "bg-gray-100 text-gray-600",
   contacted: "bg-blue-50 text-blue-600",
-  approved: "bg-[#E8F7F6] text-[#3A9E94]",
+  approved: "bg-[#f2ede6] text-[#d3c4ab]",
   rejected: "bg-red-50 text-red-500",
 };
 
@@ -56,7 +56,7 @@ export default function AdminWholesaleApplications() {
               key={f}
               onClick={() => setFilter(f)}
               className={`text-xs font-semibold px-3 py-1.5 rounded-full capitalize transition-colors ${
-                filter === f ? "bg-[#3A9E94] text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                filter === f ? "bg-[#d3c4ab] text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
             >
               {f}

@@ -45,7 +45,7 @@ function SelectionFunnel({ steps }: { steps: Array<{ label: string; value: numbe
             </div>
             <div className="h-3 bg-white/5 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#3A9E94] to-[#7ECDC4] rounded-full transition-all duration-[1200ms] ease-out"
+                className="h-full bg-gradient-to-r from-[#d3c4ab] to-[#dbcfba] rounded-full transition-all duration-[1200ms] ease-out"
                 style={{ width: inView ? `${pct}%` : "0%", transitionDelay: `${i * 120}ms` }}
               />
             </div>
@@ -108,7 +108,7 @@ export default function ScienceResearchStandards() {
         <section className="bg-[#f8f8fa] py-16 lg:py-24">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-4">
+              <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-4">
                 Research Standards
               </p>
               <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5">
@@ -142,21 +142,21 @@ export default function ScienceResearchStandards() {
                   "COAs are public — no account or sales call required to view one",
                 ].map((line) => (
                   <div key={line} className="flex items-start gap-2.5">
-                    <Check size={16} className="text-[#3A9E94] mt-0.5 shrink-0" />
+                    <Check size={16} className="text-[#d3c4ab] mt-0.5 shrink-0" />
                     <span className="text-sm text-gray-600">{line}</span>
                   </div>
                 ))}
               </div>
 
               <Link href="/compounds">
-                <button className="inline-flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] text-white font-semibold text-sm px-6 py-3 rounded-full transition-all active:scale-[0.97]">
+                <button className="inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white font-semibold text-sm px-6 py-3 rounded-full transition-all active:scale-[0.97]">
                   Browse the catalog
                   <ArrowRight size={15} />
                 </button>
               </Link>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#7ECDC4]/20 to-[#0a0a0f]">
+            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f]">
               {heroImage?.url ? (
                 <img src={heroImage.url} alt="Research documentation standards" className="w-full h-full object-cover" />
               ) : (
@@ -174,7 +174,7 @@ export default function ScienceResearchStandards() {
         <section className="bg-[#0a0a0f] py-20">
           <div className="container">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#7ECDC4]">01</span>
+              <span className="text-sm font-mono text-[#dbcfba]">01</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-white/40">Selection</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4 max-w-2xl">
@@ -194,7 +194,7 @@ export default function ScienceResearchStandards() {
         <section className="bg-white py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#3A9E94]">02</span>
+              <span className="text-sm font-mono text-[#d3c4ab]">02</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Taxonomy</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">Mechanism-based taxonomy</h2>
@@ -239,7 +239,7 @@ export default function ScienceResearchStandards() {
         <section className="bg-[#0a0a0f] py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#7ECDC4]">03</span>
+              <span className="text-sm font-mono text-[#dbcfba]">03</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-white/40">Labeling</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-4">Labeling precision</h2>
@@ -265,7 +265,7 @@ export default function ScienceResearchStandards() {
                     <span
                       className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
                         row.status === "Documented"
-                          ? "bg-[#7ECDC4]/15 text-[#7ECDC4]"
+                          ? "bg-[#dbcfba]/15 text-[#dbcfba]"
                           : row.status === "Partial"
                           ? "bg-amber-500/15 text-amber-400"
                           : "bg-white/5 text-white/30"
@@ -286,7 +286,7 @@ export default function ScienceResearchStandards() {
         <section className="bg-white py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-mono text-[#3A9E94]">04</span>
+              <span className="text-sm font-mono text-[#d3c4ab]">04</span>
               <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Transparency</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">
@@ -339,13 +339,13 @@ export default function ScienceResearchStandards() {
         <section className="bg-[#0a0a0f] py-16">
           <div className="container max-w-2xl">
             <div className="flex items-center gap-2 mb-6 justify-center">
-              <Beaker size={16} className="text-[#7ECDC4]" />
+              <Beaker size={16} className="text-[#dbcfba]" />
               <p className="text-xs font-semibold tracking-widest uppercase text-white/40">Standards Summary</p>
             </div>
             <div className="space-y-2.5 mb-10">
               {STANDARDS_SUMMARY.map((line) => (
                 <div key={line} className="flex items-start gap-2.5 justify-center text-center">
-                  <Check size={15} className="text-[#7ECDC4] mt-0.5 shrink-0" />
+                  <Check size={15} className="text-[#dbcfba] mt-0.5 shrink-0" />
                   <span className="text-sm text-white/70">{line}</span>
                 </div>
               ))}

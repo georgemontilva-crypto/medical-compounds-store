@@ -57,7 +57,7 @@ export default function AdminUsers() {
                         <span
                           className={`lab-badge text-xs flex items-center gap-1 w-fit ${
                             user.role === "admin"
-                              ? "bg-[#E8F7F6] text-[#3A9E94]"
+                              ? "bg-[#f2ede6] text-[#d3c4ab]"
                               : "bg-secondary text-muted-foreground"
                           }`}
                         >

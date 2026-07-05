@@ -42,7 +42,7 @@ export default function LegalPageLayout({
             <span className="text-gray-700 font-medium">{title}</span>
           </nav>
 
-          <p className="text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: "#3A9E94" }}>
+          <p className="text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: "#d3c4ab" }}>
             {eyebrow}
           </p>
           <h1 className="text-4xl font-light text-gray-950 mb-4">{title}</h1>

@@ -6,8 +6,8 @@ import { Link, useParams } from "wouter";
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   pending: { label: "Pending", color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
   confirmed: { label: "Confirmed", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle },
-  processing: { label: "Processing", color: "text-[#3A9E94] bg-[#E8F7F6] border-[#7ECDC4]", icon: Package },
-  shipped: { label: "Shipped", color: "text-[#2A8E84] bg-[#d0f0ed] border-[#5BB8AE]", icon: Truck },
+  processing: { label: "Processing", color: "text-[#d3c4ab] bg-[#f2ede6] border-[#dbcfba]", icon: Package },
+  shipped: { label: "Shipped", color: "text-[#baac96] bg-[#d0f0ed] border-[#d7cab3]", icon: Truck },
   delivered: { label: "Delivered", color: "text-green-600 bg-green-50 border-green-200", icon: CheckCircle },
   cancelled: { label: "Cancelled", color: "text-red-600 bg-red-50 border-red-200", icon: XCircle },
 };

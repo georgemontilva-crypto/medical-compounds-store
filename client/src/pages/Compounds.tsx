@@ -9,33 +9,33 @@ import Reveal from "@/components/Reveal";
 
 // ── Category color map ────────────────────────────────────────────────────────
 const CAT_COLORS: Record<string, string> = {
-  Tissue: "#7ECDC4", Cellular: "#5BB8AE", Neural: "#3A9E94",
+  Tissue: "#dbcfba", Cellular: "#d7cab3", Neural: "#d3c4ab",
   Metabolic: "#C8A84B", Endocrine: "#B8943A", Misc: "#8a9ba8",
 };
 const CAT_TEXT: Record<string, string> = {
-  Tissue: "text-[#3A9E94]", Cellular: "text-[#3A9E94]", Neural: "text-[#2A8E84]",
+  Tissue: "text-[#d3c4ab]", Cellular: "text-[#d3c4ab]", Neural: "text-[#baac96]",
   Metabolic: "text-[#A07A28]", Endocrine: "text-[#A07A28]", Misc: "text-gray-500",
 };
 const CAT_BG: Record<string, string> = {
-  Tissue: "bg-[#E8F7F6]", Cellular: "bg-[#E8F7F6]", Neural: "bg-[#DFF4F3]",
+  Tissue: "bg-[#f2ede6]", Cellular: "bg-[#f2ede6]", Neural: "bg-[#DFF4F3]",
   Metabolic: "bg-[#FBF6E8]", Endocrine: "bg-[#FBF6E8]", Misc: "bg-gray-50",
 };
 
 // ── Static fallback products ──────────────────────────────────────────────────
 const STATIC_PRODUCTS_RAW = [
-  { id: 1, name: "BPC-157", slug: "bpc-157", category: "Tissue", sizes: ["10mg", "20mg"], color: "#7ECDC4", price: 55, popular: true },
-  { id: 2, name: "TB-500", slug: "tb-500", category: "Tissue", sizes: ["10mg"], color: "#7ECDC4", price: 60, popular: true },
-  { id: 3, name: "KPV", slug: "kpv", category: "Tissue", sizes: ["5mg", "10mg"], color: "#7ECDC4", price: 40, popular: false },
-  { id: 4, name: "GHK-Cu", slug: "ghk-cu", category: "Tissue", sizes: ["50mg"], color: "#5BB8AE", price: 60, popular: false },
-  { id: 5, name: "RT-30", slug: "rt-30", category: "Tissue", sizes: ["30mg"], color: "#7ECDC4", price: 75, popular: false },
-  { id: 6, name: "RT-10", slug: "rt-10", category: "Tissue", sizes: ["10mg"], color: "#7ECDC4", price: 55, popular: false },
-  { id: 7, name: "Epithalon", slug: "epithalon", category: "Cellular", sizes: ["10mg", "30mg"], color: "#5BB8AE", price: 55, popular: true },
-  { id: 8, name: "MOTS-C", slug: "mots-c", category: "Cellular", sizes: ["10mg", "20mg"], color: "#5BB8AE", price: 90, popular: false },
-  { id: 9, name: "GLOW", slug: "glow", category: "Cellular", sizes: ["70mg"], color: "#5BB8AE", price: 90, popular: false },
-  { id: 10, name: "KLOW", slug: "klow", category: "Cellular", sizes: ["80mg"], color: "#5BB8AE", price: 90, popular: false },
-  { id: 11, name: "Semax", slug: "semax", category: "Neural", sizes: ["10mg"], color: "#3A9E94", price: 70, popular: false },
-  { id: 12, name: "TZ-30", slug: "tz-30", category: "Neural", sizes: ["30mg"], color: "#3A9E94", price: 80, popular: false },
-  { id: 13, name: "TZ-10", slug: "tz-10", category: "Neural", sizes: ["10mg"], color: "#3A9E94", price: 60, popular: false },
+  { id: 1, name: "BPC-157", slug: "bpc-157", category: "Tissue", sizes: ["10mg", "20mg"], color: "#dbcfba", price: 55, popular: true },
+  { id: 2, name: "TB-500", slug: "tb-500", category: "Tissue", sizes: ["10mg"], color: "#dbcfba", price: 60, popular: true },
+  { id: 3, name: "KPV", slug: "kpv", category: "Tissue", sizes: ["5mg", "10mg"], color: "#dbcfba", price: 40, popular: false },
+  { id: 4, name: "GHK-Cu", slug: "ghk-cu", category: "Tissue", sizes: ["50mg"], color: "#d7cab3", price: 60, popular: false },
+  { id: 5, name: "RT-30", slug: "rt-30", category: "Tissue", sizes: ["30mg"], color: "#dbcfba", price: 75, popular: false },
+  { id: 6, name: "RT-10", slug: "rt-10", category: "Tissue", sizes: ["10mg"], color: "#dbcfba", price: 55, popular: false },
+  { id: 7, name: "Epithalon", slug: "epithalon", category: "Cellular", sizes: ["10mg", "30mg"], color: "#d7cab3", price: 55, popular: true },
+  { id: 8, name: "MOTS-C", slug: "mots-c", category: "Cellular", sizes: ["10mg", "20mg"], color: "#d7cab3", price: 90, popular: false },
+  { id: 9, name: "GLOW", slug: "glow", category: "Cellular", sizes: ["70mg"], color: "#d7cab3", price: 90, popular: false },
+  { id: 10, name: "KLOW", slug: "klow", category: "Cellular", sizes: ["80mg"], color: "#d7cab3", price: 90, popular: false },
+  { id: 11, name: "Semax", slug: "semax", category: "Neural", sizes: ["10mg"], color: "#d3c4ab", price: 70, popular: false },
+  { id: 12, name: "TZ-30", slug: "tz-30", category: "Neural", sizes: ["30mg"], color: "#d3c4ab", price: 80, popular: false },
+  { id: 13, name: "TZ-10", slug: "tz-10", category: "Neural", sizes: ["10mg"], color: "#d3c4ab", price: 60, popular: false },
   { id: 14, name: "NAD+", slug: "nad-plus", category: "Metabolic", sizes: ["250mg", "500mg"], color: "#C8A84B", price: 75, popular: true },
   { id: 15, name: "SS-31", slug: "ss-31", category: "Metabolic", sizes: ["10mg"], color: "#C8A84B", price: 95, popular: false },
   { id: 16, name: "PT-141", slug: "pt-141", category: "Endocrine", sizes: ["10mg"], color: "#B8943A", price: 65, popular: false },
@@ -81,8 +81,8 @@ function StaticCard({ product, onAdd, added }: {
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
               product.isMock
                 ? "bg-gray-100 text-gray-300 cursor-not-allowed opacity-0 group-hover:opacity-100"
-                : added ? "bg-[#3A9E94] text-white opacity-100 scale-110"
-                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#3A9E94] hover:text-white"
+                : added ? "bg-[#d3c4ab] text-white opacity-100 scale-110"
+                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white"
             }`}
           >
             {product.isMock ? <X size={13} /> : added ? <Check size={13} /> : <Plus size={13} />}
@@ -100,7 +100,7 @@ function StaticCard({ product, onAdd, added }: {
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#3A9E94] transition-colors">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors">{product.name}</h3>
         </Link>
         <div className="flex flex-wrap gap-1 mb-2">
           {product.sizes.map((s) => (
@@ -206,9 +206,9 @@ export default function Compounds() {
       <div className="container py-10">
         {/* Page header */}
         <div className="mb-8">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[#3A9E94] mb-1">Full Catalog</p>
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-1">Full Catalog</p>
           <h1 className="text-3xl font-extrabold text-gray-950">Research Compounds</h1>
-          <div className="w-10 h-0.5 bg-gradient-to-r from-[#7ECDC4] to-[#C8A84B] mt-2 mb-3 rounded-full" />
+          <div className="w-10 h-0.5 bg-gradient-to-r from-[#dbcfba] to-[#C8A84B] mt-2 mb-3 rounded-full" />
           <p className="text-gray-400 text-sm">
             {totalCount} compound{totalCount !== 1 ? "s" : ""} across {sidebarCats.length} research categories.
             Click any card to view the full research monograph.
@@ -224,7 +224,7 @@ export default function Compounds() {
                 onClick={() => { setSelectedCategory(undefined); setSelectedStaticCat(null); }}
                 className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors ${
                   !selectedCategory && !selectedStaticCat
-                    ? "bg-[#3A9E94] text-white"
+                    ? "bg-[#d3c4ab] text-white"
                     : "text-gray-700 hover:bg-[#F5F2EC]"
                 }`}
               >
@@ -245,7 +245,7 @@ export default function Compounds() {
                         else setSelectedStaticCat(active ? null : cat.name);
                       }}
                       className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                        active ? "bg-[#E8F7F6] text-[#2A8E84] font-semibold" : "text-gray-600 hover:bg-[#F5F2EC]"
+                        active ? "bg-[#f2ede6] text-[#baac96] font-semibold" : "text-gray-600 hover:bg-[#F5F2EC]"
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
@@ -259,7 +259,7 @@ export default function Compounds() {
               </div>
             </div>
             {/* Find CTA */}
-            <button className="w-full flex items-center justify-center gap-2 border border-[#7ECDC4]/50 text-[#3A9E94] text-xs font-semibold py-2.5 rounded-xl hover:bg-[#E8F7F6] transition-colors">
+            <button className="w-full flex items-center justify-center gap-2 border border-[#dbcfba]/50 text-[#d3c4ab] text-xs font-semibold py-2.5 rounded-xl hover:bg-[#f2ede6] transition-colors">
               <FlaskConical size={12} />Find Your Compound
             </button>
           </aside>
@@ -273,7 +273,7 @@ export default function Compounds() {
                 <input
                   type="text" value={search} onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, CAS number, or mechanism..."
-                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4] transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] transition-all"
                 />
                 {search && (
                   <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -295,7 +295,7 @@ export default function Compounds() {
                     <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
                       {Object.entries(SORT_LABELS).map(([val, label]) => (
                         <button key={val} onClick={() => { setSortBy(val as SortOption); setSortOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${sortBy === val ? "bg-[#E8F7F6] text-[#2A8E84] font-semibold" : "text-gray-700 hover:bg-[#F5F2EC]"}`}>
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${sortBy === val ? "bg-[#f2ede6] text-[#baac96] font-semibold" : "text-gray-700 hover:bg-[#F5F2EC]"}`}>
                           {label}
                         </button>
                       ))}
@@ -315,7 +315,7 @@ export default function Compounds() {
               <button
                 onClick={() => { setSelectedCategory(undefined); setSelectedStaticCat(null); }}
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  !selectedCategory && !selectedStaticCat ? "bg-[#3A9E94] text-white border-[#3A9E94]" : "bg-white text-gray-600 border-gray-200"
+                  !selectedCategory && !selectedStaticCat ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200"
                 }`}
               >
                 <FlaskConical size={11} /> All
@@ -329,7 +329,7 @@ export default function Compounds() {
                       else setSelectedStaticCat(active ? null : cat.name);
                     }}
                     className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                      active ? "bg-[#3A9E94] text-white border-[#3A9E94]" : "bg-white text-gray-600 border-gray-200"
+                      active ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200"
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />{cat.name}
@@ -356,7 +356,7 @@ export default function Compounds() {
                   <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4"><FlaskConical size={24} className="text-gray-300" /></div>
                   <p className="font-semibold text-gray-700 mb-1">No compounds found</p>
                   <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
-                  <button onClick={() => { setSearch(""); setSelectedStaticCat(null); }} className="mt-4 text-sm text-[#3A9E94] font-semibold hover:underline">Clear filters</button>
+                  <button onClick={() => { setSearch(""); setSelectedStaticCat(null); }} className="mt-4 text-sm text-[#d3c4ab] font-semibold hover:underline">Clear filters</button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">

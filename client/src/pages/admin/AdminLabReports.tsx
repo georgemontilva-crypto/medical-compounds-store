@@ -121,7 +121,7 @@ export default function AdminLabReports() {
           </div>
           <button
             onClick={() => setShowUploadForm(true)}
-            className="flex items-center gap-2 bg-[#3A9E94] hover:bg-[#2A8E84] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
           >
             <Plus size={15} />
             Upload Report
@@ -150,7 +150,7 @@ export default function AdminLabReports() {
                   <select
                     value={selectedProductId ?? ""}
                     onChange={(e) => setSelectedProductId(Number(e.target.value) || null)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4]"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]"
                     required
                   >
                     <option value="">Select a product...</option>
@@ -170,7 +170,7 @@ export default function AdminLabReports() {
                     value={form.title}
                     onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                     placeholder="e.g. Certificate of Analysis — Batch 2024-01"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4]"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]"
                     required
                   />
                 </div>
@@ -185,7 +185,7 @@ export default function AdminLabReports() {
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     placeholder="Optional description or notes..."
                     rows={2}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4] resize-none"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] resize-none"
                   />
                 </div>
 
@@ -200,7 +200,7 @@ export default function AdminLabReports() {
                       value={form.batchNumber}
                       onChange={(e) => setForm((f) => ({ ...f, batchNumber: e.target.value }))}
                       placeholder="e.g. BPC-2024-01"
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4]"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]"
                     />
                   </div>
                   <div>
@@ -211,7 +211,7 @@ export default function AdminLabReports() {
                       type="date"
                       value={form.testDate}
                       onChange={(e) => setForm((f) => ({ ...f, testDate: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#7ECDC4]/30 focus:border-[#7ECDC4]"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]"
                     />
                   </div>
                 </div>
@@ -226,7 +226,7 @@ export default function AdminLabReports() {
                     className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
                       form.fileBase64
                         ? "border-emerald-300 bg-emerald-50"
-                        : "border-gray-200 hover:border-[#7ECDC4] hover:bg-[#E8F7F6]/30"
+                        : "border-gray-200 hover:border-[#dbcfba] hover:bg-[#f2ede6]/30"
                     }`}
                   >
                     {form.fileBase64 ? (
@@ -266,7 +266,7 @@ export default function AdminLabReports() {
                   <button
                     type="submit"
                     disabled={uploading || uploadMutation.isPending}
-                    className="flex-1 bg-[#3A9E94] hover:bg-[#2A8E84] disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+                    className="flex-1 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
                   >
                     {uploading || uploadMutation.isPending ? "Uploading..." : "Upload Report"}
                   </button>
@@ -301,8 +301,8 @@ export default function AdminLabReports() {
                 <div key={productId} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
                   {/* Product header */}
                   <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-50 bg-gray-50/50">
-                    <div className="w-8 h-8 rounded-lg bg-[#E8F7F6] flex items-center justify-center">
-                      <FlaskConical size={14} className="text-[#3A9E94]" />
+                    <div className="w-8 h-8 rounded-lg bg-[#f2ede6] flex items-center justify-center">
+                      <FlaskConical size={14} className="text-[#d3c4ab]" />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-gray-900">{product?.name ?? `Product #${productId}`}</p>
@@ -341,7 +341,7 @@ export default function AdminLabReports() {
                             href={report.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-[#3A9E94] hover:text-[#2A8E84] font-medium px-3 py-1.5 rounded-lg hover:bg-[#E8F7F6] transition-colors"
+                            className="text-xs text-[#d3c4ab] hover:text-[#baac96] font-medium px-3 py-1.5 rounded-lg hover:bg-[#f2ede6] transition-colors"
                           >
                             View PDF
                           </a>
