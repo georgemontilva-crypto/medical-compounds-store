@@ -1128,7 +1128,7 @@ export default function Home() {
 
       {/* Desktop (≥768px): image with text overlay — unchanged */}
       <Reveal>
-      <section className="hidden md:block relative overflow-hidden h-80 lg:h-96">
+      <section className="hidden md:block relative overflow-hidden aspect-[1738/905]">
         <img
           src={imageBySlot["home_lab_banner"] ?? "/manus-storage/modern-lab_a86acfc6.jpg"}
           alt="Modern research laboratory"
