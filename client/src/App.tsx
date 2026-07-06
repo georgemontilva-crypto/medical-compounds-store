@@ -5,7 +5,7 @@ import { Route, Switch, useLocation } from "wouter";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ComplianceProvider } from "./contexts/ComplianceContext";
@@ -125,26 +125,38 @@ function ScrollToTop() {
   return null;
 }
 
-function App() {
+// Syncs the admin-uploaded hex background pattern into a CSS var consumed by
+// .hex-cream/.hex-section/.hex-teal. In dark mode the pattern is forced off
+// site-wide — those classes fall back to a plain dark surface instead of the
+// uploaded texture. Lives inside ThemeProvider so it can read the active theme.
+function BackgroundPatternSync() {
   const { data: bgPattern } = trpc.siteImages.getBySlot.useQuery({ slotKey: "global_background_pattern" });
+  const { theme } = useTheme();
 
   useEffect(() => {
-    initLenis();
-  }, []);
-
-  useEffect(() => {
-    if (bgPattern?.url) {
+    if (theme === "dark") {
+      document.documentElement.style.setProperty("--hex-bg-pattern", "none");
+      document.documentElement.style.removeProperty("--hex-bg-size");
+    } else if (bgPattern?.url) {
       document.documentElement.style.setProperty("--hex-bg-pattern", `url("${bgPattern.url}")`);
       document.documentElement.style.setProperty("--hex-bg-size", "auto");
     } else {
       document.documentElement.style.removeProperty("--hex-bg-pattern");
       document.documentElement.style.removeProperty("--hex-bg-size");
     }
-  }, [bgPattern]);
+  }, [bgPattern, theme]);
+
+  return null;
+}
+
+function App() {
+  useEffect(() => {
+    initLenis();
+  }, []);
 
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <AuthProvider>
             <CartProvider>
@@ -153,6 +165,7 @@ function App() {
                 <LoadingScreen />
                 <Toaster position="top-right" />
                 <ScrollToTop />
+                <BackgroundPatternSync />
                 <Router />
                 <CartDrawer />
                 <FloatingCartButton />

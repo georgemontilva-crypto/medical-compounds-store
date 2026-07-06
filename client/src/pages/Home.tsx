@@ -8,6 +8,8 @@ import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
 import Reveal from "@/components/Reveal";
 import ProductCard from "@/components/ProductCard";
+import ParticleBackground from "@/components/ParticleBackground";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // ── Placeholder image component ──────────────────────────────────────────────
 function VialPlaceholder({ label, size = "10mg", color = "#a78bfa", large = false }: { label: string; size?: string; color?: string; large?: boolean }) {
@@ -49,11 +51,11 @@ const CAT_COLORS_MAP: Record<string, string> = {
 };
 const CAT_TEXT_MAP: Record<string, string> = {
   Tissue: "text-[#d3c4ab]", Cellular: "text-[#d3c4ab]", Neural: "text-[#baac96]",
-  Metabolic: "text-[#A07A28]", Endocrine: "text-[#A07A28]", Misc: "text-gray-500",
+  Metabolic: "text-[#A07A28] dark:text-[#C8A84B]", Endocrine: "text-[#A07A28] dark:text-[#C8A84B]", Misc: "text-gray-500 dark:text-gray-400",
 };
 const CAT_BG_MAP: Record<string, string> = {
-  Tissue: "bg-[#f2ede6]", Cellular: "bg-[#f2ede6]", Neural: "bg-[#DFF4F3]",
-  Metabolic: "bg-[#FBF6E8]", Endocrine: "bg-[#FBF6E8]", Misc: "bg-gray-50",
+  Tissue: "bg-[#f2ede6] dark:bg-white/10", Cellular: "bg-[#f2ede6] dark:bg-white/10", Neural: "bg-[#DFF4F3] dark:bg-white/10",
+  Metabolic: "bg-[#FBF6E8] dark:bg-white/10", Endocrine: "bg-[#FBF6E8] dark:bg-white/10", Misc: "bg-gray-50 dark:bg-white/10",
 };
 
 const CATALOG_PRODUCTS_RAW = [
@@ -95,12 +97,12 @@ function CatalogVialCard({ product, onAdd, added }: {
 }) {
   const catColor = CAT_COLORS_MAP[product.category] ?? "#6b7280";
   const catText = CAT_TEXT_MAP[product.category] ?? "text-gray-500";
-  const catBg = CAT_BG_MAP[product.category] ?? "bg-gray-50";
+  const catBg = CAT_BG_MAP[product.category] ?? "bg-gray-50 dark:bg-white/10";
   const hasVariations = product.sizes.length > 1;
   const shortLabel = product.name.length > 9 ? product.name.slice(0, 9) : product.name;
 
   return (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300 dark:bg-card dark:border-border dark:hover:border-white/20">
       <Link href={`/compounds/${product.slug}`}>
         <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
           <div className="w-full h-full flex items-center justify-center">
@@ -123,9 +125,9 @@ function CatalogVialCard({ product, onAdd, added }: {
             title={product.isMock ? "Coming soon — demo product, not yet purchasable" : undefined}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
               product.isMock
-                ? "bg-gray-100 text-gray-300 cursor-not-allowed opacity-0 group-hover:opacity-100"
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed opacity-0 group-hover:opacity-100 dark:bg-white/10 dark:text-gray-500"
                 : added ? "bg-[#d3c4ab] text-white opacity-100 scale-110"
-                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white"
+                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white dark:bg-white/10 dark:text-gray-300"
             }`}
           >
             {product.isMock ? <X size={13} /> : added ? <Check size={13} /> : <Plus size={13} />}
@@ -137,20 +139,20 @@ function CatalogVialCard({ product, onAdd, added }: {
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
           {product.isMock ? (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Coming soon</span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">Coming soon</span>
           ) : product.popular && (
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white">{product.name}</h3>
         </Link>
         <div className="flex flex-wrap gap-1 mb-2">
           {product.sizes.map((s) => (
-            <span key={s} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono">{s}</span>
+            <span key={s} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono dark:text-gray-500 dark:bg-white/10">{s}</span>
           ))}
         </div>
-        <p className="font-semibold text-gray-900 text-sm">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
+        <p className="font-semibold text-gray-900 text-sm dark:text-white">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
       </div>
     </div>
   );
@@ -216,7 +218,7 @@ function DocIntegritySection() {
   const cardDetail = data?.cardDetail || "QR access on every vial · ≥99% HPLC verified · US-made, GMP-aligned";
 
   return (
-    <section className="py-20 bg-[#0a0a0f]">
+    <section className="py-20 bg-[#0a0a0f] dark:bg-black">
       <div className="container grid md:grid-cols-2 gap-12 items-center">
         {/* Left */}
         <div>
@@ -238,7 +240,7 @@ function DocIntegritySection() {
 
         {/* Right: hero image + callouts */}
         <div>
-          <div className="relative rounded-3xl overflow-hidden h-72 md:h-[500px] bg-gradient-to-b from-white/5 to-transparent border border-white/10">
+          <div className="relative rounded-3xl overflow-hidden h-72 md:h-[500px] bg-gradient-to-b from-white/5 to-transparent border border-white/10 dark:bg-none dark:bg-background">
             {data?.heroImageUrl ? (
               <img src={data.heroImageUrl} alt="" className="w-full h-full object-contain" />
             ) : (
@@ -589,9 +591,9 @@ function CategoryShowcase() {
   if (n === 0) return null;
 
   return (
-    <section ref={sectionRef} className="relative bg-white" style={{ height: `${n * 100}vh` }}>
+    <section ref={sectionRef} className="relative bg-white dark:bg-background" style={{ height: `${n * 100}vh` }}>
       <div
-        className="sticky w-full overflow-hidden bg-white"
+        className="sticky w-full overflow-hidden bg-white dark:bg-background"
         style={{ top: NAVBAR_HEIGHT, height: `calc(100vh - ${NAVBAR_HEIGHT}px)` }}
       >
         {isDesktop ? (
@@ -630,6 +632,7 @@ function CategoryShowcase() {
 }
 
 function ResearchCatalogSection() {
+  const { theme } = useTheme();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined);
@@ -729,17 +732,25 @@ function ResearchCatalogSection() {
   };
 
   return (
-    <section className="py-20 bg-white">
-      <div className="container">
+    <section className="py-20 bg-white relative overflow-hidden dark:bg-background">
+      <ParticleBackground
+        color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
+        particleRadius={3.5}
+        particleOpacity={0.22}
+        lineOpacity={0.14}
+        linkDistance={150}
+        className="absolute inset-0 w-full h-full"
+      />
+      <div className="container relative z-10">
         {/* Header */}
         <div className="mb-10">
           <div className="inline-flex items-center gap-2 bg-[#f2ede6] border border-[#dbcfba]/30 text-[#d3c4ab] text-[11px] font-bold px-3 py-1.5 rounded-full mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-[#dbcfba]" />
             FULL CATALOG
           </div>
-          <h2 className="text-4xl font-extrabold text-gray-950 mb-1">Research Compounds</h2>
+          <h2 className="text-4xl font-extrabold text-gray-950 mb-1 dark:text-white">Research Compounds</h2>
           <div className="w-16 h-1 rounded-full bg-gradient-to-r from-[#dbcfba] via-[#C8A84B] to-[#d7cab3] mb-4" />
-          <p className="text-gray-500 text-sm max-w-xl">
+          <p className="text-gray-500 text-sm max-w-xl dark:text-gray-400">
             {totalCount} compounds across {sidebarCats.length} research categories. Click any card to view the full research monograph.
           </p>
         </div>
@@ -747,11 +758,11 @@ function ResearchCatalogSection() {
         {/* Layout: sidebar + content */}
         <div className="flex gap-8 items-start">
           {/* Sidebar */}
-          <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 bg-white border border-gray-100 rounded-2xl p-4 sticky top-[80px] self-start">
+          <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 bg-white border border-gray-100 rounded-2xl p-4 sticky top-[80px] self-start dark:bg-card dark:border-border">
             <button
               onClick={handleAllClick}
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                isAllActive ? "bg-[#d3c4ab] text-white" : "text-gray-700 hover:bg-[#F5F2EC]"
+                isAllActive ? "bg-[#d3c4ab] text-white" : "text-gray-700 hover:bg-[#F5F2EC] dark:text-gray-300 dark:hover:bg-white/5"
               }`}
             >
               <span className="flex items-center gap-2">
@@ -759,11 +770,11 @@ function ResearchCatalogSection() {
                 All Compounds
               </span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                isAllActive ? "bg-white/20 text-white" : "bg-[#F5F2EC] text-gray-500"
+                isAllActive ? "bg-white/20 text-white" : "bg-[#F5F2EC] text-gray-500 dark:bg-white/10 dark:text-gray-400"
               }`}>{totalCount}</span>
             </button>
 
-            <div className="h-px bg-gray-100 my-2" />
+            <div className="h-px bg-gray-100 my-2 dark:bg-white/10" />
 
             {sidebarCats.map((cat) => {
               const isActive = isCatActive(cat.key);
@@ -772,22 +783,22 @@ function ResearchCatalogSection() {
                   key={cat.key}
                   onClick={() => handleCatClick(cat.key)}
                   className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
-                    isActive ? "bg-[#f2ede6] font-semibold text-gray-900" : "text-gray-600 hover:bg-[#F5F2EC]"
+                    isActive ? "bg-[#f2ede6] font-semibold text-gray-900 dark:bg-white/10 dark:text-white" : "text-gray-600 hover:bg-[#F5F2EC] dark:text-gray-300 dark:hover:bg-white/5"
                   }`}
                 >
                   <span className="flex items-center gap-2.5">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                     {cat.name}
                   </span>
-                  <span className="text-xs text-gray-400">{cat.count}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{cat.count}</span>
                 </button>
               );
             })}
 
-            <div className="h-px bg-gray-100 my-2" />
+            <div className="h-px bg-gray-100 my-2 dark:bg-white/10" />
 
             <Link href="/compounds">
-              <button className="w-full flex items-center justify-center gap-2 border border-[#dbcfba]/50 text-[#d3c4ab] hover:bg-[#f2ede6] text-xs font-semibold py-2.5 rounded-xl transition-colors">
+              <button className="w-full flex items-center justify-center gap-2 border border-[#dbcfba]/50 text-[#d3c4ab] hover:bg-[#f2ede6] text-xs font-semibold py-2.5 rounded-xl transition-colors dark:hover:bg-white/10">
                 <FlaskConical size={13} />
                 Find Your Compound
               </button>
@@ -799,27 +810,27 @@ function ResearchCatalogSection() {
             {/* Search + sort bar */}
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-1 relative">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder="Search by name, CAS number, or mechanism..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] transition-all"
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] transition-all dark:border-border dark:bg-card"
                 />
               </div>
               <div className="relative">
                 <button
                   onClick={() => setSortOpen(!sortOpen)}
-                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 font-medium hover:border-[#dbcfba] hover:text-[#baac96] transition-all whitespace-nowrap"
+                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 font-medium hover:border-[#dbcfba] hover:text-[#baac96] transition-all whitespace-nowrap dark:bg-card dark:border-border dark:text-gray-300"
                 >
                   {SORT_LABELS[sortBy]}
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${sortOpen ? "rotate-180 text-[#baac96]" : "text-gray-400"}`} />
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${sortOpen ? "rotate-180 text-[#baac96]" : "text-gray-400 dark:text-gray-500"}`} />
                 </button>
                 {sortOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-[#C8D8D6] rounded-xl shadow-lg shadow-[#d3c4ab]/10 z-20 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-[#C8D8D6] rounded-xl shadow-lg shadow-[#d3c4ab]/10 z-20 overflow-hidden dark:bg-card dark:border-border dark:shadow-black/40">
                       {(Object.entries(SORT_LABELS) as [HomeSortOption, string][]).map(([val, label]) => (
                         <button
                           key={val}
@@ -827,7 +838,7 @@ function ResearchCatalogSection() {
                           className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                             sortBy === val
                               ? "bg-[#f2ede6] text-[#baac96] font-semibold border-l-2 border-[#d3c4ab]"
-                              : "text-gray-700 hover:bg-[#F5F2EC] hover:text-[#d3c4ab]"
+                              : "text-gray-700 hover:bg-[#F5F2EC] hover:text-[#d3c4ab] dark:text-gray-300 dark:hover:bg-white/5"
                           }`}
                         >
                           {label}
@@ -844,7 +855,7 @@ function ResearchCatalogSection() {
               <button
                 onClick={handleAllClick}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  isAllActive ? "bg-[#d3c4ab] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  isAllActive ? "bg-[#d3c4ab] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15"
                 }`}
               >All ({totalCount})</button>
               {sidebarCats.map((cat) => (
@@ -852,7 +863,7 @@ function ResearchCatalogSection() {
                   key={cat.key}
                   onClick={() => handleCatClick(cat.key)}
                   className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                    isCatActive(cat.key) ? "bg-[#d3c4ab] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    isCatActive(cat.key) ? "bg-[#d3c4ab] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15"
                   }`}
                 >{cat.name} ({cat.count})</button>
               ))}
@@ -862,17 +873,17 @@ function ResearchCatalogSection() {
             {isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
-                    <div className="h-48 bg-gray-100" />
+                  <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden animate-pulse dark:bg-card dark:border-border">
+                    <div className="h-48 bg-gray-100 dark:bg-white/10" />
                     <div className="p-4 space-y-2">
-                      <div className="h-3 bg-gray-100 rounded w-1/3" /><div className="h-4 bg-gray-100 rounded w-2/3" /><div className="h-3 bg-gray-100 rounded w-1/4" />
+                      <div className="h-3 bg-gray-100 rounded w-1/3 dark:bg-white/10" /><div className="h-4 bg-gray-100 rounded w-2/3 dark:bg-white/10" /><div className="h-3 bg-gray-100 rounded w-1/4 dark:bg-white/10" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : useStaticData ? (
               filteredStatic.length === 0 ? (
-                <div className="text-center py-20 text-gray-400">
+                <div className="text-center py-20 text-gray-400 dark:text-gray-500">
                   <FlaskConical size={32} className="mx-auto mb-3 opacity-30" />
                   <p className="font-medium">No compounds found</p>
                 </div>
@@ -910,7 +921,7 @@ function ResearchCatalogSection() {
             {/* View all link */}
             <div className="text-center mt-10">
               <Link href="/compounds">
-                <button className="inline-flex items-center gap-2 border border-gray-200 text-gray-600 hover:text-[#d3c4ab] hover:border-[#dbcfba]/50 hover:bg-[#f2ede6]/40 text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
+                <button className="inline-flex items-center gap-2 border border-gray-200 text-gray-600 hover:text-[#d3c4ab] hover:border-[#dbcfba]/50 hover:bg-[#f2ede6]/40 text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors dark:border-border dark:text-gray-300 dark:hover:bg-white/5">
                   View Full Catalog <ArrowRight size={14} />
                 </button>
               </Link>
@@ -924,13 +935,14 @@ function ResearchCatalogSection() {
 
 // ── Main Home ─────────────────────────────────────────────────────────────────
 export default function Home() {
+  const { theme } = useTheme();
   const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
   const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
   const { data: allProducts = [] } = trpc.products.list.useQuery();
   const { data: allCategories = [] } = trpc.categories.list.useQuery();
 
   return (
-    <div className="min-h-screen bg-[#f8f8fa]">
+    <div className="min-h-screen bg-[#f8f8fa] dark:bg-background">
       <Navbar />
 
       {/* ── HERO SLIDER ──────────────────────────────────────────────────── */}
@@ -1054,7 +1066,7 @@ export default function Home() {
       </section>
 
       {/* ── STATS BAR ────────────────────────────────────────────────────── */}
-      <section className="bg-gray-950 text-white py-8">
+      <section className="bg-gray-950 dark:bg-black text-white py-8">
         <div className="container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -1090,12 +1102,12 @@ export default function Home() {
             className="w-full h-full object-cover object-[85%_center]"
           />
         </div>
-        <div className="bg-[#F5F2EC] px-6 py-8">
+        <div className="bg-[#F5F2EC] px-6 py-8 dark:bg-background">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-3">Quality Assurance</p>
-          <h2 className="text-2xl font-extrabold text-gray-950 leading-tight mb-4">
+          <h2 className="text-2xl font-extrabold text-gray-950 leading-tight mb-4 dark:text-white">
             Manufactured to the <span className="text-[#d3c4ab]">Highest Standards</span>
           </h2>
-          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+          <p className="text-gray-500 text-sm leading-relaxed mb-6 dark:text-gray-400">
             Every compound is produced in GMP-compliant facilities, lyophilized for maximum stability, and verified by third-party HPLC analysis.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -1104,9 +1116,9 @@ export default function Home() {
               { label: "HPLC Verified" },
               { label: "COA Included" },
             ].map((item) => (
-              <div key={item.label} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5">
+              <div key={item.label} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 dark:bg-white/10 dark:border-white/10">
                 <Check size={12} className="text-[#d3c4ab]" />
-                <span className="text-gray-700 text-xs font-semibold">{item.label}</span>
+                <span className="text-gray-700 text-xs font-semibold dark:text-gray-300">{item.label}</span>
               </div>
             ))}
           </div>
@@ -1122,7 +1134,7 @@ export default function Home() {
           alt="Modern research laboratory"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d1a18]/80 via-[#0d1a18]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d1a18]/80 via-[#0d1a18]/50 to-transparent dark:bg-none dark:bg-background/70" />
         <div className="absolute inset-0 flex items-center">
           <div className="container">
             <div className="max-w-lg">
@@ -1159,8 +1171,16 @@ export default function Home() {
       </Reveal>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="py-20">
-        <div className="container">
+      <section className="py-20 relative overflow-hidden">
+        <ParticleBackground
+          color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
+          particleRadius={3.5}
+          particleOpacity={0.22}
+          lineOpacity={0.14}
+          linkDistance={150}
+          className="absolute inset-0 w-full h-full"
+        />
+        <div className="container relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: image */}
             <div className="relative rounded-3xl overflow-hidden shadow-xl h-80 lg:h-[420px]">
@@ -1169,7 +1189,7 @@ export default function Home() {
                 alt="Scientist working in research laboratory"
                 className="w-full h-full object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d1a18]/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d1a18]/60 via-transparent to-transparent dark:bg-none dark:bg-background/70" />
               <div className="absolute bottom-6 left-6 right-6">
                 <p className="text-white font-bold text-lg leading-tight">GMP-Compliant Manufacturing</p>
                 <p className="text-white/70 text-sm mt-1">Every batch produced under strict quality controls</p>
@@ -1178,8 +1198,8 @@ export default function Home() {
             {/* Right: steps */}
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-2">Process</p>
-              <h2 className="text-3xl font-extrabold text-gray-950 mb-3">How It Works</h2>
-              <p className="text-gray-400 mb-10 max-w-md">From catalog to your laboratory in a few simple steps.</p>
+              <h2 className="text-3xl font-extrabold text-gray-950 mb-3 dark:text-white">How It Works</h2>
+              <p className="text-gray-400 mb-10 max-w-md dark:text-gray-500">From catalog to your laboratory in a few simple steps.</p>
               <div className="flex flex-col gap-6">
                 {[
                   { step: "01", title: "Browse & Select", desc: "Explore our catalog of research compounds, filter by category or mechanism, and select your compound and dosage." },
@@ -1187,12 +1207,12 @@ export default function Home() {
                   { step: "03", title: "Fast Dispatch", desc: "Orders are processed same-day. Each vial ships with a Certificate of Analysis confirming purity and identity." },
                 ].map((item) => (
                   <div key={item.step} className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-[#f2ede6] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#f2ede6] flex items-center justify-center shrink-0 dark:bg-white/10">
                       <span className="text-sm font-extrabold text-[#d3c4ab]">{item.step}</span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
-                      <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
+                      <h3 className="font-bold text-gray-900 mb-1 dark:text-white">{item.title}</h3>
+                      <p className="text-sm text-gray-400 leading-relaxed dark:text-gray-500">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -1203,7 +1223,7 @@ export default function Home() {
       </section>
 
       {/* ── CTA BANNER ───────────────────────────────────────────────────── */}
-      <section className="py-20 bg-gradient-to-br from-[#0d1a18] via-[#163028] to-[#0a1f18] relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-[#0d1a18] via-[#163028] to-[#0a1f18] relative overflow-hidden dark:bg-none dark:bg-black">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
           <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />

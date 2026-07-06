@@ -51,7 +51,7 @@ function OperationalTimeline() {
   const { ref, inView } = useInView<HTMLDivElement>(0.2);
   return (
     <div ref={ref} className="relative">
-      <div className="hidden sm:block absolute top-6 left-[10%] right-[10%] h-px bg-gray-200">
+      <div className="hidden sm:block absolute top-6 left-[10%] right-[10%] h-px bg-gray-200 dark:bg-white/10">
         <div
           className="h-full bg-[#d3c4ab] transition-all duration-[1400ms] ease-out"
           style={{ width: inView ? "100%" : "0%" }}
@@ -68,11 +68,11 @@ function OperationalTimeline() {
               transitionDelay: inView ? `${i * 130}ms` : "0ms",
             }}
           >
-            <div className="w-12 h-12 rounded-full bg-white border-2 border-[#d3c4ab] flex items-center justify-center mx-auto mb-3 relative z-10">
+            <div className="w-12 h-12 rounded-full bg-white border-2 border-[#d3c4ab] flex items-center justify-center mx-auto mb-3 relative z-10 dark:bg-background">
               <step.icon size={18} className="text-[#d3c4ab]" />
             </div>
-            <p className="font-bold text-gray-900 text-sm mb-1">{step.title}</p>
-            <p className="text-gray-500 text-xs leading-relaxed">{step.description}</p>
+            <p className="font-bold text-gray-900 text-sm mb-1 dark:text-white">{step.title}</p>
+            <p className="text-gray-500 text-xs leading-relaxed dark:text-gray-400">{step.description}</p>
           </div>
         ))}
       </div>
@@ -84,23 +84,23 @@ export default function ScienceResponsibleSupply() {
   const { data: heroImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "responsible_supply_hero_image" });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-background">
       <Navbar />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#f8f8fa] py-16 lg:py-24">
+        <section className="bg-[#f8f8fa] dark:bg-background py-16 lg:py-24">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-4">
                 Responsible Supply
               </p>
-              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5">
+              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5 dark:text-white">
                 Discipline at every
                 <br />
                 step of the chain.
               </h1>
-              <p className="text-gray-500 text-base leading-relaxed mb-8 max-w-lg">
+              <p className="text-gray-500 text-base leading-relaxed mb-8 max-w-lg dark:text-gray-400">
                 Responsible sourcing isn't a marketing line — it's operational control over how a compound is
                 manufactured, packaged, and handled before it reaches a researcher's bench. Brighter Days Labs
                 treats each of those steps as a discipline with its own standard.
@@ -114,8 +114,8 @@ export default function ScienceResponsibleSupply() {
                   { label: "Cold-chain", value: "Not required" },
                 ].map((m) => (
                   <div key={m.label}>
-                    <p className="text-lg font-extrabold text-gray-950">{m.value}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{m.label}</p>
+                    <p className="text-lg font-extrabold text-gray-950 dark:text-white">{m.value}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">{m.label}</p>
                   </div>
                 ))}
               </div>
@@ -127,7 +127,7 @@ export default function ScienceResponsibleSupply() {
                 ].map((line) => (
                   <div key={line} className="flex items-start gap-2.5">
                     <Check size={16} className="text-[#d3c4ab] mt-0.5 shrink-0" />
-                    <span className="text-sm text-gray-600">{line}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{line}</span>
                   </div>
                 ))}
               </div>
@@ -140,7 +140,7 @@ export default function ScienceResponsibleSupply() {
               </Link>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f]">
+            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f] dark:bg-none dark:bg-black">
               {heroImage?.url ? (
                 <img src={heroImage.url} alt="Responsible supply chain" className="w-full h-full object-cover" />
               ) : (
@@ -155,7 +155,7 @@ export default function ScienceResponsibleSupply() {
 
       {/* ── 01 · DOMESTIC SYNTHESIS ───────────────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-20">
+        <section className="bg-[#0a0a0f] dark:bg-black py-20">
           <div className="container">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#dbcfba]">01</span>
@@ -185,34 +185,34 @@ export default function ScienceResponsibleSupply() {
 
       {/* ── 02 · DOCUMENTATION INTEGRITY ──────────────────────────────────── */}
       <Reveal>
-        <section className="bg-white py-20">
+        <section className="bg-white dark:bg-background py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#d3c4ab]">02</span>
-              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Integrity</span>
+              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 dark:text-gray-500">Integrity</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">Documentation integrity</h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-xl">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 dark:text-white">Documentation integrity</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-xl dark:text-gray-400">
               Every batch is checked against the same criteria before it's cleared to ship.
             </p>
 
-            <div className="border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_auto] bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <div className="border border-gray-100 rounded-2xl overflow-hidden dark:border-border">
+              <div className="grid grid-cols-[1fr_auto] bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:bg-white/5 dark:text-gray-500">
                 <div className="px-5 py-3">Criterion</div>
                 <div className="px-5 py-3 text-right">Status</div>
               </div>
               {DOCUMENTATION_CHECKS.map((row, i) => (
                 <div
                   key={row.criterion}
-                  className={`grid grid-cols-[1fr_auto] items-center ${i !== 0 ? "border-t border-gray-100" : ""}`}
+                  className={`grid grid-cols-[1fr_auto] items-center ${i !== 0 ? "border-t border-gray-100 dark:border-border" : ""}`}
                 >
-                  <div className="px-5 py-4 text-sm font-semibold text-gray-800">{row.criterion}</div>
+                  <div className="px-5 py-4 text-sm font-semibold text-gray-800 dark:text-gray-100">{row.criterion}</div>
                   <div className="px-5 py-4 text-right">
                     <span
                       className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
                         row.status === "Verified"
-                          ? "bg-[#f2ede6] text-[#d3c4ab]"
-                          : "bg-amber-50 text-amber-600"
+                          ? "bg-[#f2ede6] text-[#d3c4ab] dark:bg-white/10"
+                          : "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
                       }`}
                     >
                       {row.status}
@@ -227,7 +227,7 @@ export default function ScienceResponsibleSupply() {
 
       {/* ── 03 · PACKAGING CLARITY ────────────────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-20">
+        <section className="bg-[#0a0a0f] dark:bg-black py-20">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -254,16 +254,16 @@ export default function ScienceResponsibleSupply() {
 
       {/* ── 04 · OPERATIONAL DISCIPLINE ───────────────────────────────────── */}
       <Reveal>
-        <section className="bg-white py-20">
+        <section className="bg-white dark:bg-background py-20">
           <div className="container">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#d3c4ab]">04</span>
-              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Operations</span>
+              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 dark:text-gray-500">Operations</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 max-w-2xl">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 max-w-2xl dark:text-white">
               Operational discipline
             </h2>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-2xl mb-14">
+            <p className="text-gray-500 text-sm leading-relaxed max-w-2xl mb-14 dark:text-gray-400">
               Inventory handling follows the same sequence for every order, so a compound's chain of custody stays
               intact from the moment it's requested to the moment it ships.
             </p>
@@ -274,7 +274,7 @@ export default function ScienceResponsibleSupply() {
 
       {/* ── CIERRE · HONEST ABOUT WHAT WE ARE ────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-16">
+        <section className="bg-[#0a0a0f] dark:bg-black py-16">
           <div className="container max-w-2xl text-center">
             <p className="text-xs font-semibold tracking-widest uppercase text-white/40 mb-4">
               Honest About What We Are

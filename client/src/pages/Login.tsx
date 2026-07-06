@@ -3,13 +3,18 @@ import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { FlaskConical, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "@/contexts/ThemeContext";
+import ParticleBackground from "@/components/ParticleBackground";
 
 export default function Login() {
   const [, navigate] = useLocation();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPass, setShowPass] = useState(false);
   const utils = trpc.useUtils();
+  const { theme } = useTheme();
   const { data: logoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo" });
+  const { data: footerLogoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo_footer" });
+  const activeLogoUrl = theme === "dark" ? footerLogoImage?.url : logoImage?.url;
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
@@ -28,14 +33,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-dvh hex-cream flex items-center justify-center p-4" style={{ minHeight: "100dvh" }}>
-      <div className="w-full max-w-md">
+    <div className="min-h-dvh relative overflow-hidden bg-background flex items-center justify-center p-4" style={{ minHeight: "100dvh" }}>
+      <ParticleBackground
+        color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
+        particleRadius={3.5}
+        particleOpacity={0.22}
+        lineOpacity={0.14}
+        linkDistance={150}
+        className="absolute inset-0 w-full h-full"
+      />
+      <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/">
-            {logoImage?.url ? (
+            {activeLogoUrl ? (
               <div className="inline-flex items-center cursor-pointer">
-                <img src={logoImage.url} alt="Logo" className="h-16 w-auto object-contain" />
+                <img src={activeLogoUrl} alt="Logo" className="h-16 w-auto object-contain" />
               </div>
             ) : (
               <div className="inline-flex items-center gap-2.5 cursor-pointer">

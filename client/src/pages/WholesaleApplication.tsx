@@ -3,6 +3,8 @@ import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CreditCard, Percent, Package, UserCheck, Send, Check } from "lucide-react";
+import ParticleBackground from "@/components/ParticleBackground";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const BENEFITS = [
   { icon: CreditCard, title: "Flexible payment", description: "Net terms and purchase orders for qualified accounts." },
@@ -19,8 +21,8 @@ const VOLUME_OPTIONS = [
 ];
 
 const inputCls =
-  "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition";
-const labelCls = "block text-xs font-semibold text-gray-500 tracking-widest uppercase mb-1.5";
+  "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/40 focus:border-[#dbcfba] transition dark:border-border dark:bg-background dark:text-gray-100 dark:placeholder-gray-500";
+const labelCls = "block text-xs font-semibold text-gray-500 tracking-widest uppercase mb-1.5 dark:text-gray-400";
 
 type FormState = {
   fullName: string;
@@ -53,6 +55,7 @@ const emptyForm: FormState = {
 };
 
 export default function WholesaleApplication() {
+  const { theme } = useTheme();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitted, setSubmitted] = useState(false);
 
@@ -98,17 +101,25 @@ export default function WholesaleApplication() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8fa]">
+    <div className="min-h-screen bg-[#f8f8fa] dark:bg-background relative overflow-hidden">
+      <ParticleBackground
+        color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
+        particleRadius={3.5}
+        particleOpacity={0.22}
+        lineOpacity={0.14}
+        linkDistance={150}
+        className="absolute inset-0 w-full h-full"
+      />
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 py-16">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-3">Wholesale Application</p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-950 mb-4">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-950 mb-4 dark:text-white">
             Built for institutional research at volume
           </h1>
-          <p className="text-gray-500 text-base max-w-xl mx-auto leading-relaxed">
+          <p className="text-gray-500 text-base max-w-xl mx-auto leading-relaxed dark:text-gray-400">
             Brighter Days Labs partners with universities, contract labs, and research organizations that need
             consistent supply, documentation, and pricing at scale. Tell us about your program and our team will
             follow up.
@@ -118,33 +129,33 @@ export default function WholesaleApplication() {
         {/* Benefit cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {BENEFITS.map((b) => (
-            <div key={b.title} className="bg-white border border-gray-100 rounded-2xl p-5">
-              <div className="w-10 h-10 rounded-xl bg-[#f2ede6] flex items-center justify-center mb-3">
+            <div key={b.title} className="bg-white border border-gray-100 rounded-2xl p-5 dark:bg-card dark:border-border">
+              <div className="w-10 h-10 rounded-xl bg-[#f2ede6] flex items-center justify-center mb-3 dark:bg-white/10">
                 <b.icon size={17} className="text-[#d3c4ab]" />
               </div>
-              <p className="font-bold text-gray-900 text-sm mb-1">{b.title}</p>
-              <p className="text-gray-500 text-xs leading-relaxed">{b.description}</p>
+              <p className="font-bold text-gray-900 text-sm mb-1 dark:text-white">{b.title}</p>
+              <p className="text-gray-500 text-xs leading-relaxed dark:text-gray-400">{b.description}</p>
             </div>
           ))}
         </div>
 
         {/* Form */}
         {submitted ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-[#f2ede6] flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center dark:bg-card dark:border-border">
+            <div className="w-14 h-14 rounded-full bg-[#f2ede6] flex items-center justify-center mx-auto mb-4 dark:bg-white/10">
               <Check size={24} className="text-[#d3c4ab]" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Application received</h2>
-            <p className="text-gray-500 text-sm max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-gray-900 mb-2 dark:text-white">Application received</h2>
+            <p className="text-gray-500 text-sm max-w-md mx-auto dark:text-gray-400">
               Thanks, {form.fullName}. Our team is reviewing your application and will follow up at{" "}
-              <span className="font-semibold text-gray-700">{form.workEmail}</span> within 1-2 business days.
+              <span className="font-semibold text-gray-700 dark:text-gray-200">{form.workEmail}</span> within 1-2 business days.
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-10 space-y-10">
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-10 space-y-10 dark:bg-card dark:border-border">
             {/* About You */}
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">About You</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4 dark:text-gray-500">About You</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Full name <span className="text-[#d3c4ab]">*</span></label>
@@ -167,7 +178,7 @@ export default function WholesaleApplication() {
 
             {/* Your Research */}
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">Your Research</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4 dark:text-gray-500">Your Research</h2>
               <div className="mb-4">
                 <label className={labelCls}>Expected monthly volume <span className="text-[#d3c4ab]">*</span></label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -179,11 +190,11 @@ export default function WholesaleApplication() {
                         type="button"
                         onClick={() => set("expectedMonthlyVolume", v.value)}
                         className={`text-left rounded-xl border px-4 py-3 transition-colors ${
-                          active ? "border-[#d3c4ab] bg-[#f2ede6]" : "border-gray-200 bg-white hover:border-gray-300"
+                          active ? "border-[#d3c4ab] bg-[#f2ede6] dark:bg-white/10" : "border-gray-200 bg-white hover:border-gray-300 dark:border-border dark:bg-background dark:hover:border-white/20"
                         }`}
                       >
-                        <p className={`text-sm font-bold ${active ? "text-[#baac96]" : "text-gray-900"}`}>{v.label}</p>
-                        <p className="text-[11px] text-gray-400">{v.detail}</p>
+                        <p className={`text-sm font-bold ${active ? "text-[#baac96]" : "text-gray-900 dark:text-white"}`}>{v.label}</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">{v.detail}</p>
                       </button>
                     );
                   })}
@@ -195,15 +206,15 @@ export default function WholesaleApplication() {
                   type="checkbox"
                   checked={form.taxExempt}
                   onChange={(e) => set("taxExempt", e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-[#d3c4ab] focus:ring-[#dbcfba]"
+                  className="w-4 h-4 rounded border-gray-300 text-[#d3c4ab] focus:ring-[#dbcfba] dark:border-border"
                 />
-                <span className="text-sm text-gray-600">My organization is tax-exempt</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">My organization is tax-exempt</span>
               </label>
             </div>
 
             {/* Shipping Address */}
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">Shipping Address</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4 dark:text-gray-500">Shipping Address</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label className={labelCls}>Street address <span className="text-[#d3c4ab]">*</span></label>
@@ -226,7 +237,7 @@ export default function WholesaleApplication() {
 
             {/* Anything Else */}
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">Anything Else?</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4 dark:text-gray-500">Anything Else?</h2>
               <textarea
                 className={`${inputCls} resize-none`}
                 rows={4}
@@ -238,15 +249,15 @@ export default function WholesaleApplication() {
 
             {/* Stay in the Loop */}
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4">Stay in the Loop</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-4 dark:text-gray-500">Stay in the Loop</h2>
               <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={form.wantsUpdates}
                   onChange={(e) => set("wantsUpdates", e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-[#d3c4ab] focus:ring-[#dbcfba]"
+                  className="w-4 h-4 rounded border-gray-300 text-[#d3c4ab] focus:ring-[#dbcfba] dark:border-border"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   Send me occasional updates on new compounds, pricing, and lab reports
                 </span>
               </label>
@@ -264,7 +275,7 @@ export default function WholesaleApplication() {
         )}
 
         {/* Legal disclaimer */}
-        <p className="text-[11px] text-gray-400 text-center leading-relaxed mt-8 max-w-2xl mx-auto">
+        <p className="text-[11px] text-gray-400 text-center leading-relaxed mt-8 max-w-2xl mx-auto dark:text-gray-500">
           For Research Use Only. Not for Human Consumption. Submitting this application does not create an account
           or place an order — it requests review for wholesale-tier access.
         </p>

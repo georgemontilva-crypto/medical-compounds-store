@@ -3,7 +3,7 @@ import { FlaskConical, ArrowRight, FileText } from "lucide-react";
 
 export default function ReadyToStartBanner() {
   return (
-    <section className="py-20 bg-gradient-to-br from-[#0d1a18] via-[#163028] to-[#0a1f18] relative overflow-hidden">
+    <section className="py-20 bg-gradient-to-br from-[#0d1a18] via-[#163028] to-[#0a1f18] relative overflow-hidden dark:bg-none dark:bg-black">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />

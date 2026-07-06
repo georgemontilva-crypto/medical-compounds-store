@@ -31,7 +31,7 @@ export default function OrderDetail() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-lab-bg flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-lab-muted mb-4">Please sign in to view your order.</p>
           <Link href="/login">
@@ -44,7 +44,7 @@ export default function OrderDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-lab-bg flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="lab-spinner" />
       </div>
     );
@@ -52,7 +52,7 @@ export default function OrderDetail() {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-lab-bg flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-lab-muted mb-4">Order not found.</p>
           <Link href="/my-orders">

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 
 type Theme = "light" | "dark";
 
@@ -28,10 +29,16 @@ export function ThemeProvider({
     }
     return defaultTheme;
   });
+  const [location] = useLocation();
 
   useEffect(() => {
+    // The admin panel never gets dark mode, even if the public store toggle
+    // is set to dark — the class is applied to <html> so portaled content
+    // (modals, toasts, cart drawer) inherits it too, which means it has to
+    // be gated here rather than by scoping the class to a wrapper element.
+    const isAdminRoute = location.startsWith("/admin");
     const root = document.documentElement;
-    if (theme === "dark") {
+    if (theme === "dark" && !isAdminRoute) {
       root.classList.add("dark");
     } else {
       root.classList.remove("dark");
@@ -40,7 +47,7 @@ export function ThemeProvider({
     if (switchable) {
       localStorage.setItem("theme", theme);
     }
-  }, [theme, switchable]);
+  }, [theme, switchable, location]);
 
   const toggleTheme = switchable
     ? () => {

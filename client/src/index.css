@@ -5,13 +5,14 @@
 
 /* ── Google Fonts already loaded in index.html ───────────────────────────── */
 
-@theme inline {
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.5rem;
-
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME VARIABLES — plain custom properties so `.dark` can override them
+   at runtime. @theme inline below only aliases these into Tailwind's
+   theme namespace; it must reference var(--x) rather than literals, or
+   Tailwind bakes the light value into every utility at build time and
+   the .dark override becomes a no-op.
+══════════════════════════════════════════════════════════════════════════ */
+:root {
   /* ── Lab palette — extracted from Brighter Days Labs label ──────────────
      Beige/cream   : #E8DCC8 / #D4C5A9
      Accent (tan)  : #dbcfba / #d7cab3
@@ -21,55 +22,149 @@
   ──────────────────────────────────────────────────────────────────────── */
 
   /* Background: warm off-white derived from label cream */
-  --color-background:          oklch(0.972 0.008 80);   /* #F5F2EC */
-  --color-foreground:          oklch(0.13  0.005 240);  /* #1A1A1A */
+  --background:          oklch(0.972 0.008 80);   /* #F5F2EC */
+  --foreground:          oklch(0.13  0.005 240);  /* #1A1A1A */
 
   /* Card: pure white with slight warm tint */
-  --color-card:                oklch(1    0     0);
-  --color-card-foreground:     oklch(0.13 0.005 240);
+  --card:                oklch(1    0     0);
+  --card-foreground:     oklch(0.13 0.005 240);
 
-  --color-popover:             oklch(1    0     0);
-  --color-popover-foreground:  oklch(0.13 0.005 240);
+  --popover:             oklch(1    0     0);
+  --popover-foreground:  oklch(0.13 0.005 240);
 
   /* Primary: tan accent from label bottom bar */
-  --color-primary:             oklch(0.86 0.03 82);   /* #dbcfba */
-  --color-primary-foreground:  oklch(0.13 0.005 240);
+  --primary:             oklch(0.86 0.03 82);   /* #dbcfba */
+  --primary-foreground:  oklch(0.13 0.005 240);
 
   /* Secondary: warm beige from label background */
-  --color-secondary:           oklch(0.90 0.022 80);    /* #E8DCC8 */
-  --color-secondary-foreground:oklch(0.30 0.01  80);
+  --secondary:           oklch(0.90 0.022 80);    /* #E8DCC8 */
+  --secondary-foreground:oklch(0.30 0.01  80);
 
   /* Muted: lighter beige */
-  --color-muted:               oklch(0.95 0.012 80);
-  --color-muted-foreground:    oklch(0.50 0.01  80);
+  --muted:               oklch(0.95 0.012 80);
+  --muted-foreground:    oklch(0.50 0.01  80);
 
   /* Accent: gold/amber from label badges */
-  --color-accent:              oklch(0.78 0.10  75);    /* #C8A84B */
-  --color-accent-foreground:   oklch(0.13 0.005 240);
+  --accent:              oklch(0.78 0.10  75);    /* #C8A84B */
+  --accent-foreground:   oklch(0.13 0.005 240);
 
-  --color-destructive:         oklch(0.55 0.22  25);
-  --color-destructive-foreground: oklch(1 0 0);
+  --destructive:         oklch(0.55 0.22  25);
+  --destructive-foreground: oklch(1 0 0);
 
-  --color-border:              oklch(0.88 0.015 80);
-  --color-input:               oklch(0.88 0.015 80);
-  --color-ring:                oklch(0.86 0.03 82);
+  --border:              oklch(0.88 0.015 80);
+  --input:               oklch(0.88 0.015 80);
+  --ring:                oklch(0.86 0.03 82);
 
   /* Charts */
-  --color-chart-1:             oklch(0.86 0.03 82);
-  --color-chart-2:             oklch(0.78 0.10  75);
-  --color-chart-3:             oklch(0.90 0.022 80);
-  --color-chart-4:             oklch(0.55 0.22  25);
-  --color-chart-5:             oklch(0.45 0.10  240);
+  --chart-1:             oklch(0.86 0.03 82);
+  --chart-2:             oklch(0.78 0.10  75);
+  --chart-3:             oklch(0.90 0.022 80);
+  --chart-4:             oklch(0.55 0.22  25);
+  --chart-5:             oklch(0.45 0.10  240);
 
   /* Sidebar */
-  --color-sidebar:             oklch(0.97 0.008 80);
-  --color-sidebar-foreground:  oklch(0.13 0.005 240);
-  --color-sidebar-primary:     oklch(0.86 0.03 82);
-  --color-sidebar-primary-foreground: oklch(0.13 0.005 240);
-  --color-sidebar-accent:      oklch(0.93 0.015 80);
-  --color-sidebar-accent-foreground: oklch(0.30 0.01 80);
-  --color-sidebar-border:      oklch(0.88 0.015 80);
-  --color-sidebar-ring:        oklch(0.86 0.03 82);
+  --sidebar:             oklch(0.97 0.008 80);
+  --sidebar-foreground:  oklch(0.13 0.005 240);
+  --sidebar-primary:     oklch(0.86 0.03 82);
+  --sidebar-primary-foreground: oklch(0.13 0.005 240);
+  --sidebar-accent:      oklch(0.93 0.015 80);
+  --sidebar-accent-foreground: oklch(0.30 0.01 80);
+  --sidebar-border:      oklch(0.88 0.015 80);
+  --sidebar-ring:        oklch(0.86 0.03 82);
+}
+
+/* ── Dark palette — near-black warm charcoal, not pure black, same brand
+   hue (~80/82) carried through so the tan/gold accents read identically
+   in both modes ─────────────────────────────────────────────────────── */
+.dark {
+  /* Neutral gray scale (chroma 0) — no warm tint, unified around #0f0f0f */
+  --background:          oklch(0.168 0 0);   /* #0f0f0f */
+  --foreground:           oklch(0.94  0 0);   /* near-white neutral */
+
+  --card:                oklch(0.22 0 0);    /* ~#1c1c1c, elevated vs background */
+  --card-foreground:     oklch(0.94 0 0);
+
+  --popover:             oklch(0.22 0 0);
+  --popover-foreground:  oklch(0.94 0 0);
+
+  /* Primary: same tan brand accent, unaffected by the neutral-gray rebase */
+  --primary:             oklch(0.82 0.035 82);   /* ~#d3c4ab */
+  --primary-foreground:  oklch(0.13 0.005 240);
+
+  --secondary:           oklch(0.29 0 0);    /* ~#282828 */
+  --secondary-foreground:oklch(0.90 0 0);
+
+  --muted:               oklch(0.25 0 0);    /* ~#202020 */
+  --muted-foreground:    oklch(0.65 0 0);
+
+  /* Accent: gold/amber, brightened for legibility on dark bg */
+  --accent:              oklch(0.76 0.11 75);
+  --accent-foreground:   oklch(0.13 0.005 240);
+
+  --destructive:         oklch(0.62 0.20 25);
+  --destructive-foreground: oklch(1 0 0);
+
+  --border:              oklch(0.32 0 0);    /* ~#333333 */
+  --input:               oklch(0.32 0 0);
+  --ring:                oklch(0.78 0.05 82);
+
+  --chart-1:             oklch(0.82 0.035 82);
+  --chart-2:             oklch(0.76 0.11 75);
+  --chart-3:             oklch(0.29 0 0);
+  --chart-4:             oklch(0.62 0.20 25);
+  --chart-5:             oklch(0.62 0.12 240);
+
+  --sidebar:             oklch(0.22 0 0);
+  --sidebar-foreground:  oklch(0.94 0 0);
+  --sidebar-primary:     oklch(0.82 0.035 82);
+  --sidebar-primary-foreground: oklch(0.13 0.005 240);
+  --sidebar-accent:      oklch(0.29 0 0);
+  --sidebar-accent-foreground: oklch(0.90 0 0);
+  --sidebar-border:      oklch(0.32 0 0);
+  --sidebar-ring:        oklch(0.78 0.05 82);
+}
+
+@theme inline {
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+
+  --color-background:          var(--background);
+  --color-foreground:          var(--foreground);
+  --color-card:                var(--card);
+  --color-card-foreground:     var(--card-foreground);
+  --color-popover:             var(--popover);
+  --color-popover-foreground:  var(--popover-foreground);
+  --color-primary:             var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+  --color-secondary:           var(--secondary);
+  --color-secondary-foreground:var(--secondary-foreground);
+  --color-muted:               var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+  --color-accent:              var(--accent);
+  --color-accent-foreground:   var(--accent-foreground);
+  --color-destructive:         var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border:              var(--border);
+  --color-input:               var(--input);
+  --color-ring:                var(--ring);
+
+  --color-chart-1:             var(--chart-1);
+  --color-chart-2:             var(--chart-2);
+  --color-chart-3:             var(--chart-3);
+  --color-chart-4:             var(--chart-4);
+  --color-chart-5:             var(--chart-5);
+
+  --color-sidebar:             var(--sidebar);
+  --color-sidebar-foreground:  var(--sidebar-foreground);
+  --color-sidebar-primary:     var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:      var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border:      var(--sidebar-border);
+  --color-sidebar-ring:        var(--sidebar-ring);
 
   --font-sans: "DM Sans", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -147,6 +242,40 @@
   background-image:
     linear-gradient(135deg, rgba(91,184,174,0.5) 0%, rgba(126,205,196,0) 60%),
     var(--hex-bg-pattern, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,2 78,22 78,70 40,90 2,70 2,22' fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.18'/%3E%3C/svg%3E"));
+  background-size: auto, var(--hex-bg-size, 80px 92px);
+  background-repeat: repeat;
+}
+
+/* ── Dark variants — reference the neutral-gray tokens directly instead of
+   their own hardcoded hex, so they can never drift out of sync with the
+   base palette again. hex-section and hex-cream both sit at page level
+   (--background) — every usage of either across the site is a full-page
+   wrapper, so they must render at the exact same tone in dark mode.
+   hex-teal (unused as of this writing) stays on --card as a reserved,
+   visually-distinct accent tier if it's ever adopted. */
+.dark .hex-section {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(135deg, rgba(200,168,75,0.10) 0%, transparent 50%, rgba(126,205,196,0.06) 100%),
+    var(--hex-bg-pattern, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,2 78,22 78,70 40,90 2,70 2,22' fill='none' stroke='%23d3c4ab' stroke-width='0.8' stroke-opacity='0.14'/%3E%3C/svg%3E"));
+  background-size: auto, var(--hex-bg-size, 80px 92px);
+  background-repeat: repeat;
+}
+
+.dark .hex-cream {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(135deg, rgba(200,168,75,0.14) 0%, transparent 50%, rgba(126,205,196,0.08) 100%),
+    var(--hex-bg-pattern, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,2 78,22 78,70 40,90 2,70 2,22' fill='none' stroke='%23d3c4ab' stroke-width='0.9' stroke-opacity='0.18'/%3E%3C/svg%3E"));
+  background-size: auto, var(--hex-bg-size, 80px 92px);
+  background-repeat: repeat;
+}
+
+.dark .hex-teal {
+  background-color: var(--card);
+  background-image:
+    linear-gradient(135deg, rgba(91,184,174,0.28) 0%, rgba(126,205,196,0) 60%),
+    var(--hex-bg-pattern, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,2 78,22 78,70 40,90 2,70 2,22' fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.14'/%3E%3C/svg%3E"));
   background-size: auto, var(--hex-bg-size, 80px 92px);
   background-repeat: repeat;
 }

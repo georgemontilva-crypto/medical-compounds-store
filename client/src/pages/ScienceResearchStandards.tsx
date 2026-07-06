@@ -100,23 +100,23 @@ export default function ScienceResearchStandards() {
   }, [products, categories]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-background">
       <Navbar />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#f8f8fa] py-16 lg:py-24">
+        <section className="bg-[#f8f8fa] dark:bg-background py-16 lg:py-24">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-4">
                 Research Standards
               </p>
-              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5">
+              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5 dark:text-white">
                 What serious researchers
                 <br />
                 should expect from a supply partner.
               </h1>
-              <p className="text-gray-500 text-base leading-relaxed mb-8 max-w-lg">
+              <p className="text-gray-500 text-base leading-relaxed mb-8 max-w-lg dark:text-gray-400">
                 Compound sourcing isn't a commodity decision. Documentation depth, labeling precision, and how
                 rigorously a catalog is categorized all affect whether the data you get back is usable. Brighter
                 Days Labs holds itself to a documented standard on all three.
@@ -130,8 +130,8 @@ export default function ScienceResearchStandards() {
                   { label: "Update frequency", value: "Per batch" },
                 ].map((m) => (
                   <div key={m.label}>
-                    <p className="text-lg font-extrabold text-gray-950">{m.value}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{m.label}</p>
+                    <p className="text-lg font-extrabold text-gray-950 dark:text-white">{m.value}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">{m.label}</p>
                   </div>
                 ))}
               </div>
@@ -143,7 +143,7 @@ export default function ScienceResearchStandards() {
                 ].map((line) => (
                   <div key={line} className="flex items-start gap-2.5">
                     <Check size={16} className="text-[#d3c4ab] mt-0.5 shrink-0" />
-                    <span className="text-sm text-gray-600">{line}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{line}</span>
                   </div>
                 ))}
               </div>
@@ -156,7 +156,7 @@ export default function ScienceResearchStandards() {
               </Link>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f]">
+            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f] dark:bg-none dark:bg-black">
               {heroImage?.url ? (
                 <img src={heroImage.url} alt="Research documentation standards" className="w-full h-full object-cover" />
               ) : (
@@ -171,7 +171,7 @@ export default function ScienceResearchStandards() {
 
       {/* ── 01 · COMPOUND SELECTION CRITERIA ─────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-20">
+        <section className="bg-[#0a0a0f] dark:bg-black py-20">
           <div className="container">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#dbcfba]">01</span>
@@ -191,20 +191,20 @@ export default function ScienceResearchStandards() {
 
       {/* ── 02 · MECHANISM-BASED TAXONOMY ────────────────────────────────── */}
       <Reveal>
-        <section className="bg-white py-20">
+        <section className="bg-white dark:bg-background py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#d3c4ab]">02</span>
-              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Taxonomy</span>
+              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 dark:text-gray-500">Taxonomy</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">Mechanism-based taxonomy</h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-xl">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 dark:text-white">Mechanism-based taxonomy</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-xl dark:text-gray-400">
               Every category below groups compounds by the biological system they act on, not by an arbitrary
               catalog order.
             </p>
 
-            <div className="border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[auto_1fr_auto] bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <div className="border border-gray-100 rounded-2xl overflow-hidden dark:border-border">
+              <div className="grid grid-cols-[auto_1fr_auto] bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:bg-white/5 dark:text-gray-500">
                 <div className="px-5 py-3">Code</div>
                 <div className="px-5 py-3">Category</div>
                 <div className="px-5 py-3 text-right">Compounds</div>
@@ -212,7 +212,7 @@ export default function ScienceResearchStandards() {
               {categoryRows.map((cat, i) => (
                 <div
                   key={cat.id}
-                  className={`grid grid-cols-[auto_1fr_auto] items-center ${i !== 0 ? "border-t border-gray-100" : ""}`}
+                  className={`grid grid-cols-[auto_1fr_auto] items-center ${i !== 0 ? "border-t border-gray-100 dark:border-border" : ""}`}
                 >
                   <div className="px-5 py-4">
                     <span
@@ -224,9 +224,9 @@ export default function ScienceResearchStandards() {
                   </div>
                   <div className="px-5 py-4 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                    <span className="text-sm font-semibold text-gray-800">{cat.name}</span>
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{cat.name}</span>
                   </div>
-                  <div className="px-5 py-4 text-right text-sm text-gray-500">{cat.count}</div>
+                  <div className="px-5 py-4 text-right text-sm text-gray-500 dark:text-gray-400">{cat.count}</div>
                 </div>
               ))}
             </div>
@@ -236,7 +236,7 @@ export default function ScienceResearchStandards() {
 
       {/* ── 03 · LABELING PRECISION ───────────────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-20">
+        <section className="bg-[#0a0a0f] dark:bg-black py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#dbcfba]">03</span>
@@ -283,28 +283,28 @@ export default function ScienceResearchStandards() {
 
       {/* ── 04 · COA ACCESSIBILITY AND TRANSPARENCY ──────────────────────── */}
       <Reveal>
-        <section className="bg-white py-20">
+        <section className="bg-white dark:bg-background py-20">
           <div className="container max-w-3xl">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#d3c4ab]">04</span>
-              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Transparency</span>
+              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 dark:text-gray-500">Transparency</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 dark:text-white">
               COA accessibility and transparency
             </h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-6 max-w-xl">
+            <p className="text-gray-500 text-sm leading-relaxed mb-6 max-w-xl dark:text-gray-400">
               Certificates of Analysis are published as batches are tested — no account or request needed to view
               one.
             </p>
 
             {recentReports.length === 0 && (
-              <p className="text-xs italic text-gray-400 mb-4">
+              <p className="text-xs italic text-gray-400 mb-4 dark:text-gray-500">
                 Example COAs shown below — real batch reports will appear here as they're uploaded.
               </p>
             )}
 
-            <div className="border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_auto_auto] bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <div className="border border-gray-100 rounded-2xl overflow-hidden dark:border-border">
+              <div className="grid grid-cols-[1fr_auto_auto] bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:bg-white/5 dark:text-gray-500">
                 <div className="px-5 py-3">Compound</div>
                 <div className="px-5 py-3">Batch</div>
                 <div className="px-5 py-3 text-right">Date</div>
@@ -322,11 +322,11 @@ export default function ScienceResearchStandards() {
               ).map((row, i) => (
                 <div
                   key={row.key}
-                  className={`grid grid-cols-[1fr_auto_auto] items-center ${i !== 0 ? "border-t border-gray-100" : ""}`}
+                  className={`grid grid-cols-[1fr_auto_auto] items-center ${i !== 0 ? "border-t border-gray-100 dark:border-border" : ""}`}
                 >
-                  <div className="px-5 py-4 text-sm font-semibold text-gray-800">{row.product}</div>
-                  <div className="px-5 py-4 text-sm font-mono text-gray-500">{row.batch}</div>
-                  <div className="px-5 py-4 text-right text-sm text-gray-400">{row.date}</div>
+                  <div className="px-5 py-4 text-sm font-semibold text-gray-800 dark:text-gray-100">{row.product}</div>
+                  <div className="px-5 py-4 text-sm font-mono text-gray-500 dark:text-gray-400">{row.batch}</div>
+                  <div className="px-5 py-4 text-right text-sm text-gray-400 dark:text-gray-500">{row.date}</div>
                 </div>
               ))}
             </div>
@@ -336,7 +336,7 @@ export default function ScienceResearchStandards() {
 
       {/* ── CIERRE · STANDARDS SUMMARY ────────────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-16">
+        <section className="bg-[#0a0a0f] dark:bg-black py-16">
           <div className="container max-w-2xl">
             <div className="flex items-center gap-2 mb-6 justify-center">
               <Beaker size={16} className="text-[#dbcfba]" />

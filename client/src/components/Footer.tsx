@@ -80,7 +80,7 @@ export default function Footer() {
 
   return (
     <Reveal>
-      <footer className="relative bg-gray-950 text-gray-400 overflow-hidden">
+      <footer className="relative bg-gray-950 dark:bg-black text-gray-400 overflow-hidden">
         <div className="h-[3px] w-full" style={{ background: gradient }} />
 
         <div

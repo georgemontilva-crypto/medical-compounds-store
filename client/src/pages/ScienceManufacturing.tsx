@@ -57,7 +57,7 @@ function ProcessDiagram() {
               transitionDelay: inView ? `${i * 150}ms` : "0ms",
             }}
           >
-            <div className="w-12 h-12 rounded-full bg-[#0a0a0f] border-2 border-[#dbcfba] flex items-center justify-center mx-auto mb-3 relative z-10">
+            <div className="w-12 h-12 rounded-full bg-[#0a0a0f] dark:bg-black border-2 border-[#dbcfba] flex items-center justify-center mx-auto mb-3 relative z-10">
               <step.icon size={18} className="text-[#dbcfba]" />
             </div>
             <p className="font-bold text-white text-sm mb-1">{step.title}</p>
@@ -125,23 +125,23 @@ export default function ScienceManufacturing() {
   const { data: lyoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "manufacturing_lyophilization_image" });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-background">
       <Navbar />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Reveal>
-        <section className="bg-[#f8f8fa] py-16 lg:py-24">
+        <section className="bg-[#f8f8fa] dark:bg-background py-16 lg:py-24">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-4">
                 Manufacturing Standards
               </p>
-              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5">
+              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-5 dark:text-white">
                 US-based synthesis
                 <br />
                 with batch-level accountability.
               </h1>
-              <p className="text-gray-500 text-base leading-relaxed mb-8 max-w-lg">
+              <p className="text-gray-500 text-base leading-relaxed mb-8 max-w-lg dark:text-gray-400">
                 Every compound Brighter Days Labs sells is synthesized and tested under documented process
                 controls. Sourcing, purification, and quality checks are tracked at the batch level, so a given
                 vial can always be traced back to how and when it was made.
@@ -155,8 +155,8 @@ export default function ScienceManufacturing() {
                   { label: "Lot number", value: "Tied to order" },
                 ].map((m) => (
                   <div key={m.label}>
-                    <p className="text-lg font-extrabold text-gray-950">{m.value}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{m.label}</p>
+                    <p className="text-lg font-extrabold text-gray-950 dark:text-white">{m.value}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">{m.label}</p>
                   </div>
                 ))}
               </div>
@@ -168,7 +168,7 @@ export default function ScienceManufacturing() {
                 ].map((line) => (
                   <div key={line} className="flex items-start gap-2.5">
                     <Check size={16} className="text-[#d3c4ab] mt-0.5 shrink-0" />
-                    <span className="text-sm text-gray-600">{line}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{line}</span>
                   </div>
                 ))}
               </div>
@@ -181,7 +181,7 @@ export default function ScienceManufacturing() {
               </Link>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f]">
+            <div className="relative rounded-3xl overflow-hidden h-72 lg:h-[420px] bg-gradient-to-br from-[#dbcfba]/20 to-[#0a0a0f] dark:bg-none dark:bg-black">
               {heroImage?.url ? (
                 <img src={heroImage.url} alt="Manufacturing facility" className="w-full h-full object-cover" />
               ) : (
@@ -196,7 +196,7 @@ export default function ScienceManufacturing() {
 
       {/* ── 01 · SOLID-PHASE PEPTIDE SYNTHESIS ───────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-20">
+        <section className="bg-[#0a0a0f] dark:bg-black py-20">
           <div className="container">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#dbcfba]">01</span>
@@ -216,17 +216,17 @@ export default function ScienceManufacturing() {
 
       {/* ── 02 · LYOPHILIZATION AND FORMULATION ──────────────────────────── */}
       <Reveal>
-        <section className="bg-white py-20">
+        <section className="bg-white dark:bg-background py-20">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-sm font-mono text-[#d3c4ab]">02</span>
-                <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Formulation</span>
+                <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 dark:text-gray-500">Formulation</span>
               </div>
-              <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">
+              <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 dark:text-white">
                 Lyophilization and formulation
               </h2>
-              <p className="text-gray-500 text-sm leading-relaxed">
+              <p className="text-gray-500 text-sm leading-relaxed dark:text-gray-400">
                 After purification, compounds are freeze-dried into a stable lyophilized powder rather than shipped
                 in solution. This keeps the product stable during shipping and storage, and each vial is labeled
                 with its compound, size, and batch reference at the point of formulation.
@@ -247,7 +247,7 @@ export default function ScienceManufacturing() {
 
       {/* ── 03 · INDEPENDENT ANALYTICAL TESTING ──────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-20">
+        <section className="bg-[#0a0a0f] dark:bg-black py-20">
           <div className="container grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -269,28 +269,28 @@ export default function ScienceManufacturing() {
 
       {/* ── 04 · LOT-LEVEL TRACEABILITY ───────────────────────────────────── */}
       <Reveal>
-        <section className="bg-white py-20">
+        <section className="bg-white dark:bg-background py-20">
           <div className="container max-w-2xl">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-mono text-[#d3c4ab]">04</span>
-              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">Traceability</span>
+              <span className="text-xs font-semibold tracking-widest uppercase text-gray-400 dark:text-gray-500">Traceability</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4">Lot-level traceability</h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-12 max-w-xl">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 dark:text-white">Lot-level traceability</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-12 max-w-xl dark:text-gray-400">
               Every lot moves through the same recorded checkpoints, illustrated below with representative
               timestamps.
             </p>
 
             <div className="relative pl-8">
-              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200" />
+              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200 dark:bg-white/10" />
               <div className="space-y-8">
                 {TRACEABILITY_EVENTS.map((event) => (
                   <Reveal key={event.title}>
                     <div className="relative">
-                      <span className="absolute -left-8 top-1 w-3.5 h-3.5 rounded-full bg-[#d3c4ab] border-4 border-white ring-1 ring-gray-200" />
-                      <p className="text-xs font-mono text-gray-400 mb-1">{event.time}</p>
-                      <p className="font-bold text-gray-900 text-sm mb-1">{event.title}</p>
-                      <p className="text-gray-500 text-xs leading-relaxed">{event.description}</p>
+                      <span className="absolute -left-8 top-1 w-3.5 h-3.5 rounded-full bg-[#d3c4ab] border-4 border-white ring-1 ring-gray-200 dark:border-background dark:ring-white/10" />
+                      <p className="text-xs font-mono text-gray-400 mb-1 dark:text-gray-500">{event.time}</p>
+                      <p className="font-bold text-gray-900 text-sm mb-1 dark:text-white">{event.title}</p>
+                      <p className="text-gray-500 text-xs leading-relaxed dark:text-gray-400">{event.description}</p>
                     </div>
                   </Reveal>
                 ))}
@@ -302,7 +302,7 @@ export default function ScienceManufacturing() {
 
       {/* ── CIERRE · MANUFACTURING AT A GLANCE ───────────────────────────── */}
       <Reveal>
-        <section className="bg-[#0a0a0f] py-16">
+        <section className="bg-[#0a0a0f] dark:bg-black py-16">
           <div className="container max-w-3xl text-center">
             <p className="text-xs font-semibold tracking-widest uppercase text-white/40 mb-8">
               Manufacturing at a Glance

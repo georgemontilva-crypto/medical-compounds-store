@@ -14,9 +14,12 @@ import {
   X,
   Settings,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -76,14 +79,14 @@ function NavDropdown({
     >
       <button
         className={`flex items-center gap-1 text-sm font-medium px-2 py-1.5 rounded-lg transition-colors duration-150 ${
-          active ? "text-[#d3c4ab] font-semibold" : "text-gray-700 hover:text-gray-900"
+          active ? "text-[#d3c4ab] font-semibold" : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
         }`}
         onClick={() => setOpen((v) => !v)}
       >
         {label}
         <ChevronDown
           size={13}
-          className={`transition-transform duration-200 text-gray-400 ${open ? "rotate-180" : ""}`}
+          className={`transition-transform duration-200 text-gray-400 dark:text-gray-500 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -98,8 +101,8 @@ function NavDropdown({
         {/* Arrow tip — pt-2 above (not mt-2 on this whole container) keeps the
             gap between button and panel inside this element's own hoverable
             box, instead of an invisible margin dead-zone outside it. */}
-        <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-gray-100 rotate-45 z-10" />
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-gray-200/60 overflow-hidden">
+        <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-gray-100 rotate-45 z-10 dark:bg-card dark:border-border" />
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-gray-200/60 overflow-hidden dark:bg-card dark:border-border dark:shadow-black/40">
           {children}
         </div>
       </div>
@@ -111,6 +114,7 @@ function NavDropdown({
 export default function Navbar() {
   const { itemCount, openCart } = useCart();
   const { user, isAuthenticated, isAdmin } = useAuthContext();
+  const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
   // Real categories for the Shop/Science dropdowns' "Reference" links —
   // replaces the old hardcoded SCIENCE_REFS list, which drifted out of sync
@@ -124,6 +128,10 @@ export default function Navbar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const { data: logoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo" });
+  const { data: footerLogoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo_footer" });
+  // Dark mode reuses the footer's logo slot — it's already the version meant
+  // to sit on a dark surface, same need as the navbar in dark mode.
+  const activeLogoUrl = theme === "dark" ? footerLogoImage?.url : logoImage?.url;
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => { window.location.href = "/"; },
@@ -140,15 +148,15 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm dark:bg-background/95 dark:border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
           <Link href="/">
-            {logoImage?.url ? (
+            {activeLogoUrl ? (
               <div className="flex items-center cursor-pointer shrink-0">
-                <img src={logoImage.url} alt="Logo" className="h-12 w-auto object-contain" />
+                <img src={activeLogoUrl} alt="Logo" className="h-12 w-auto object-contain" />
               </div>
             ) : (
               <div className="flex items-center gap-2.5 cursor-pointer shrink-0">
@@ -156,8 +164,8 @@ export default function Navbar() {
                   <FlaskConical size={17} className="text-white" />
                 </div>
                 <div className="leading-none">
-                  <span className="font-extrabold text-gray-950 text-base tracking-tight">Brighter Days Labs</span>
-                  <p className="text-[9px] font-semibold tracking-[0.15em] uppercase text-gray-400 leading-none mt-0.5">
+                  <span className="font-extrabold text-gray-950 text-base tracking-tight dark:text-white">Brighter Days Labs</span>
+                  <p className="text-[9px] font-semibold tracking-[0.15em] uppercase text-gray-400 leading-none mt-0.5 dark:text-gray-500">
                     Compounds
                   </p>
                 </div>
@@ -171,27 +179,27 @@ export default function Navbar() {
             {/* Shop dropdown */}
             <NavDropdown label="Shop" active={location.startsWith("/compounds")}>
               <div className="p-5" style={{ minWidth: 340 }}>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-3 px-1">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-3 px-1 dark:text-gray-500">
                   Reference
                 </p>
                 <div className="grid grid-cols-2 gap-0.5">
                   {realCategories.map((cat) => (
                     <Link key={cat.id} href={`/compounds?category=${cat.slug}`}>
-                      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
+                      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group dark:hover:bg-white/5">
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: cat.color || "#6b7280" }}
                         />
-                        <span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium">
+                        <span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium dark:text-gray-300 dark:group-hover:text-white">
                           {cat.name}
                         </span>
                       </div>
                     </Link>
                   ))}
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-border">
                   <Link href="/compounds">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f2ede6] cursor-pointer transition-colors group">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f2ede6] cursor-pointer transition-colors group dark:hover:bg-white/10">
                       <span className="text-sm font-semibold text-[#d3c4ab] group-hover:text-[#baac96]">
                         All Compounds
                       </span>
@@ -205,21 +213,21 @@ export default function Navbar() {
             {/* Science dropdown */}
             <NavDropdown label="Science">
               <div className="flex">
-                <div className="p-4 border-r border-gray-50" style={{ width: 260 }}>
+                <div className="p-4 border-r border-gray-50 dark:border-border" style={{ width: 260 }}>
                   {SCIENCE_ITEMS.map((item) => {
                     const content = (
-                      <div className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
-                        <div className="w-9 h-9 rounded-xl bg-[#F5F2EC] flex items-center justify-center shrink-0 group-hover:bg-[#f2ede6] transition-colors">
+                      <div className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group dark:hover:bg-white/5">
+                        <div className="w-9 h-9 rounded-xl bg-[#F5F2EC] flex items-center justify-center shrink-0 group-hover:bg-[#f2ede6] transition-colors dark:bg-white/10 dark:group-hover:bg-white/15">
                           <item.icon
                             size={15}
-                            className="text-gray-500 group-hover:text-[#d3c4ab] transition-colors"
+                            className="text-gray-500 group-hover:text-[#d3c4ab] transition-colors dark:text-gray-400"
                           />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">
+                          <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900 dark:text-gray-100 dark:group-hover:text-white">
                             {item.label}
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+                          <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">{item.desc}</p>
                         </div>
                       </div>
                     );
@@ -231,17 +239,17 @@ export default function Navbar() {
                   })}
                 </div>
                 <div className="p-4" style={{ width: 220 }}>
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-3 px-1">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-3 px-1 dark:text-gray-500">
                     Reference
                   </p>
                   {realCategories.map((cat) => (
                     <Link key={cat.id} href={`/compounds?category=${cat.slug}`}>
-                      <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
+                      <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group dark:hover:bg-white/5">
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: cat.color || "#6b7280" }}
                         />
-                        <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                        <span className="text-sm text-gray-600 group-hover:text-gray-900 dark:text-gray-300 dark:group-hover:text-white">
                           {cat.name}
                         </span>
                       </div>
@@ -255,7 +263,7 @@ export default function Navbar() {
             <Link href="/lab-tests">
               <button
                 className={`text-sm font-medium px-2 py-1.5 rounded-lg transition-colors duration-150 ${
-                  location.startsWith("/lab-tests") ? "text-[#d3c4ab] font-semibold" : "text-gray-700 hover:text-gray-900"
+                  location.startsWith("/lab-tests") ? "text-[#d3c4ab] font-semibold" : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                 }`}
               >
                 Lab Tests
@@ -264,13 +272,13 @@ export default function Navbar() {
 
             {/* Wholesale */}
             <Link href="/wholesale">
-              <button className="ml-2 text-sm font-semibold border border-[#dbcfba] text-[#d3c4ab] hover:bg-[#f2ede6] px-4 py-1.5 rounded-full transition-colors duration-150">
+              <button className="ml-2 text-sm font-semibold border border-[#dbcfba] text-[#d3c4ab] hover:bg-[#f2ede6] px-4 py-1.5 rounded-full transition-colors duration-150 dark:hover:bg-white/10">
                 Apply for Wholesale
               </button>
             </Link>
 
             <Link href="/contact">
-              <button className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg transition-colors ml-1">
+              <button className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg transition-colors ml-1 dark:text-gray-300 dark:hover:text-white">
                 Contact
               </button>
             </Link>
@@ -278,10 +286,21 @@ export default function Navbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-1.5">
+            {/* Theme toggle */}
+            {toggleTheme && (
+              <button
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 transition-colors"
+              >
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            )}
+
             {/* Cart */}
             <button
               onClick={openCart}
-              className="relative w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+              className="relative w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors dark:text-gray-300 dark:hover:bg-white/10"
             >
               <ShoppingBag size={18} />
               {itemCount > 0 && (
@@ -296,37 +315,37 @@ export default function Navbar() {
               <div ref={userMenuRef} className="relative hidden md:block">
                 <button
                   onClick={() => setUserMenuOpen((v) => !v)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors dark:hover:bg-white/10"
                 >
-                  <div className="w-7 h-7 rounded-full bg-[#f2ede6] flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full bg-[#f2ede6] flex items-center justify-center dark:bg-white/10">
                     <span className="text-xs font-bold text-[#d3c4ab]">
                       {(user?.name ?? user?.email ?? "U")[0].toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate">
+                  <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate dark:text-gray-300">
                     {user?.name ?? user?.email}
                   </span>
-                  <ChevronDown size={13} className="text-gray-400" />
+                  <ChevronDown size={13} className="text-gray-400 dark:text-gray-500" />
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-50">
-                      <p className="text-[11px] text-gray-400">Signed in as</p>
-                      <p className="text-sm font-semibold text-gray-800 truncate">{user?.email}</p>
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50 dark:bg-card dark:border-border dark:shadow-black/40">
+                    <div className="px-4 py-3 border-b border-gray-50 dark:border-border">
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">Signed in as</p>
+                      <p className="text-sm font-semibold text-gray-800 truncate dark:text-gray-100">{user?.email}</p>
                     </div>
                     <Link href="/my-orders">
                       <div
-                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors dark:text-gray-300 dark:hover:bg-white/5"
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        <ShoppingBag size={14} className="text-gray-400" />
+                        <ShoppingBag size={14} className="text-gray-400 dark:text-gray-500" />
                         My Orders
                       </div>
                     </Link>
                     {isAdmin && (
                       <Link href="/admin">
                         <div
-                          className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-[#d3c4ab] hover:bg-[#f2ede6] cursor-pointer transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-[#d3c4ab] hover:bg-[#f2ede6] cursor-pointer transition-colors dark:hover:bg-white/10"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           <Settings size={14} />
@@ -336,7 +355,7 @@ export default function Navbar() {
                     )}
                     <button
                       onClick={() => { setUserMenuOpen(false); logoutMutation.mutate(); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50 dark:text-red-400 dark:hover:bg-red-500/10 dark:border-border"
                     >
                       <LogOut size={14} />
                       Sign Out
@@ -347,7 +366,7 @@ export default function Navbar() {
             ) : (
               <div className="hidden md:flex items-center gap-2">
                 <Link href="/login">
-                  <button className="text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors">
+                  <button className="text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors dark:text-gray-300 dark:hover:text-white dark:hover:bg-white/10">
                     <User size={14} />
                     Sign In
                   </button>
@@ -364,19 +383,19 @@ export default function Navbar() {
             <button
               aria-expanded={mobileOpen}
               aria-label="Toggle menu"
-              className="md:hidden flex flex-col gap-[5px] p-2 rounded-xl hover:bg-gray-100 transition-colors"
+              className="md:hidden flex flex-col gap-[5px] p-2 rounded-xl hover:bg-gray-100 transition-colors dark:hover:bg-white/10"
               onClick={() => setMobileOpen((v) => !v)}
             >
               <span
-                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-transform duration-300 ease-in-out"
+                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-transform duration-300 ease-in-out dark:bg-gray-300"
                 style={mobileOpen ? { transform: "translateY(7.5px) rotate(45deg)" } : {}}
               />
               <span
-                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-opacity duration-300 ease-in-out"
+                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-opacity duration-300 ease-in-out dark:bg-gray-300"
                 style={mobileOpen ? { opacity: 0 } : {}}
               />
               <span
-                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-transform duration-300 ease-in-out"
+                className="block w-[22px] h-[2.5px] bg-gray-700 rounded-full transition-transform duration-300 ease-in-out dark:bg-gray-300"
                 style={mobileOpen ? { transform: "translateY(-7.5px) rotate(-45deg)" } : {}}
               />
             </button>
@@ -386,7 +405,7 @@ export default function Navbar() {
 
       {/* Mobile menu — absolute overlay, white solid, does not push content */}
       <div
-        className="md:hidden absolute left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden z-50"
+        className="md:hidden absolute left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden z-50 dark:bg-card dark:border-border dark:shadow-black/40"
         style={{
           top: "100%",
           maxHeight: mobileOpen ? "800px" : "0",
@@ -396,7 +415,7 @@ export default function Navbar() {
         <div className="px-4 py-4 space-y-1">
           <Link href="/compounds">
             <div
-              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"
               onClick={() => setMobileOpen(false)}
             >
               Shop
@@ -405,12 +424,12 @@ export default function Navbar() {
           <div>
             <button
               onClick={() => setMobileScienceOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
             >
               Science
               <ChevronDown
                 size={15}
-                className={`text-gray-400 transition-transform duration-200 ${mobileScienceOpen ? "rotate-180" : ""}`}
+                className={`text-gray-400 transition-transform duration-200 dark:text-gray-500 ${mobileScienceOpen ? "rotate-180" : ""}`}
               />
             </button>
             <div
@@ -421,7 +440,7 @@ export default function Navbar() {
                 {SCIENCE_ITEMS.map((item) => (
                   <Link key={item.label} href={item.href ?? "#"}>
                     <div
-                      className="px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50 cursor-pointer"
+                      className="px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"
                       onClick={() => { setMobileOpen(false); setMobileScienceOpen(false); }}
                     >
                       {item.label}
@@ -433,7 +452,7 @@ export default function Navbar() {
           </div>
           <Link href="/lab-tests">
             <div
-              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"
               onClick={() => setMobileOpen(false)}
             >
               Lab Tests
@@ -441,7 +460,7 @@ export default function Navbar() {
           </Link>
           <Link href="/wholesale">
             <div
-              className="mx-3 my-1 text-center border border-[#dbcfba] text-[#d3c4ab] hover:bg-[#f2ede6] px-4 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-150"
+              className="mx-3 my-1 text-center border border-[#dbcfba] text-[#d3c4ab] hover:bg-[#f2ede6] px-4 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-150 dark:hover:bg-white/10"
               onClick={() => setMobileOpen(false)}
             >
               Apply for Wholesale
@@ -449,19 +468,19 @@ export default function Navbar() {
           </Link>
           <Link href="/contact">
             <div
-              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"
               onClick={() => setMobileOpen(false)}
             >
               Contact
             </div>
           </Link>
-          <div className="border-t border-gray-100 pt-2 mt-2 space-y-1">
+          <div className="border-t border-gray-100 pt-2 mt-2 space-y-1 dark:border-border">
             {isAuthenticated ? (
               <>
                 {isAdmin && (
                   <Link href="/admin">
                     <div
-                      className="px-3 py-2.5 rounded-xl text-sm font-semibold text-[#d3c4ab] hover:bg-[#f2ede6] cursor-pointer"
+                      className="px-3 py-2.5 rounded-xl text-sm font-semibold text-[#d3c4ab] hover:bg-[#f2ede6] cursor-pointer dark:hover:bg-white/10"
                       onClick={() => setMobileOpen(false)}
                     >
                       Admin Panel
@@ -470,7 +489,7 @@ export default function Navbar() {
                 )}
                 <Link href="/my-orders">
                   <div
-                    className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"
                     onClick={() => setMobileOpen(false)}
                   >
                     My Orders
@@ -478,7 +497,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={() => { logoutMutation.mutate(); setMobileOpen(false); }}
-                  className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-600 hover:bg-red-50"
+                  className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
                 >
                   Sign Out
                 </button>
@@ -487,7 +506,7 @@ export default function Navbar() {
               <div className="flex gap-2">
                 <Link href="/login">
                   <button
-                    className="flex-1 text-sm font-medium border border-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="flex-1 text-sm font-medium border border-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/5"
                     onClick={() => setMobileOpen(false)}
                   >
                     Sign In

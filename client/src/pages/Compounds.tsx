@@ -14,11 +14,11 @@ const CAT_COLORS: Record<string, string> = {
 };
 const CAT_TEXT: Record<string, string> = {
   Tissue: "text-[#d3c4ab]", Cellular: "text-[#d3c4ab]", Neural: "text-[#baac96]",
-  Metabolic: "text-[#A07A28]", Endocrine: "text-[#A07A28]", Misc: "text-gray-500",
+  Metabolic: "text-[#A07A28] dark:text-[#C8A84B]", Endocrine: "text-[#A07A28] dark:text-[#C8A84B]", Misc: "text-gray-500 dark:text-gray-400",
 };
 const CAT_BG: Record<string, string> = {
-  Tissue: "bg-[#f2ede6]", Cellular: "bg-[#f2ede6]", Neural: "bg-[#DFF4F3]",
-  Metabolic: "bg-[#FBF6E8]", Endocrine: "bg-[#FBF6E8]", Misc: "bg-gray-50",
+  Tissue: "bg-[#f2ede6] dark:bg-white/10", Cellular: "bg-[#f2ede6] dark:bg-white/10", Neural: "bg-[#DFF4F3] dark:bg-white/10",
+  Metabolic: "bg-[#FBF6E8] dark:bg-white/10", Endocrine: "bg-[#FBF6E8] dark:bg-white/10", Misc: "bg-gray-50 dark:bg-white/10",
 };
 
 // ── Static fallback products ──────────────────────────────────────────────────
@@ -62,13 +62,13 @@ function StaticCard({ product, onAdd, added }: {
 }) {
   const catColor = CAT_COLORS[product.category] ?? "#6b7280";
   const catText = CAT_TEXT[product.category] ?? "text-gray-500";
-  const catBg = CAT_BG[product.category] ?? "bg-gray-50";
+  const catBg = CAT_BG[product.category] ?? "bg-gray-50 dark:bg-white/10";
   const hasVariations = product.sizes.length > 1;
   const catGlow = `0 0 0 2px ${catColor}40, 0 8px 24px -6px ${catColor}66`;
 
   return (
     <div
-      className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300"
+      className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300 dark:bg-card dark:border-border"
       style={{ "--cat-glow": catGlow } as React.CSSProperties}
     >
       <Link href={`/compounds/${product.slug}`}>
@@ -80,9 +80,9 @@ function StaticCard({ product, onAdd, added }: {
             title={product.isMock ? "Coming soon — demo product, not yet purchasable" : undefined}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
               product.isMock
-                ? "bg-gray-100 text-gray-300 cursor-not-allowed opacity-0 group-hover:opacity-100"
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed opacity-0 group-hover:opacity-100 dark:bg-white/10 dark:text-gray-500"
                 : added ? "bg-[#d3c4ab] text-white opacity-100 scale-110"
-                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white"
+                        : "bg-white text-gray-700 opacity-0 group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white dark:bg-white/10 dark:text-gray-300"
             }`}
           >
             {product.isMock ? <X size={13} /> : added ? <Check size={13} /> : <Plus size={13} />}
@@ -94,20 +94,20 @@ function StaticCard({ product, onAdd, added }: {
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
           {product.isMock ? (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Coming soon</span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">Coming soon</span>
           ) : product.popular && (
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white">{product.name}</h3>
         </Link>
         <div className="flex flex-wrap gap-1 mb-2">
           {product.sizes.map((s) => (
-            <span key={s} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono">{s}</span>
+            <span key={s} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono dark:text-gray-500 dark:bg-white/10">{s}</span>
           ))}
         </div>
-        <p className="font-semibold text-gray-900 text-sm">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
+        <p className="font-semibold text-gray-900 text-sm dark:text-white">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
       </div>
     </div>
   );
@@ -201,15 +201,15 @@ export default function Compounds() {
     : STATIC_CATS.map((c, i) => ({ id: i + 1, name: c.name, color: CAT_COLORS[c.name] ?? "#6b7280", count: c.count }));
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-background">
       <Navbar />
       <div className="container py-10">
         {/* Page header */}
         <div className="mb-8">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-1">Full Catalog</p>
-          <h1 className="text-3xl font-extrabold text-gray-950">Research Compounds</h1>
+          <h1 className="text-3xl font-extrabold text-gray-950 dark:text-white">Research Compounds</h1>
           <div className="w-10 h-0.5 bg-gradient-to-r from-[#dbcfba] to-[#C8A84B] mt-2 mb-3 rounded-full" />
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-400 text-sm dark:text-gray-500">
             {totalCount} compound{totalCount !== 1 ? "s" : ""} across {sidebarCats.length} research categories.
             Click any card to view the full research monograph.
           </p>
@@ -218,23 +218,23 @@ export default function Compounds() {
         <div className="flex gap-7 items-start">
           {/* ── Sidebar ─────────────────────────────────────────────────── */}
           <aside className="hidden lg:flex flex-col gap-3 w-56 shrink-0 sticky top-[80px] self-start">
-            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm dark:bg-card dark:border-border">
               {/* All */}
               <button
                 onClick={() => { setSelectedCategory(undefined); setSelectedStaticCat(null); }}
                 className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors ${
                   !selectedCategory && !selectedStaticCat
                     ? "bg-[#d3c4ab] text-white"
-                    : "text-gray-700 hover:bg-[#F5F2EC]"
+                    : "text-gray-700 hover:bg-[#F5F2EC] dark:text-gray-300 dark:hover:bg-white/5"
                 }`}
               >
                 <span className="flex items-center gap-2"><FlaskConical size={14} />All Compounds</span>
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${!selectedCategory && !selectedStaticCat ? "bg-white/20 text-white" : "bg-[#F5F2EC] text-gray-500"}`}>
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${!selectedCategory && !selectedStaticCat ? "bg-white/20 text-white" : "bg-[#F5F2EC] text-gray-500 dark:bg-white/10 dark:text-gray-400"}`}>
                   {useStaticData ? STATIC_PRODUCTS.length : allProducts.length}
                 </span>
               </button>
               {/* Categories */}
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-50 dark:divide-white/10">
                 {sidebarCats.map((cat) => {
                   const active = categories.length > 0 ? selectedCategory === cat.id : selectedStaticCat === cat.name;
                   return (
@@ -245,21 +245,21 @@ export default function Compounds() {
                         else setSelectedStaticCat(active ? null : cat.name);
                       }}
                       className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                        active ? "bg-[#f2ede6] text-[#baac96] font-semibold" : "text-gray-600 hover:bg-[#F5F2EC]"
+                        active ? "bg-[#f2ede6] text-[#baac96] font-semibold dark:bg-white/10" : "text-gray-600 hover:bg-[#F5F2EC] dark:text-gray-300 dark:hover:bg-white/5"
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
                         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                         {cat.name}
                       </span>
-                      <span className="text-xs text-gray-400">{cat.count}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{cat.count}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
             {/* Find CTA */}
-            <button className="w-full flex items-center justify-center gap-2 border border-[#dbcfba]/50 text-[#d3c4ab] text-xs font-semibold py-2.5 rounded-xl hover:bg-[#f2ede6] transition-colors">
+            <button className="w-full flex items-center justify-center gap-2 border border-[#dbcfba]/50 text-[#d3c4ab] text-xs font-semibold py-2.5 rounded-xl hover:bg-[#f2ede6] transition-colors dark:hover:bg-white/10">
               <FlaskConical size={12} />Find Your Compound
             </button>
           </aside>
@@ -269,14 +269,14 @@ export default function Compounds() {
             {/* Search + sort */}
             <div className="flex items-center gap-3 mb-5">
               <div className="flex-1 relative">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text" value={search} onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, CAS number, or mechanism..."
-                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] transition-all dark:bg-card dark:border-border dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
                 {search && (
-                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                     <X size={14} />
                   </button>
                 )}
@@ -285,17 +285,17 @@ export default function Compounds() {
               <div className="relative">
                 <button
                   onClick={() => setSortOpen(!sortOpen)}
-                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 font-medium hover:border-gray-300 transition-all whitespace-nowrap"
+                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 font-medium hover:border-gray-300 transition-all whitespace-nowrap dark:bg-card dark:border-border dark:text-gray-300 dark:hover:border-white/20"
                 >
                   {SORT_LABELS[sortBy]}<ChevronDown size={14} className={`transition-transform ${sortOpen ? "rotate-180" : ""}`} />
                 </button>
                 {sortOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden dark:bg-card dark:border-border dark:shadow-black/40">
                       {Object.entries(SORT_LABELS).map(([val, label]) => (
                         <button key={val} onClick={() => { setSortBy(val as SortOption); setSortOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${sortBy === val ? "bg-[#f2ede6] text-[#baac96] font-semibold" : "text-gray-700 hover:bg-[#F5F2EC]"}`}>
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${sortBy === val ? "bg-[#f2ede6] text-[#baac96] font-semibold" : "text-gray-700 hover:bg-[#F5F2EC] dark:text-gray-300 dark:hover:bg-white/5"}`}>
                           {label}
                         </button>
                       ))}
@@ -305,7 +305,7 @@ export default function Compounds() {
               </div>
               {/* Mobile filter */}
               <button onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-                className="lg:hidden flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700">
+                className="lg:hidden flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:bg-card dark:border-border dark:text-gray-300">
                 <SlidersHorizontal size={14} />
               </button>
             </div>
@@ -315,7 +315,7 @@ export default function Compounds() {
               <button
                 onClick={() => { setSelectedCategory(undefined); setSelectedStaticCat(null); }}
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  !selectedCategory && !selectedStaticCat ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200"
+                  !selectedCategory && !selectedStaticCat ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200 dark:bg-card dark:text-gray-300 dark:border-border"
                 }`}
               >
                 <FlaskConical size={11} /> All
@@ -329,7 +329,7 @@ export default function Compounds() {
                       else setSelectedStaticCat(active ? null : cat.name);
                     }}
                     className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                      active ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200"
+                      active ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200 dark:bg-card dark:text-gray-300 dark:border-border"
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />{cat.name}
@@ -342,10 +342,10 @@ export default function Compounds() {
             {isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
-                    <div className="h-48 bg-gray-100" />
+                  <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden animate-pulse dark:bg-card dark:border-border">
+                    <div className="h-48 bg-gray-100 dark:bg-white/10" />
                     <div className="p-4 space-y-2">
-                      <div className="h-3 bg-gray-100 rounded w-1/3" /><div className="h-4 bg-gray-100 rounded w-2/3" /><div className="h-3 bg-gray-100 rounded w-1/4" />
+                      <div className="h-3 bg-gray-100 rounded w-1/3 dark:bg-white/10" /><div className="h-4 bg-gray-100 rounded w-2/3 dark:bg-white/10" /><div className="h-3 bg-gray-100 rounded w-1/4 dark:bg-white/10" />
                     </div>
                   </div>
                 ))}
@@ -353,9 +353,9 @@ export default function Compounds() {
             ) : useStaticData ? (
               filteredStatic.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4"><FlaskConical size={24} className="text-gray-300" /></div>
-                  <p className="font-semibold text-gray-700 mb-1">No compounds found</p>
-                  <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
+                  <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-white/10 flex items-center justify-center mb-4"><FlaskConical size={24} className="text-gray-300 dark:text-gray-600" /></div>
+                  <p className="font-semibold text-gray-700 dark:text-gray-200 mb-1">No compounds found</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Try adjusting your search or filters</p>
                   <button onClick={() => { setSearch(""); setSelectedStaticCat(null); }} className="mt-4 text-sm text-[#d3c4ab] font-semibold hover:underline">Clear filters</button>
                 </div>
               ) : (
@@ -369,9 +369,9 @@ export default function Compounds() {
               )
             ) : dbProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4"><FlaskConical size={24} className="text-gray-300" /></div>
-                <p className="font-semibold text-gray-700 mb-1">No compounds found</p>
-                <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
+                <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-white/10 flex items-center justify-center mb-4"><FlaskConical size={24} className="text-gray-300 dark:text-gray-600" /></div>
+                <p className="font-semibold text-gray-700 dark:text-gray-200 mb-1">No compounds found</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">Try adjusting your search or filters</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
