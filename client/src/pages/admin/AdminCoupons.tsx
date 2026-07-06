@@ -47,6 +47,16 @@ export default function AdminCoupons() {
     onError: (e) => toast.error(e.message),
   });
 
+  const setNewCustomerOffer = trpc.coupons.setNewCustomerOffer.useMutation({
+    onSuccess: (_data, variables) => {
+      utils.coupons.list.invalidate();
+      toast.success(
+        variables.enabled ? "Set as the active new-customer signup offer" : "Removed from new-customer signup offer"
+      );
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = {
@@ -226,6 +236,7 @@ export default function AdminCoupons() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Min Order</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Expires</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">New-Customer Offer</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -262,6 +273,22 @@ export default function AdminCoupons() {
                           ) : (
                             <span className="lab-badge bg-secondary text-muted-foreground text-xs">Inactive</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <label className="flex items-center gap-2 cursor-pointer w-fit">
+                            <input
+                              type="checkbox"
+                              checked={coupon.isNewCustomerOffer}
+                              disabled={setNewCustomerOffer.isPending}
+                              onChange={(e) =>
+                                setNewCustomerOffer.mutate({ id: coupon.id, enabled: e.target.checked })
+                              }
+                              className="rounded accent-[#d3c4ab]"
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {coupon.isNewCustomerOffer ? "Active offer" : "Use as offer"}
+                            </span>
+                          </label>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">

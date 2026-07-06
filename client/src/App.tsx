@@ -14,6 +14,7 @@ import FloatingCartButton from "./components/FloatingCartButton";
 import LoadingScreen from "./components/LoadingScreen";
 import AgeVerificationModal from "./components/AgeVerificationModal";
 import ComplianceModal from "./components/ComplianceModal";
+import GuestOrRegisterModal from "./components/GuestOrRegisterModal";
 import Footer from "./components/Footer";
 import { initLenis, getLenis } from "@/lib/lenis";
 import "lenis/dist/lenis.css";
@@ -170,6 +171,7 @@ function App() {
                 <CartDrawer />
                 <FloatingCartButton />
                 <ComplianceModal />
+                <GuestOrRegisterModal />
               </ComplianceProvider>
             </CartProvider>
           </AuthProvider>

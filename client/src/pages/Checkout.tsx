@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -11,7 +11,6 @@ import {
   CheckCircle,
   Loader2,
   Lock,
-  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -87,25 +86,18 @@ export default function Checkout() {
   const discount = appliedCoupon?.discount ?? 0;
   const finalTotal = Math.max(0, total - discount);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen hex-cream flex items-center justify-center p-4">
-        <div className="lab-card p-8 max-w-md w-full text-center">
-          <Lock size={32} className="text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Sign In Required</h2>
-          <p className="text-muted-foreground mb-6">
-            Please sign in to complete your purchase
-          </p>
-          <Link href="/login">
-            <button className="lab-btn-primary w-full">Sign In</button>
-          </Link>
-          <Link href="/register">
-            <button className="lab-btn-secondary w-full mt-2">Create Account</button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Auto-apply the welcome coupon assigned right after registering via the checkout incentive modal.
+  const pendingCouponHandled = useRef(false);
+  useEffect(() => {
+    if (pendingCouponHandled.current || total <= 0) return;
+    const pendingCode = sessionStorage.getItem("pendingCoupon");
+    if (pendingCode) {
+      pendingCouponHandled.current = true;
+      sessionStorage.removeItem("pendingCoupon");
+      validateCoupon.mutate({ code: pendingCode, orderAmount: total });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
 
   if (items.length === 0 && step !== "confirmation") {
     return (
@@ -193,6 +185,7 @@ export default function Checkout() {
                 notes={notes}
                 setNotes={setNotes}
                 onNext={() => setStep("payment")}
+                isAuthenticated={isAuthenticated}
               />
             )}
             {step === "payment" && (
@@ -261,12 +254,14 @@ function ShippingStep({
   notes,
   setNotes,
   onNext,
+  isAuthenticated,
 }: {
   shipping: ShippingForm;
   setShipping: (s: ShippingForm) => void;
   notes: string;
   setNotes: (n: string) => void;
   onNext: () => void;
+  isAuthenticated: boolean;
 }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,6 +292,18 @@ function ShippingStep({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {!isAuthenticated && (
+        <div className="lab-card p-4 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-muted-foreground">
+            Checking out as a guest. Have an account?
+          </p>
+          <Link href="/login">
+            <button type="button" className="text-sm font-medium text-primary hover:underline">
+              Sign in for faster checkout & order tracking
+            </button>
+          </Link>
+        </div>
+      )}
       <div className="lab-card p-6">
         <h2 className="font-semibold text-lg mb-5">Shipping Information</h2>
         <div className="grid grid-cols-2 gap-4">

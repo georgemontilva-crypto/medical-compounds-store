@@ -114,6 +114,7 @@ export const coupons = mysqlTable("coupons", {
   usedCount: int("usedCount").default(0).notNull(),
   active: boolean("active").default(true).notNull(),
   expiresAt: timestamp("expiresAt"),
+  isNewCustomerOffer: boolean("isNewCustomerOffer").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -163,6 +164,19 @@ export const orders = mysqlTable("orders", {
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
+
+// ─── Welcome Coupon Redemptions (new-customer signup offer tracking) ──────────
+export const welcomeCouponRedemptions = mysqlTable("welcome_coupon_redemptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  couponId: int("couponId").notNull().references(() => coupons.id),
+  redeemedAt: timestamp("redeemedAt").defaultNow().notNull(),
+  orderId: int("orderId").references(() => orders.id),
+  usedAt: timestamp("usedAt"),
+});
+
+export type WelcomeCouponRedemption = typeof welcomeCouponRedemptions.$inferSelect;
+export type InsertWelcomeCouponRedemption = typeof welcomeCouponRedemptions.$inferInsert;
 
 // ─── Order Items ──────────────────────────────────────────────────────────────
 export const orderItems = mysqlTable("order_items", {

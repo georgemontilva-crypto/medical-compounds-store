@@ -16,6 +16,7 @@ import {
   InsertSiteImage,
   InsertUser,
   InsertWholesaleApplication,
+  InsertWelcomeCouponRedemption,
   Order,
   cartItems,
   categories,
@@ -30,6 +31,7 @@ import {
   siteImages,
   siteSettings,
   users,
+  welcomeCouponRedemptions,
   wholesaleApplications,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -100,7 +102,26 @@ export async function getUserByEmail(email: string) {
 export async function getAllUsers(limit = 100, offset = 0) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(users).orderBy(desc(users.createdAt)).limit(limit).offset(offset);
+  const rows = await db
+    .select({
+      user: users,
+      welcomeCouponCode: coupons.code,
+      welcomeCouponRedeemedAt: welcomeCouponRedemptions.redeemedAt,
+      welcomeCouponUsedAt: welcomeCouponRedemptions.usedAt,
+    })
+    .from(users)
+    .leftJoin(welcomeCouponRedemptions, eq(welcomeCouponRedemptions.userId, users.id))
+    .leftJoin(coupons, eq(coupons.id, welcomeCouponRedemptions.couponId))
+    .orderBy(desc(users.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  return rows.map((r) => ({
+    ...r.user,
+    welcomeCouponCode: r.welcomeCouponCode,
+    welcomeCouponRedeemedAt: r.welcomeCouponRedeemedAt,
+    welcomeCouponUsedAt: r.welcomeCouponUsedAt,
+  }));
 }
 
 export async function countUsers() {
@@ -351,6 +372,65 @@ export async function incrementCouponUsage(id: number) {
     .update(coupons)
     .set({ usedCount: sql`${coupons.usedCount} + 1` })
     .where(eq(coupons.id, id));
+}
+
+export async function getActiveNewCustomerOfferCoupon() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(coupons)
+    .where(and(eq(coupons.isNewCustomerOffer, true), eq(coupons.active, true)))
+    .limit(1);
+  const coupon = result[0];
+  if (!coupon) return undefined;
+  if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) return undefined;
+  if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) return undefined;
+  return coupon;
+}
+
+export async function setNewCustomerOfferCoupon(id: number, enabled: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  if (enabled) {
+    await db.update(coupons).set({ isNewCustomerOffer: false }).where(eq(coupons.isNewCustomerOffer, true));
+    await db.update(coupons).set({ isNewCustomerOffer: true }).where(eq(coupons.id, id));
+  } else {
+    await db.update(coupons).set({ isNewCustomerOffer: false }).where(eq(coupons.id, id));
+  }
+}
+
+// ─── Welcome Coupon Redemptions ────────────────────────────────────────────────
+export async function getWelcomeRedemption(userId: number, couponId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(welcomeCouponRedemptions)
+    .where(and(eq(welcomeCouponRedemptions.userId, userId), eq(welcomeCouponRedemptions.couponId, couponId)))
+    .limit(1);
+  return result[0];
+}
+
+export async function createWelcomeRedemption(data: InsertWelcomeCouponRedemption) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.insert(welcomeCouponRedemptions).values(data);
+}
+
+export async function markWelcomeRedemptionUsed(userId: number, couponId: number, orderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(welcomeCouponRedemptions)
+    .set({ orderId, usedAt: new Date() })
+    .where(
+      and(
+        eq(welcomeCouponRedemptions.userId, userId),
+        eq(welcomeCouponRedemptions.couponId, couponId),
+        sql`${welcomeCouponRedemptions.usedAt} IS NULL`
+      )
+    );
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────────

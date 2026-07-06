@@ -5,6 +5,7 @@ import { FlaskConical, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
 import ParticleBackground from "@/components/ParticleBackground";
+import { CHECKOUT_OFFER_PENDING_KEY } from "@/contexts/ComplianceContext";
 
 export default function Register() {
   const [, navigate] = useLocation();
@@ -15,11 +16,32 @@ export default function Register() {
   const { data: logoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo" });
   const { data: footerLogoImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_logo_footer" });
   const activeLogoUrl = theme === "dark" ? footerLogoImage?.url : logoImage?.url;
+  const cameFromCheckoutOffer =
+    typeof window !== "undefined" && sessionStorage.getItem(CHECKOUT_OFFER_PENDING_KEY) === "1";
+  const { data: newCustomerOffer } = trpc.coupons.getActiveNewCustomerOffer.useQuery(undefined, {
+    enabled: cameFromCheckoutOffer,
+  });
+
+  const claimWelcomeOffer = trpc.coupons.claimWelcomeOffer.useMutation();
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       utils.auth.me.invalidate();
       toast.success("Account created! Welcome to Brighter Days Labs.");
+
+      if (sessionStorage.getItem(CHECKOUT_OFFER_PENDING_KEY) === "1") {
+        sessionStorage.removeItem(CHECKOUT_OFFER_PENDING_KEY);
+        try {
+          const offer = await claimWelcomeOffer.mutateAsync();
+          sessionStorage.setItem("pendingCoupon", offer.code);
+          toast.success(`Welcome code ${offer.code} applied to your order!`);
+        } catch {
+          // Offer may have been deactivated between showing the modal and registering — proceed without it.
+        }
+        navigate("/checkout");
+        return;
+      }
+
       navigate("/");
     },
     onError: (err) => {
@@ -85,6 +107,16 @@ export default function Register() {
           <p className="text-sm text-muted-foreground mb-6">
             Join Brighter Days Labs to access our research compound catalog
           </p>
+
+          {cameFromCheckoutOffer && newCustomerOffer && (
+            <div className="mb-6 p-3.5 rounded-xl bg-[#f2ede6] border border-[#e5dccc] text-sm text-gray-800 font-medium">
+              Complete registration to get{" "}
+              {newCustomerOffer.type === "percentage"
+                ? `${newCustomerOffer.value}%`
+                : `$${newCustomerOffer.value.toFixed(2)}`}{" "}
+              off your first order.
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

@@ -39,6 +39,7 @@ export default function AdminUsers() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Login Method</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Joined</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Last Sign In</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Welcome Coupon</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -73,6 +74,19 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">
                         {new Date(user.lastSignedIn).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        {user.welcomeCouponUsedAt ? (
+                          <span className="lab-badge bg-green-100 text-green-700 text-xs">
+                            Used {user.welcomeCouponCode ? `(${user.welcomeCouponCode})` : ""}
+                          </span>
+                        ) : user.welcomeCouponRedeemedAt ? (
+                          <span className="lab-badge bg-[#f2ede6] text-[#8a7a5c] text-xs">
+                            Assigned {user.welcomeCouponCode ? `(${user.welcomeCouponCode})` : ""}
+                          </span>
+                        ) : (
+                          <span className="lab-badge bg-secondary text-muted-foreground text-xs">Not assigned</span>
+                        )}
                       </td>
                     </tr>
                   ))}

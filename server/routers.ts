@@ -27,6 +27,7 @@ import {
   deleteProduct,
   deleteProductImage,
   deleteVariation,
+  getActiveNewCustomerOfferCoupon,
   getAllCategories,
   getAllCoupons,
   getAllOrders,
@@ -35,6 +36,10 @@ import {
   getCategoryById,
   getCouponByCode,
   getCouponById,
+  getWelcomeRedemption,
+  createWelcomeRedemption,
+  markWelcomeRedemptionUsed,
+  setNewCustomerOfferCoupon,
   getOrderById,
   getOrderItems,
   getOrdersByUser,
@@ -461,9 +466,9 @@ export const appRouter = router({
 
   // ─── Coupons ───────────────────────────────────────────────────────────────
   coupons: router({
-    validate: protectedProcedure
+    validate: publicProcedure
       .input(z.object({ code: z.string(), orderAmount: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const coupon = await getCouponByCode(input.code);
         if (!coupon || !coupon.active) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Coupon not found or inactive" });
@@ -480,6 +485,18 @@ export const appRouter = router({
             message: `Minimum order amount is $${coupon.minOrderAmount}`,
           });
         }
+        if (coupon.isNewCustomerOffer) {
+          const redemption = ctx.user ? await getWelcomeRedemption(ctx.user.id, coupon.id) : undefined;
+          if (!redemption) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "This code is reserved for new customers who registered through the welcome offer.",
+            });
+          }
+          if (redemption.usedAt) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "This welcome code has already been used." });
+          }
+        }
         const discount =
           coupon.type === "percentage"
             ? (input.orderAmount * Number(coupon.value)) / 100
@@ -490,6 +507,26 @@ export const appRouter = router({
           discount: Math.min(discount, input.orderAmount),
         };
       }),
+
+    getActiveNewCustomerOffer: publicProcedure.query(async () => {
+      const coupon = await getActiveNewCustomerOfferCoupon();
+      if (!coupon) return null;
+      return { id: coupon.id, code: coupon.code, type: coupon.type, value: Number(coupon.value) };
+    }),
+
+    claimWelcomeOffer: protectedProcedure.mutation(async ({ ctx }) => {
+      const coupon = await getActiveNewCustomerOfferCoupon();
+      if (!coupon) throw new TRPCError({ code: "NOT_FOUND", message: "No active welcome offer" });
+      const existing = await getWelcomeRedemption(ctx.user.id, coupon.id);
+      if (!existing) {
+        await createWelcomeRedemption({ userId: ctx.user.id, couponId: coupon.id });
+      }
+      return { code: coupon.code, type: coupon.type, value: Number(coupon.value) };
+    }),
+
+    setNewCustomerOffer: adminProcedure
+      .input(z.object({ id: z.number(), enabled: z.boolean() }))
+      .mutation(({ input }) => setNewCustomerOfferCoupon(input.id, input.enabled)),
 
     list: adminProcedure.query(() => getAllCoupons()),
 
@@ -541,7 +578,7 @@ export const appRouter = router({
 
   // ─── Orders ────────────────────────────────────────────────────────────────
   orders: router({
-    create: protectedProcedure
+    create: publicProcedure
       .input(
         z.object({
           items: z.array(
@@ -577,7 +614,7 @@ export const appRouter = router({
         const total = Math.max(0, subtotal - discount);
 
         const newOrderId = await createOrder({
-          userId: ctx.user.id,
+          userId: ctx.user?.id ?? null,
           subtotal: subtotal.toFixed(2),
           discountAmount: discount.toFixed(2),
           total: total.toFixed(2),
@@ -614,9 +651,14 @@ export const appRouter = router({
 
         if (input.couponId) {
           await incrementCouponUsage(input.couponId);
+          if (ctx.user) {
+            await markWelcomeRedemptionUsed(ctx.user.id, input.couponId, newOrder.id);
+          }
         }
 
-        await clearCart(ctx.user.id);
+        if (ctx.user) {
+          await clearCart(ctx.user.id);
+        }
 
         // Notify admin
         try {
