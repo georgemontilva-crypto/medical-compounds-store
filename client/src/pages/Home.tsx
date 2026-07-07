@@ -297,9 +297,31 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
   roundedClassName?: string;
 }) {
   const { data: products = [] } = trpc.products.list.useQuery({ categoryId: category.id, limit: 30 });
+  const { theme } = useTheme();
   const accent = category.color || "#6366f1";
   const badge = category.badgeCode || category.name.slice(0, 3).toUpperCase();
   const counter = `${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+  // Dark keeps the existing near-black card with a bolder accent tint; light
+  // swaps to the site's off-white --background with a much subtler tint so
+  // the card reads as "light with a hint of accent" instead of dark either way.
+  const cardBase = theme === "dark" ? "#0a0a0f" : "#F5F2EC";
+  const imageAccentAlpha = theme === "dark" ? "40" : "14";
+  // Dark: unchanged diagonal accent-to-black blend. Light: flat neutral base
+  // with a soft accent glow pinned to the top-left corner instead of a
+  // diagonal tint, so it reads as "light card with a glow" not "gradient".
+  const cardBackground =
+    theme === "dark"
+      ? `linear-gradient(135deg, ${accent}33 0%, ${cardBase} 55%)`
+      : `radial-gradient(circle at top left, ${accent}25 0%, transparent 50%), ${cardBase}`;
+  // Text/border tokens hardcoded to white only worked because the card was
+  // always dark — now that light mode has a near-white cardBase, they need
+  // to flip to dark-on-light too, or they'd be near-invisible.
+  const textPrimary = theme === "dark" ? "text-white" : "text-[#0a0a0f]";
+  const textSecondary = theme === "dark" ? "text-white/60" : "text-black/55";
+  const textTertiary = theme === "dark" ? "text-white/30" : "text-black/35";
+  const chipText = theme === "dark" ? "text-white/70" : "text-black/70";
+  const chipBg = theme === "dark" ? "bg-white/5" : "bg-black/5";
+  const chipBorder = theme === "dark" ? "border-white/10" : "border-black/10";
 
   // Mobile-only "Read more" for the tagline — measured once (while still
   // clamped, since this runs before any expansion) via scrollHeight vs
@@ -317,7 +339,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
   return (
     <div
       className={`relative h-full w-full flex flex-col md:flex-row items-start md:items-center ${roundedClassName}`}
-      style={{ background: `linear-gradient(135deg, ${accent}33 0%, #0a0a0f 55%)`, backgroundColor: "#0a0a0f" }}
+      style={{ background: cardBackground, backgroundColor: cardBase }}
     >
       {/* Subtle grid pattern tinted with the category accent, fading out via a radial mask */}
       <div
@@ -343,16 +365,16 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
             >
               {badge} · {products.length} COMPOUND{products.length !== 1 ? "S" : ""}
             </span>
-            <span className="text-xs font-mono text-white/30">{counter}</span>
+            <span className={`text-xs font-mono ${textTertiary}`}>{counter}</span>
           </div>
-          <h2 className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 md:mb-4">
+          <h2 className={`text-2xl md:text-4xl lg:text-5xl font-extrabold ${textPrimary} leading-tight mb-3 md:mb-4`}>
             {category.name}
           </h2>
           {category.tagline && (
             <div className="mb-3 md:mb-6 max-w-md">
               <p
                 ref={taglineRef}
-                className={`text-white/60 text-sm md:text-base leading-relaxed md:line-clamp-none ${
+                className={`${textSecondary} text-sm md:text-base leading-relaxed md:line-clamp-none ${
                   taglineExpanded ? "" : "line-clamp-2"
                 }`}
               >
@@ -373,7 +395,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
           {products.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4 md:mb-8">
               {products.slice(0, 8).map((p) => (
-                <span key={p.id} className="text-xs text-white/70 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
+                <span key={p.id} className={`text-xs ${chipText} ${chipBg} border ${chipBorder} px-3 py-1.5 rounded-full`}>
                   {p.name}
                 </span>
               ))}
@@ -393,7 +415,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
         {/* Hero image (desktop only) — the mobile version renders full-bleed below, outside .container's padding */}
         <div
           className="hidden md:block relative rounded-3xl overflow-hidden md:h-[70vh] md:max-h-[560px]"
-          style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}
+          style={{ background: `linear-gradient(160deg, ${accent}${imageAccentAlpha}, ${cardBase})` }}
         >
           {category.heroImageUrl ? (
             <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-contain" />
@@ -442,7 +464,7 @@ function CategorySlideContent({ category, index, total, roundedClassName = "roun
           card wrapper (CategoryShowcase on mobile), which owns the card's
           real (scroll-driven) corner radius. object-cover (not contain) so
           it always fills the strip with no empty letterboxed space. */}
-      <div className="md:hidden relative flex-1 w-full min-h-0" style={{ background: `linear-gradient(160deg, ${accent}40, #0a0a0f)` }}>
+      <div className="md:hidden relative flex-1 w-full min-h-0" style={{ background: `linear-gradient(160deg, ${accent}${imageAccentAlpha}, ${cardBase})` }}>
         {category.heroImageUrl ? (
           <img src={category.heroImageUrl} alt={category.name} className="w-full h-full object-cover" />
         ) : (
