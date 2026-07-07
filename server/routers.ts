@@ -67,8 +67,10 @@ import {
   createLabReport,
   deleteLabReport,
   updateLabReport,
+  getAllHeroSlidesConfig,
   getAllSiteImages,
   getSiteImageBySlot,
+  upsertHeroSlideConfig,
   upsertSiteImage,
   getSiteSetting,
   setSiteSetting,
@@ -817,6 +819,21 @@ export const appRouter = router({
         const { key: fileKey, url } = await storagePut(relKey, buffer, input.mimeType);
         return upsertSiteImage({ slotKey: input.slotKey, url, fileKey, label: input.label });
       }),
+  }),
+
+  // ─── Hero Slides Config (per-slide active/animation toggles) ──────────────
+  heroSlidesConfig: router({
+    list: publicProcedure.query(() => getAllHeroSlidesConfig()),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          slotKey: z.string().min(1).max(100),
+          active: z.boolean().optional(),
+          animationEnabled: z.boolean().optional(),
+        })
+      )
+      .mutation(({ input: { slotKey, ...data } }) => upsertHeroSlideConfig(slotKey, data)),
   }),
 
   // ─── Site Settings (admin-editable text values) ───────────────────────────

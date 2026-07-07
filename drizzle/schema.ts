@@ -251,6 +251,20 @@ export const siteImages = mysqlTable("site_images", {
 export type SiteImage = typeof siteImages.$inferSelect;
 export type InsertSiteImage = typeof siteImages.$inferInsert;
 
+// ─── Hero Slides Config (per-slide active/animation toggles, keyed by the same
+// slotKey used in site_images — kept separate because a site_images row only
+// exists once an image has been uploaded for that slot) ──────────────────────
+export const heroSlidesConfig = mysqlTable("hero_slides_config", {
+  id: int("id").autoincrement().primaryKey(),
+  slotKey: varchar("slotKey", { length: 100 }).notNull().unique(),
+  active: boolean("active").default(true).notNull(),
+  animationEnabled: boolean("animationEnabled").default(true).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HeroSlideConfig = typeof heroSlidesConfig.$inferSelect;
+export type InsertHeroSlideConfig = typeof heroSlidesConfig.$inferInsert;
+
 // ─── Site Settings (generic admin-editable text values) ──────────────────────
 export const siteSettings = mysqlTable("site_settings", {
   id: int("id").autoincrement().primaryKey(),

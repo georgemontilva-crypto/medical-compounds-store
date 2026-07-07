@@ -103,6 +103,9 @@ export default function AdminSiteImages() {
   const { data: images = [], isLoading } = trpc.siteImages.list.useQuery();
   const imageBySlot = Object.fromEntries(images.map((img) => [img.slotKey, img]));
 
+  const { data: heroConfigs = [] } = trpc.heroSlidesConfig.list.useQuery();
+  const heroConfigBySlot = Object.fromEntries(heroConfigs.map((c) => [c.slotKey, c]));
+
   const uploadMutation = trpc.siteImages.upload.useMutation({
     onSuccess: () => {
       toast.success("Image updated");
@@ -111,6 +114,11 @@ export default function AdminSiteImages() {
     },
     onError: (err) => toast.error(err.message),
     onSettled: () => setUploadingSlot(null),
+  });
+
+  const heroConfigMutation = trpc.heroSlidesConfig.update.useMutation({
+    onSuccess: () => utils.heroSlidesConfig.list.invalidate(),
+    onError: (err) => toast.error(err.message),
   });
 
   function triggerUpload(slotKey: string, label: string) {
@@ -210,6 +218,10 @@ export default function AdminSiteImages() {
                 {slotsInSection.map((slot) => {
                   const current = imageBySlot[slot.slotKey];
                   const isUploading = uploadingSlot === slot.slotKey;
+                  const isHeroSlide = slot.slotKey.startsWith("hero_slide_");
+                  const heroConfig = heroConfigBySlot[slot.slotKey];
+                  const isActive = heroConfig?.active ?? true;
+                  const isAnimated = heroConfig?.animationEnabled ?? true;
                   return (
                     <div key={slot.slotKey} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
                       <div className="relative h-40 bg-gray-50">
@@ -226,6 +238,32 @@ export default function AdminSiteImages() {
                         <p className="text-sm font-semibold text-gray-900">{slot.label}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{slot.recommended}</p>
                         <p className="text-[11px] text-gray-300 mt-1 font-mono">{slot.slotKey}</p>
+                        {isHeroSlide && (
+                          <div className="flex items-center gap-4 mt-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isActive}
+                                onChange={(e) =>
+                                  heroConfigMutation.mutate({ slotKey: slot.slotKey, active: e.target.checked })
+                                }
+                                className="rounded"
+                              />
+                              <span className="text-xs font-medium text-gray-700">Activo</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isAnimated}
+                                onChange={(e) =>
+                                  heroConfigMutation.mutate({ slotKey: slot.slotKey, animationEnabled: e.target.checked })
+                                }
+                                className="rounded"
+                              />
+                              <span className="text-xs font-medium text-gray-700">Animación</span>
+                            </label>
+                          </div>
+                        )}
                         <button
                           onClick={() => triggerUpload(slot.slotKey, slot.label)}
                           disabled={isUploading}

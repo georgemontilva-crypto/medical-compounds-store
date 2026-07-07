@@ -100,10 +100,20 @@ export default function HeroSlider() {
   const { data: siteImages = [] } = trpc.siteImages.list.useQuery();
   const imageBySlot = Object.fromEntries(siteImages.map((img) => [img.slotKey, img.url]));
 
+  const { data: heroConfigs = [] } = trpc.heroSlidesConfig.list.useQuery();
+  const heroConfigBySlot = Object.fromEntries(heroConfigs.map((c) => [c.slotKey, c]));
+
   const { data: products = [] } = trpc.products.list.useQuery();
   const { data: categories = [] } = trpc.categories.list.useQuery();
 
   useEffect(() => { injectKBStyle(); }, []);
+
+  // Admin can deactivate individual slides — skip them without leaving a gap.
+  // Falls back to showing all slides if every one is somehow deactivated, so
+  // the hero never renders empty.
+  const activeSlides = SLIDES.filter((s) => heroConfigBySlot[`hero_slide_${s.id}`]?.active !== false);
+  const visibleSlides = activeSlides.length > 0 ? activeSlides : SLIDES;
+  const safeCurrent = current % visibleSlides.length;
 
   const goTo = useCallback((idx: number) => {
     setPrev(current);
@@ -112,8 +122,8 @@ export default function HeroSlider() {
     setTimeout(() => setPrev(null), 700);
   }, [current]);
 
-  const next = useCallback(() => goTo((current + 1) % SLIDES.length), [current, goTo]);
-  const back = useCallback(() => goTo((current - 1 + SLIDES.length) % SLIDES.length), [current, goTo]);
+  const next = useCallback(() => goTo((safeCurrent + 1) % visibleSlides.length), [safeCurrent, goTo, visibleSlides.length]);
+  const back = useCallback(() => goTo((safeCurrent - 1 + visibleSlides.length) % visibleSlides.length), [safeCurrent, goTo, visibleSlides.length]);
 
   // Auto-advance every 6 s
   useEffect(() => {
@@ -121,9 +131,10 @@ export default function HeroSlider() {
     return () => clearInterval(t);
   }, [next]);
 
-  const slide = SLIDES[current];
-  const prevSlide = prev !== null ? SLIDES[prev] : null;
+  const slide = visibleSlides[safeCurrent];
+  const prevSlide = prev !== null ? visibleSlides[prev % visibleSlides.length] : null;
   const bgImage = imageBySlot[`hero_slide_${slide.id}`] ?? slide.bgImage;
+  const animationEnabled = heroConfigBySlot[`hero_slide_${slide.id}`]?.animationEnabled !== false;
 
   const stat1 =
     slide.id === LIVE_STATS_SLIDE_ID ? { value: String(products.length), label: "Compounds" } : slide.stat1;
@@ -152,16 +163,16 @@ export default function HeroSlider() {
             alt=""
             aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover object-center ${
-              current % 2 === 0 ? "kb-anim" : "kb-anim-alt"
+              animationEnabled ? (safeCurrent % 2 === 0 ? "kb-anim" : "kb-anim-alt") : ""
             }`}
-            style={{ willChange: "transform" }}
+            style={animationEnabled ? { willChange: "transform" } : undefined}
           />
         ) : (
           <div
             className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} ${
-              current % 2 === 0 ? "kb-anim" : "kb-anim-alt"
+              animationEnabled ? (safeCurrent % 2 === 0 ? "kb-anim" : "kb-anim-alt") : ""
             }`}
-            style={{ willChange: "transform" }}
+            style={animationEnabled ? { willChange: "transform" } : undefined}
           />
         )}
         {/* Dark overlay for text readability */}
@@ -259,12 +270,12 @@ export default function HeroSlider() {
 
       {/* ── Slide indicators (right side) ── */}
       <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3">
-        {SLIDES.map((_, i) => (
+        {visibleSlides.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
             className={`w-2 rounded-full transition-all duration-300 ${
-              i === current ? "h-8 bg-white" : "h-2 bg-white/30 hover:bg-white/50"
+              i === safeCurrent ? "h-8 bg-white" : "h-2 bg-white/30 hover:bg-white/50"
             }`}
           />
         ))}
@@ -297,7 +308,7 @@ export default function HeroSlider() {
 
       {/* ── Slide counter ── */}
       <div className="absolute bottom-6 left-6 z-20 text-white/40 text-xs font-mono font-bold tracking-widest">
-        {String(current + 1).padStart(2, "0")} / {String(SLIDES.length).padStart(2, "0")}
+        {String(safeCurrent + 1).padStart(2, "0")} / {String(visibleSlides.length).padStart(2, "0")}
       </div>
 
       <style>{`

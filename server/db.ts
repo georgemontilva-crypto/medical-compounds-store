@@ -13,6 +13,7 @@ import {
   InsertProduct,
   InsertProductImage,
   InsertProductVariation,
+  InsertHeroSlideConfig,
   InsertSiteImage,
   InsertUser,
   InsertWholesaleApplication,
@@ -22,6 +23,7 @@ import {
   categories,
   coupons,
   docIntegritySection,
+  heroSlidesConfig,
   labReports,
   orderItems,
   orders,
@@ -625,6 +627,27 @@ export async function upsertSiteImage(data: InsertSiteImage) {
     .values(data)
     .onDuplicateKeyUpdate({ set: { url: data.url, fileKey: data.fileKey, label: data.label, updatedAt: new Date() } });
   return getSiteImageBySlot(data.slotKey);
+}
+
+// ─── Hero Slides Config ─────────────────────────────────────────────────────────
+export async function getAllHeroSlidesConfig() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(heroSlidesConfig);
+}
+
+export async function upsertHeroSlideConfig(
+  slotKey: string,
+  data: Partial<Pick<InsertHeroSlideConfig, "active" | "animationEnabled">>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .insert(heroSlidesConfig)
+    .values({ slotKey, active: data.active ?? true, animationEnabled: data.animationEnabled ?? true })
+    .onDuplicateKeyUpdate({ set: { ...data, updatedAt: new Date() } });
+  const result = await db.select().from(heroSlidesConfig).where(eq(heroSlidesConfig.slotKey, slotKey)).limit(1);
+  return result[0];
 }
 
 // ─── Site Settings ──────────────────────────────────────────────────────────────
