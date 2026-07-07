@@ -40,10 +40,7 @@ export default function FloatingCartButton() {
       }`}
       style={{ transitionDuration: `${FADE_MS}ms` }}
     >
-      <span
-        className="absolute inset-0 rounded-full bg-[#d3c4ab] pointer-events-none"
-        style={{ animation: "cart-pulse 2s ease-out infinite" }}
-      />
+      <span className="pulse-ring rounded-full bg-[#d3c4ab]" />
       <ShoppingBag size={22} className="relative text-white" />
       {itemCount > 0 && (
         <span className="absolute -top-1 -right-1 min-w-[20px] min-h-[20px] bg-white text-[#d3c4ab] text-[11px] font-bold rounded-full flex items-center justify-center leading-none px-1 shadow-sm">

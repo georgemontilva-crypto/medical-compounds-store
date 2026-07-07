@@ -847,6 +847,41 @@ export const appRouter = router({
       .mutation(({ input }) => setSiteSetting(input.key, input.value)),
   }),
 
+  // ─── Bulk (volume) discount tiers — same 2+/4+/8+ thresholds for every
+  // product; only the percentages are admin-editable, stored as 3 rows in
+  // site_settings rather than a dedicated table ────────────────────────────
+  bulkDiscount: router({
+    get: publicProcedure.query(async () => {
+      const [t2, t4, t8] = await Promise.all([
+        getSiteSetting("bulk_discount_tier_2"),
+        getSiteSetting("bulk_discount_tier_4"),
+        getSiteSetting("bulk_discount_tier_8"),
+      ]);
+      return {
+        tier2Percent: t2 ? Number(t2.value) : 10,
+        tier4Percent: t4 ? Number(t4.value) : 20,
+        tier8Percent: t8 ? Number(t8.value) : 40,
+      };
+    }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          tier2Percent: z.number().min(0).max(100),
+          tier4Percent: z.number().min(0).max(100),
+          tier8Percent: z.number().min(0).max(100),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await Promise.all([
+          setSiteSetting("bulk_discount_tier_2", String(input.tier2Percent)),
+          setSiteSetting("bulk_discount_tier_4", String(input.tier4Percent)),
+          setSiteSetting("bulk_discount_tier_8", String(input.tier8Percent)),
+        ]);
+        return { success: true };
+      }),
+  }),
+
   // ─── Doc Integrity Section (singleton Home content block) ─────────────────
   docIntegrity: router({
     get: publicProcedure.query(() => getDocIntegritySection()),

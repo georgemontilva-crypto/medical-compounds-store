@@ -94,6 +94,84 @@ function TextSettingCard({ settingKey, label, placeholder }: { settingKey: strin
   );
 }
 
+// Same 2+/4+/8+ quantity thresholds for every product — only the percentages
+// are editable here (client reads them via trpc.bulkDiscount.get).
+function BulkDiscountCard() {
+  const utils = trpc.useUtils();
+  const { data, isLoading } = trpc.bulkDiscount.get.useQuery();
+  const [tier2, setTier2] = useState("");
+  const [tier4, setTier4] = useState("");
+  const [tier8, setTier8] = useState("");
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    if (!touched && data) {
+      setTier2(String(data.tier2Percent));
+      setTier4(String(data.tier4Percent));
+      setTier8(String(data.tier8Percent));
+    }
+  }, [data, touched]);
+
+  const saveMutation = trpc.bulkDiscount.update.useMutation({
+    onSuccess: () => {
+      toast.success("Descuentos por volumen actualizados");
+      setTouched(false);
+      utils.bulkDiscount.get.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleSave = () => {
+    const t2 = Number(tier2);
+    const t4 = Number(tier4);
+    const t8 = Number(tier8);
+    if ([t2, t4, t8].some((n) => Number.isNaN(n) || n < 0 || n > 100)) {
+      toast.error("Los porcentajes deben ser números entre 0 y 100");
+      return;
+    }
+    saveMutation.mutate({ tier2Percent: t2, tier4Percent: t4, tier8Percent: t8 });
+  };
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+      <p className="text-sm font-semibold text-gray-900">Descuentos por volumen (todos los productos)</p>
+      <p className="text-xs text-gray-400 mt-0.5">
+        Mismos umbrales de cantidad para todo el catálogo — solo el % de descuento es editable.
+      </p>
+      <div className="grid grid-cols-3 gap-3 mt-3">
+        {[
+          { label: "2+ unidades", value: tier2, setValue: setTier2 },
+          { label: "4+ unidades", value: tier4, setValue: setTier4 },
+          { label: "8+ unidades", value: tier8, setValue: setTier8 },
+        ].map((tier) => (
+          <label key={tier.label} className="block">
+            <span className="text-xs text-gray-500">{tier.label}</span>
+            <div className="mt-1 flex items-center border border-gray-200 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-[#dbcfba]/30 focus-within:border-[#dbcfba]">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={isLoading ? "" : tier.value}
+                onChange={(e) => { tier.setValue(e.target.value); setTouched(true); }}
+                className="w-full text-sm focus:outline-none"
+              />
+              <span className="text-xs text-gray-400">%</span>
+            </div>
+          </label>
+        ))}
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={saveMutation.isPending || isLoading}
+        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-xl transition-colors"
+      >
+        <Save size={13} />
+        {saveMutation.isPending ? "Guardando..." : "Guardar"}
+      </button>
+    </div>
+  );
+}
+
 export default function AdminSiteImages() {
   const utils = trpc.useUtils();
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
@@ -294,6 +372,14 @@ export default function AdminSiteImages() {
                 placeholder={setting.placeholder}
               />
             ))}
+          </div>
+        </div>
+
+        {/* Bulk (volume) discount tiers — same screen, same site_settings table */}
+        <div className="mb-8">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Descuentos por volumen</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <BulkDiscountCard />
           </div>
         </div>
       </div>

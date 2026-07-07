@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatVariationValue } from "@/lib/utils";
+import { formatVariationValue, getBulkDiscountPercent, BULK_DISCOUNT_QUANTITIES } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useCompliance } from "@/contexts/ComplianceContext";
 import { Link } from "wouter";
@@ -8,8 +8,6 @@ import {
   FlaskConical,
   ChevronLeft,
   ShoppingBag,
-  Plus,
-  Minus,
   Check,
   ChevronRight,
   FileText,
@@ -31,6 +29,7 @@ export default function ProductDetail({ params }: Props) {
     { enabled: !!product }
   );
   const { data: categories } = trpc.categories.list.useQuery();
+  const { data: bulkTiers } = trpc.bulkDiscount.get.useQuery();
 
   const [selectedVariationId, setSelectedVariationId] = useState<number | undefined>();
   const [quantity, setQuantity] = useState(1);
@@ -40,12 +39,30 @@ export default function ProductDetail({ params }: Props) {
   const { requestCheckout } = useCompliance();
 
   const category = categories?.find((c) => c.id === product?.categoryId);
+  const catColor = category?.color || "#6366f1";
   const selectedVariation =
     variations?.find((v) => v.id === selectedVariationId) ?? variations?.[0];
   const price = selectedVariation
     ? Number(selectedVariation.price)
     : Number(product?.basePrice ?? 0);
   const inStock = selectedVariation ? selectedVariation.stock > 0 : true;
+
+  // Buy-more-save-more: same 1/2/4/8 tiers for every product, percentages
+  // come from admin config. Selecting a tier both sets `quantity` and
+  // determines the discounted per-unit price used at Add to Cart time.
+  const quantityOptions = bulkTiers
+    ? BULK_DISCOUNT_QUANTITIES.map((qty) => {
+        const percent = getBulkDiscountPercent(qty, bulkTiers);
+        return {
+          qty,
+          percent,
+          unitPrice: price * (1 - percent / 100),
+          disabled: selectedVariation ? qty > selectedVariation.stock : false,
+        };
+      })
+    : [];
+  const selectedPercent = bulkTiers ? getBulkDiscountPercent(quantity, bulkTiers) : 0;
+  const effectiveUnitPrice = price * (1 - selectedPercent / 100);
 
   // Prefer images uploaded for the selected variation; fall back to the
   // product's general (variationId-less) images if that variation has none.
@@ -61,6 +78,7 @@ export default function ProductDetail({ params }: Props) {
 
   useEffect(() => {
     setActiveImage(0);
+    setQuantity(1);
   }, [selectedVariation?.id]);
 
   const addSelectionToCart = () => {
@@ -76,7 +94,7 @@ export default function ProductDetail({ params }: Props) {
       variationLabel: selectedVariation
         ? `${formatVariationValue(selectedVariation.value)}${selectedVariation.unit}`
         : undefined,
-      unitPrice: price,
+      unitPrice: effectiveUnitPrice,
       quantity,
       image: displayImages[0]?.url,
       slug: product.slug,
@@ -232,33 +250,49 @@ export default function ProductDetail({ params }: Props) {
               </div>
             )}
 
-            {/* Quantity */}
+            {/* Quantity — buy more, save more */}
             <div>
               <p className="lab-section-title mb-3">Quantity</p>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center border border-border rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-2.5 hover:bg-secondary transition-colors"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="px-4 py-2.5 text-sm font-semibold min-w-[3rem] text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-2.5 hover:bg-secondary transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-                {selectedVariation && (
-                  <span className="text-xs text-muted-foreground">
-                    {selectedVariation.stock} in stock
-                  </span>
-                )}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {quantityOptions.map((opt) => {
+                  const isSelected = quantity === opt.qty;
+                  const isBestValue = opt.qty === 8 && !opt.disabled;
+                  return (
+                    <button
+                      key={opt.qty}
+                      onClick={() => setQuantity(opt.qty)}
+                      disabled={opt.disabled}
+                      className={`relative text-left px-3 py-2.5 rounded-xl border-2 transition-all ${
+                        isSelected
+                          ? "bg-primary/10 shadow-md shadow-primary/20"
+                          : opt.disabled
+                          ? "border-border opacity-40 cursor-not-allowed"
+                          : "border-border hover:border-primary/50 hover:bg-accent"
+                      }`}
+                      style={isSelected ? { borderColor: catColor } : undefined}
+                    >
+                      {isBestValue && (
+                        <span
+                          className="absolute -top-2 right-2 text-[#0a0a0f] text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ backgroundColor: catColor }}
+                        >
+                          Best Value
+                        </span>
+                      )}
+                      <p className="text-sm font-semibold">
+                        {opt.qty} Vial{opt.qty > 1 ? "s" : ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground">${opt.unitPrice.toFixed(2)} / vial</p>
+                      {opt.percent > 0 && (
+                        <p className="text-[11px] font-semibold text-green-600 mt-0.5">Save {opt.percent}%</p>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+              {selectedVariation && (
+                <p className="text-xs text-muted-foreground mt-2">{selectedVariation.stock} in stock</p>
+              )}
             </div>
 
             {/* Research use disclaimer */}
@@ -300,7 +334,7 @@ export default function ProductDetail({ params }: Props) {
               ) : (
                 <>
                   <ShoppingBag size={18} />
-                  Add to Cart — ${(price * quantity).toFixed(2)}
+                  Add to Cart — ${(effectiveUnitPrice * quantity).toFixed(2)}
                 </>
               )}
             </button>
