@@ -9,6 +9,10 @@ const SLIDES = [
   {
     id: 1,
     bgImage: "/manus-storage/lab-scientist_de975453.jpg",
+    // object-position used only below 768px — the product/focal point in this
+    // photo sits right-of-center, so mobile's cropped aspect cuts it off
+    // unless we shift the crop origin toward it. Tune per-slide as needed.
+    mobileFocal: "80% center",
     gradient: "from-[#0d1a18] via-[#0f2420] to-[#071510]",
     overlay: "bg-[#0d1a18]/65",
     badge: "Research Grade · ≥99% Purity",
@@ -25,6 +29,7 @@ const SLIDES = [
   {
     id: 2,
     bgImage: "/manus-storage/peptide-synthesis_a782e21c.jpg",
+    mobileFocal: "90% center",
     gradient: "from-[#1a1408] via-[#2a1f0a] to-[#1a1005]",
     overlay: "bg-[#1a1408]/65",
     badge: "Cellular Research · Neural Peptides",
@@ -42,6 +47,7 @@ const SLIDES = [
   {
     id: 3,
     bgImage: "/manus-storage/modern-lab_a86acfc6.jpg",
+    mobileFocal: "80% center",
     gradient: "from-[#0d1a18] via-[#163028] to-[#0a1f18]",
     overlay: "bg-[#0a1f18]/60",
     badge: "Metabolic Research · Energy Metabolism",
@@ -162,10 +168,13 @@ export default function HeroSlider() {
             src={bgImage}
             alt=""
             aria-hidden="true"
-            className={`absolute inset-0 w-full h-full object-cover object-center ${
+            className={`hero-bg-img absolute inset-0 w-full h-full object-cover ${
               animationEnabled ? (safeCurrent % 2 === 0 ? "kb-anim" : "kb-anim-alt") : ""
             }`}
-            style={animationEnabled ? { willChange: "transform" } : undefined}
+            style={{
+              ...(animationEnabled ? { willChange: "transform" } : {}),
+              "--hero-mobile-focal": slide.mobileFocal ?? "center",
+            } as React.CSSProperties}
           />
         ) : (
           <div
@@ -319,6 +328,10 @@ export default function HeroSlider() {
         @keyframes progressBar {
           from { width: 0%; }
           to   { width: 100%; }
+        }
+        .hero-bg-img { object-position: center; }
+        @media (max-width: 767px) {
+          .hero-bg-img { object-position: var(--hero-mobile-focal, center); }
         }
       `}</style>
     </section>
