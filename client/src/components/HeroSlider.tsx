@@ -131,11 +131,14 @@ export default function HeroSlider() {
   const next = useCallback(() => goTo((safeCurrent + 1) % visibleSlides.length), [safeCurrent, goTo, visibleSlides.length]);
   const back = useCallback(() => goTo((safeCurrent - 1 + visibleSlides.length) % visibleSlides.length), [safeCurrent, goTo, visibleSlides.length]);
 
-  // Auto-advance every 6 s
+  // Auto-advance every 6 s — nothing to advance to with a single (or zero)
+  // visible slide, so skip starting the timer entirely rather than having
+  // it tick forever just to re-select the same slide.
   useEffect(() => {
+    if (visibleSlides.length <= 1) return;
     const t = setInterval(next, 6000);
     return () => clearInterval(t);
-  }, [next]);
+  }, [next, visibleSlides.length]);
 
   const slide = visibleSlides[safeCurrent];
   const prevSlide = prev !== null ? visibleSlides[prev % visibleSlides.length] : null;
