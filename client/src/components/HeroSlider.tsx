@@ -23,7 +23,7 @@ const SLIDES = [
     cta: "Browse Compounds",
     ctaHref: "/compounds",
     stat1: { value: "≥99%", label: "Purity Guaranteed" },
-    stat2: { value: "COA", label: "Every Batch" },
+    stat2: { value: "COA", label: "3rd-Party Lab Tested in Every Batch" },
     accent: "#dbcfba",
   },
   {
