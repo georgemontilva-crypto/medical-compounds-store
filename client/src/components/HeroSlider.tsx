@@ -169,8 +169,15 @@ export default function HeroSlider() {
             {/* Admin can upload a separate mobile/tablet crop per slide — if
                 they haven't, this <source> is simply omitted and the <img>
                 below (desktop image + mobileFocal object-position) is what
-                renders at every width, same as before this existed. */}
-            {mobileBgImage && <source media="(max-width: 767px)" srcSet={mobileBgImage} />}
+                renders at every width, same as before this existed.
+                srcset (unlike a plain src) uses raw whitespace as a
+                candidate/descriptor delimiter — uploaded filenames routinely
+                contain spaces (R2 keys keep the original filename), which
+                silently breaks that candidate and falls back to the desktop
+                img. Encode just the spaces so the URL parses as one candidate. */}
+            {mobileBgImage && (
+              <source media="(max-width: 767px)" srcSet={mobileBgImage.replace(/ /g, "%20")} />
+            )}
             <img
               src={bgImage}
               alt=""
