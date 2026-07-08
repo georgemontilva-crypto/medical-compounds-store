@@ -140,6 +140,7 @@ export default function HeroSlider() {
   const slide = visibleSlides[safeCurrent];
   const prevSlide = prev !== null ? visibleSlides[prev % visibleSlides.length] : null;
   const bgImage = imageBySlot[`hero_slide_${slide.id}`] ?? slide.bgImage;
+  const mobileBgImage = imageBySlot[`hero_slide_${slide.id}_mobile`];
   const animationEnabled = heroConfigBySlot[`hero_slide_${slide.id}`]?.animationEnabled !== false;
 
   const stat1 =
@@ -164,18 +165,29 @@ export default function HeroSlider() {
       <div key={`bg-${current}-${animKey}`} className="absolute inset-0 z-0 overflow-hidden">
         {/* Real photo background */}
         {bgImage ? (
-          <img
-            src={bgImage}
-            alt=""
-            aria-hidden="true"
-            className={`hero-bg-img absolute inset-0 w-full h-full object-cover ${
-              animationEnabled ? (safeCurrent % 2 === 0 ? "kb-anim" : "kb-anim-alt") : ""
-            }`}
-            style={{
-              ...(animationEnabled ? { willChange: "transform" } : {}),
-              "--hero-mobile-focal": slide.mobileFocal ?? "center",
-            } as React.CSSProperties}
-          />
+          <picture>
+            {/* Admin can upload a separate mobile/tablet crop per slide — if
+                they haven't, this <source> is simply omitted and the <img>
+                below (desktop image + mobileFocal object-position) is what
+                renders at every width, same as before this existed. */}
+            {mobileBgImage && <source media="(max-width: 767px)" srcSet={mobileBgImage} />}
+            <img
+              src={bgImage}
+              alt=""
+              aria-hidden="true"
+              className={`hero-bg-img absolute inset-0 w-full h-full object-cover ${
+                animationEnabled ? (safeCurrent % 2 === 0 ? "kb-anim" : "kb-anim-alt") : ""
+              }`}
+              style={{
+                ...(animationEnabled ? { willChange: "transform" } : {}),
+                // mobileFocal only makes sense as a crop-origin shift for the
+                // desktop image being force-fit into a narrow viewport — a
+                // dedicated mobile image is already composed/cropped for that
+                // width, so it should render centered, not re-shifted.
+                "--hero-mobile-focal": mobileBgImage ? "center" : slide.mobileFocal ?? "center",
+              } as React.CSSProperties}
+            />
+          </picture>
         ) : (
           <div
             className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} ${
