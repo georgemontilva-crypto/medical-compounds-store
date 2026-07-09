@@ -15,7 +15,7 @@ const SLIDES = [
     mobileFocal: "80% center",
     gradient: "from-[#0d1a18] via-[#0f2420] to-[#071510]",
     overlay: "bg-[#0d1a18]/65",
-    badge: "Research Grade · ≥99% Purity",
+    badge: "MADE IN USA",
     badgeColor: "bg-[#dbcfba]/20 border-[#dbcfba]/40 text-[#dbcfba]",
     tag: "01 · TISSUE REPAIR",
     headline: "Precision Peptides\nfor Advanced Research",

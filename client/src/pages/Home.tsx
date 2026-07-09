@@ -1136,7 +1136,7 @@ export default function Home() {
             {[
               { label: "GMP Compliant" },
               { label: "HPLC Verified" },
-              { label: "COA Included" },
+              { label: "MADE IN USA" },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 dark:bg-white/10 dark:border-white/10">
                 <Check size={12} className="text-[#d3c4ab]" />
@@ -1173,7 +1173,7 @@ export default function Home() {
                 {[
                   { label: "GMP Compliant", icon: "✓" },
                   { label: "HPLC Verified", icon: "✓" },
-                  { label: "COA Included", icon: "✓" },
+                  { label: "MADE IN USA", icon: "✓" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5">
                     <span className="text-[#dbcfba] font-bold text-xs">{item.icon}</span>

@@ -107,7 +107,7 @@ export default function Footer() {
                 </div>
               )}
               <p className="text-sm text-gray-500 max-w-xs">
-                Research-grade compounds, documented at every batch.
+                MADE IN USA. Research-grade compounds, documented at every batch.
               </p>
             </div>
 
