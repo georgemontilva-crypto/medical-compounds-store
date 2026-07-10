@@ -28,6 +28,7 @@ type ProductForm = {
   active: boolean;
   mechanism: string;
   casNumber: string;
+  excludeFromBulkDiscount: boolean;
 };
 
 const emptyForm: ProductForm = {
@@ -41,6 +42,7 @@ const emptyForm: ProductForm = {
   active: true,
   mechanism: "",
   casNumber: "",
+  excludeFromBulkDiscount: false,
 };
 
 type VariationForm = { unit: "mg" | "ml"; value: string; price: string; stock: string; sku: string };
@@ -128,7 +130,7 @@ export default function AdminProducts() {
     }
   };
 
-  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null }) => {
+  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; excludeFromBulkDiscount?: boolean }) => {
     setEditingId(p.id);
     setForm({
       name: p.name,
@@ -141,6 +143,7 @@ export default function AdminProducts() {
       active: p.active,
       mechanism: p.mechanism ?? "",
       casNumber: p.casNumber ?? "",
+      excludeFromBulkDiscount: p.excludeFromBulkDiscount ?? false,
     });
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -263,6 +266,15 @@ export default function AdminProducts() {
                       className="rounded"
                     />
                     <span className="text-sm font-medium">Active</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.excludeFromBulkDiscount}
+                      onChange={(e) => setForm({ ...form, excludeFromBulkDiscount: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium">Exclude from bulk volume discount</span>
                   </label>
                 </div>
               </div>

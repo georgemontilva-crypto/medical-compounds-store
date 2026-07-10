@@ -60,6 +60,7 @@ export const products = mysqlTable("products", {
   active: boolean("active").default(true).notNull(),
   mechanism: text("mechanism"),
   casNumber: varchar("casNumber", { length: 50 }),
+  excludeFromBulkDiscount: boolean("excludeFromBulkDiscount").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

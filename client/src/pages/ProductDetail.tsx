@@ -47,12 +47,15 @@ export default function ProductDetail({ params }: Props) {
     : Number(product?.basePrice ?? 0);
   const inStock = selectedVariation ? selectedVariation.stock > 0 : true;
 
-  // Buy-more-save-more: same 1/2/4/8 tiers for every product, percentages
+  // Buy-more-save-more: same 1/2/5 tiers for every product, percentages
   // come from admin config. Selecting a tier both sets `quantity` and
   // determines the discounted per-unit price used at Add to Cart time.
+  // Products flagged excludeFromBulkDiscount always price at 0% off, but
+  // keep the same quantity selector for a consistent buying flow.
+  const bulkDiscountEnabled = bulkTiers && !product?.excludeFromBulkDiscount;
   const quantityOptions = bulkTiers
     ? BULK_DISCOUNT_QUANTITIES.map((qty) => {
-        const percent = getBulkDiscountPercent(qty, bulkTiers);
+        const percent = bulkDiscountEnabled ? getBulkDiscountPercent(qty, bulkTiers) : 0;
         return {
           qty,
           percent,
@@ -61,7 +64,7 @@ export default function ProductDetail({ params }: Props) {
         };
       })
     : [];
-  const selectedPercent = bulkTiers ? getBulkDiscountPercent(quantity, bulkTiers) : 0;
+  const selectedPercent = bulkDiscountEnabled ? getBulkDiscountPercent(quantity, bulkTiers) : 0;
   const effectiveUnitPrice = price * (1 - selectedPercent / 100);
 
   // Prefer images uploaded for the selected variation; fall back to the
@@ -253,10 +256,10 @@ export default function ProductDetail({ params }: Props) {
             {/* Quantity — buy more, save more */}
             <div>
               <p className="lab-section-title mb-3">Quantity</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {quantityOptions.map((opt) => {
                   const isSelected = quantity === opt.qty;
-                  const isBestValue = opt.qty === 8 && !opt.disabled;
+                  const isBestValue = opt.qty === 5 && opt.percent > 0 && !opt.disabled;
                   return (
                     <button
                       key={opt.qty}

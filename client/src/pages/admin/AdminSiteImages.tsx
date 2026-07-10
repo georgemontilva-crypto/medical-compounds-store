@@ -97,21 +97,19 @@ function TextSettingCard({ settingKey, label, placeholder }: { settingKey: strin
   );
 }
 
-// Same 2+/4+/8+ quantity thresholds for every product — only the percentages
+// Same 2+/5+ quantity thresholds for every product — only the percentages
 // are editable here (client reads them via trpc.bulkDiscount.get).
 function BulkDiscountCard() {
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.bulkDiscount.get.useQuery();
   const [tier2, setTier2] = useState("");
-  const [tier4, setTier4] = useState("");
-  const [tier8, setTier8] = useState("");
+  const [tier5, setTier5] = useState("");
   const [touched, setTouched] = useState(false);
 
   useEffect(() => {
     if (!touched && data) {
       setTier2(String(data.tier2Percent));
-      setTier4(String(data.tier4Percent));
-      setTier8(String(data.tier8Percent));
+      setTier5(String(data.tier5Percent));
     }
   }, [data, touched]);
 
@@ -126,13 +124,12 @@ function BulkDiscountCard() {
 
   const handleSave = () => {
     const t2 = Number(tier2);
-    const t4 = Number(tier4);
-    const t8 = Number(tier8);
-    if ([t2, t4, t8].some((n) => Number.isNaN(n) || n < 0 || n > 100)) {
+    const t5 = Number(tier5);
+    if ([t2, t5].some((n) => Number.isNaN(n) || n < 0 || n > 100)) {
       toast.error("Los porcentajes deben ser números entre 0 y 100");
       return;
     }
-    saveMutation.mutate({ tier2Percent: t2, tier4Percent: t4, tier8Percent: t8 });
+    saveMutation.mutate({ tier2Percent: t2, tier5Percent: t5 });
   };
 
   return (
@@ -141,11 +138,10 @@ function BulkDiscountCard() {
       <p className="text-xs text-gray-400 mt-0.5">
         Mismos umbrales de cantidad para todo el catálogo — solo el % de descuento es editable.
       </p>
-      <div className="grid grid-cols-3 gap-3 mt-3">
+      <div className="grid grid-cols-2 gap-3 mt-3">
         {[
           { label: "2+ unidades", value: tier2, setValue: setTier2 },
-          { label: "4+ unidades", value: tier4, setValue: setTier4 },
-          { label: "8+ unidades", value: tier8, setValue: setTier8 },
+          { label: "5+ unidades", value: tier5, setValue: setTier5 },
         ].map((tier) => (
           <label key={tier.label} className="block">
             <span className="text-xs text-gray-500">{tier.label}</span>

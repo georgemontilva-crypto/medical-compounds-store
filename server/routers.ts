@@ -317,6 +317,7 @@ export const appRouter = router({
           active: z.boolean().optional(),
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
+          excludeFromBulkDiscount: z.boolean().optional(),
         })
       )
       .mutation(({ input }) => createProduct(input)),
@@ -335,6 +336,7 @@ export const appRouter = router({
           active: z.boolean().optional(),
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
+          excludeFromBulkDiscount: z.boolean().optional(),
         })
       )
       .mutation(({ input }) => {
@@ -847,20 +849,18 @@ export const appRouter = router({
       .mutation(({ input }) => setSiteSetting(input.key, input.value)),
   }),
 
-  // ─── Bulk (volume) discount tiers — same 2+/4+/8+ thresholds for every
-  // product; only the percentages are admin-editable, stored as 3 rows in
+  // ─── Bulk (volume) discount tiers — same 2+/5+ thresholds for every
+  // product; only the percentages are admin-editable, stored as 2 rows in
   // site_settings rather than a dedicated table ────────────────────────────
   bulkDiscount: router({
     get: publicProcedure.query(async () => {
-      const [t2, t4, t8] = await Promise.all([
+      const [t2, t5] = await Promise.all([
         getSiteSetting("bulk_discount_tier_2"),
-        getSiteSetting("bulk_discount_tier_4"),
-        getSiteSetting("bulk_discount_tier_8"),
+        getSiteSetting("bulk_discount_tier_5"),
       ]);
       return {
         tier2Percent: t2 ? Number(t2.value) : 10,
-        tier4Percent: t4 ? Number(t4.value) : 20,
-        tier8Percent: t8 ? Number(t8.value) : 40,
+        tier5Percent: t5 ? Number(t5.value) : 20,
       };
     }),
 
@@ -868,15 +868,13 @@ export const appRouter = router({
       .input(
         z.object({
           tier2Percent: z.number().min(0).max(100),
-          tier4Percent: z.number().min(0).max(100),
-          tier8Percent: z.number().min(0).max(100),
+          tier5Percent: z.number().min(0).max(100),
         })
       )
       .mutation(async ({ input }) => {
         await Promise.all([
           setSiteSetting("bulk_discount_tier_2", String(input.tier2Percent)),
-          setSiteSetting("bulk_discount_tier_4", String(input.tier4Percent)),
-          setSiteSetting("bulk_discount_tier_8", String(input.tier8Percent)),
+          setSiteSetting("bulk_discount_tier_5", String(input.tier5Percent)),
         ]);
         return { success: true };
       }),

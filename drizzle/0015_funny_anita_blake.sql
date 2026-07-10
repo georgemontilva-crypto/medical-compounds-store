@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `excludeFromBulkDiscount` boolean DEFAULT false NOT NULL;

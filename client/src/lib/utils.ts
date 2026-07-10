@@ -19,15 +19,13 @@ export function formatVariationValue(value: string | number): string {
 // product; only the percentages come from admin config (bulkDiscount.get).
 export interface BulkDiscountTiers {
   tier2Percent: number;
-  tier4Percent: number;
-  tier8Percent: number;
+  tier5Percent: number;
 }
 
-export const BULK_DISCOUNT_QUANTITIES = [1, 2, 4, 8] as const;
+export const BULK_DISCOUNT_QUANTITIES = [1, 2, 5] as const;
 
 export function getBulkDiscountPercent(quantity: number, tiers: BulkDiscountTiers): number {
-  if (quantity >= 8) return tiers.tier8Percent;
-  if (quantity >= 4) return tiers.tier4Percent;
+  if (quantity >= 5) return tiers.tier5Percent;
   if (quantity >= 2) return tiers.tier2Percent;
   return 0;
 }
