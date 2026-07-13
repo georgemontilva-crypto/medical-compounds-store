@@ -106,8 +106,14 @@ export default function Footer() {
                   <span className="font-bold text-white text-lg">Brighter Days Labs</span>
                 </div>
               )}
-              <p className="text-sm text-gray-500 max-w-xs">
-                MADE IN USA. Research-grade compounds, documented at every batch.
+              <p className="text-sm text-gray-500 max-w-xs flex items-start gap-1.5">
+                <img
+                  src="https://pub-f9dc97453f1244a0a96fa1fb85c35d2e.r2.dev/site-images/Flag_of_the_United_States.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="w-4 h-3 rounded-[1px] object-cover flex-shrink-0 mt-0.5"
+                />
+                <span>MADE IN USA. Research-grade compounds, documented at every batch.</span>
               </p>
             </div>
 

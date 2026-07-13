@@ -17,6 +17,7 @@ const SLIDES = [
     overlay: "bg-[#0d1a18]/65",
     badge: "MADE IN USA",
     badgeColor: "bg-[#dbcfba]/20 border-[#dbcfba]/40 text-[#dbcfba]",
+    showFlag: true,
     tag: "01 · TISSUE REPAIR",
     headline: "Precision Peptides\nfor Advanced Research",
     sub: "High-purity lyophilized compounds manufactured to the strictest laboratory standards.",
@@ -223,10 +224,19 @@ export default function HeroSlider() {
               className={`inline-flex items-center gap-2 border text-xs font-semibold px-3 py-1.5 rounded-full mb-6 backdrop-blur-sm ${slide.badgeColor}`}
               style={{ animation: "fadeSlideUp 0.6s ease-out both", animationDelay: "0.1s" }}
             >
-              <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: slide.accent }}
-              />
+              {slide.showFlag ? (
+                <img
+                  src="https://pub-f9dc97453f1244a0a96fa1fb85c35d2e.r2.dev/site-images/Flag_of_the_United_States.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="w-4 h-3 rounded-[1px] object-cover flex-shrink-0"
+                />
+              ) : (
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: slide.accent }}
+                />
+              )}
               {slide.badge}
             </div>
 
