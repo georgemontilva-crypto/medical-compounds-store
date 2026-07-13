@@ -343,7 +343,7 @@ function ShippingStep({
       </div>
 
       <div className="lab-card p-6">
-        <h2 className="font-semibold text-lg mb-5">Researcher Information</h2>
+        <h2 className="font-semibold text-lg mb-5">Additional Required Information</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">
