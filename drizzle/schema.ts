@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   decimal,
   int,
   mysqlEnum,
@@ -142,6 +143,13 @@ export const orders = mysqlTable("orders", {
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   couponId: int("couponId").references(() => coupons.id),
   couponCode: varchar("couponCode", { length: 50 }),
+  // Researcher info
+  researcherType: mysqlEnum("researcherType", [
+    "private_researcher",
+    "lab_company_researcher",
+    "government_entity_researcher",
+  ]).notNull(),
+  dateOfBirth: date("dateOfBirth", { mode: "string" }).notNull(),
   // Shipping info
   shippingFirstName: varchar("shippingFirstName", { length: 100 }),
   shippingLastName: varchar("shippingLastName", { length: 100 }),

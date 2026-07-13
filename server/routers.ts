@@ -598,6 +598,12 @@ export const appRouter = router({
           couponCode: z.string().optional(),
           couponId: z.number().optional(),
           discountAmount: z.number().optional(),
+          researcherType: z.enum([
+            "private_researcher",
+            "lab_company_researcher",
+            "government_entity_researcher",
+          ]),
+          dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date of birth"),
           shipping: z.object({
             firstName: z.string(),
             lastName: z.string(),
@@ -624,6 +630,8 @@ export const appRouter = router({
           total: total.toFixed(2),
           couponId: input.couponId,
           couponCode: input.couponCode,
+          researcherType: input.researcherType,
+          dateOfBirth: input.dateOfBirth,
           shippingFirstName: input.shipping.firstName,
           shippingLastName: input.shipping.lastName,
           shippingEmail: input.shipping.email,

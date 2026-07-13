@@ -16,6 +16,12 @@ import { toast } from "sonner";
 
 type Step = "shipping" | "payment" | "confirmation";
 
+type ResearcherType =
+  | ""
+  | "private_researcher"
+  | "lab_company_researcher"
+  | "government_entity_researcher";
+
 interface ShippingForm {
   firstName: string;
   lastName: string;
@@ -26,6 +32,8 @@ interface ShippingForm {
   state: string;
   zip: string;
   country: string;
+  researcherType: ResearcherType;
+  dateOfBirth: string;
 }
 
 export default function Checkout() {
@@ -44,6 +52,8 @@ export default function Checkout() {
     state: "",
     zip: "",
     country: "United States",
+    researcherType: "",
+    dateOfBirth: "",
   });
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -212,6 +222,11 @@ export default function Checkout() {
                     couponCode: appliedCoupon?.code,
                     couponId: appliedCoupon?.id,
                     discountAmount: discount,
+                    researcherType: shipping.researcherType as
+                      | "private_researcher"
+                      | "lab_company_researcher"
+                      | "government_entity_researcher",
+                    dateOfBirth: shipping.dateOfBirth,
                     shipping: {
                       firstName: shipping.firstName,
                       lastName: shipping.lastName,
@@ -324,6 +339,35 @@ function ShippingStep({
         <div className="grid grid-cols-2 gap-4 mt-4">
           {field("ZIP / Postal Code", "zip", "text", "10001", false)}
           {field("Country", "country", "text", "United States")}
+        </div>
+      </div>
+
+      <div className="lab-card p-6">
+        <h2 className="font-semibold text-lg mb-5">Researcher Information</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1.5">
+              What type of researcher are you? <span className="text-destructive">*</span>
+            </label>
+            <select
+              value={shipping.researcherType}
+              onChange={(e) =>
+                setShipping({ ...shipping, researcherType: e.target.value as ResearcherType })
+              }
+              className="lab-input"
+              required
+            >
+              <option value="" disabled>
+                Select an option…
+              </option>
+              <option value="private_researcher">Private Researcher</option>
+              <option value="lab_company_researcher">Lab/Company Researcher</option>
+              <option value="government_entity_researcher">
+                Government Entity Researcher
+              </option>
+            </select>
+          </div>
+          {field("Date of Birth", "dateOfBirth", "date", "", true)}
         </div>
       </div>
 

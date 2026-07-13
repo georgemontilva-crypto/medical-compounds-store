@@ -1,0 +1,2 @@
+ALTER TABLE `orders` ADD `researcherType` enum('private_researcher','lab_company_researcher','government_entity_researcher') NOT NULL;--> statement-breakpoint
+ALTER TABLE `orders` ADD `dateOfBirth` date NOT NULL;
