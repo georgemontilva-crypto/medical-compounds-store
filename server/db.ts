@@ -248,7 +248,25 @@ export async function updateProduct(id: number, data: Partial<InsertProduct>) {
 export async function deleteProduct(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.delete(products).where(eq(products.id, id));
+
+  const existingOrderItem = await db
+    .select({ id: orderItems.id })
+    .from(orderItems)
+    .where(eq(orderItems.productId, id))
+    .limit(1);
+  if (existingOrderItem.length > 0) {
+    throw new Error(
+      "Cannot delete a product that has existing orders. Deactivate it instead."
+    );
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(cartItems).where(eq(cartItems.productId, id));
+    await tx.delete(productImages).where(eq(productImages.productId, id));
+    await tx.delete(productVariations).where(eq(productVariations.productId, id));
+    await tx.delete(labReports).where(eq(labReports.productId, id));
+    await tx.delete(products).where(eq(products.id, id));
+  });
 }
 
 export async function countProducts() {
