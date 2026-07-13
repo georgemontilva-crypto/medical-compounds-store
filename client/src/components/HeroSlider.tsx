@@ -282,11 +282,6 @@ export default function HeroSlider() {
                   <ArrowRight size={15} />
                 </button>
               </Link>
-              <Link href="/compounds">
-                <button className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                  View all compounds →
-                </button>
-              </Link>
             </div>
 
             {/* Stats */}
@@ -345,11 +340,6 @@ export default function HeroSlider() {
             animation: "progressBar 6s linear forwards",
           }}
         />
-      </div>
-
-      {/* ── Slide counter ── */}
-      <div className="absolute bottom-6 left-6 z-20 text-white/40 text-xs font-mono font-bold tracking-widest">
-        {String(safeCurrent + 1).padStart(2, "0")} / {String(visibleSlides.length).padStart(2, "0")}
       </div>
 
       <style>{`
