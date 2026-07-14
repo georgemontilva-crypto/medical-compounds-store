@@ -12,6 +12,7 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "site_logo", label: "Logo del sitio (navbar)", section: "Global", recommended: "PNG/SVG con fondo transparente, ~160×40px o proporción similar (se muestra a max-height 40px)" },
   { slotKey: "site_logo_footer", label: "Logo del pie de página", section: "Global", recommended: "PNG/SVG con fondo transparente, versión clara/blanca para fondo oscuro" },
   { slotKey: "global_background_pattern", label: "Fondo general del sitio (patrón repetido)", section: "Global", recommended: "Imagen pequeña que se repite en mosaico (tile), idealmente transparente o sin costuras visibles, ~80×92px o similar" },
+  { slotKey: "site_favicon", label: "Favicon del sitio", section: "Global", recommended: "ICO, PNG o SVG cuadrado, ideal 32×32 o 512×512" },
   { slotKey: "hero_slide_1", label: "Home — Hero Slider, slide 1 (Tissue Repair)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_1_mobile", label: "Hero Slide 1 — Versión Mobile/Tablet", section: "Home — Hero & Secciones", recommended: "Opcional — si no se sube, usa la imagen desktop reposicionada. Portrait o cuadrada, ≥1080×1350, foco recortado para pantallas angostas" },
   { slotKey: "hero_slide_2", label: "Home — Hero Slider, slide 2 (Cellular & Neural)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },

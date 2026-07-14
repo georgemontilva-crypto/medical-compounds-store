@@ -150,6 +150,21 @@ function BackgroundPatternSync() {
   return null;
 }
 
+// Points the static <link rel="icon"> in index.html at the admin-uploaded
+// favicon once it's loaded. Runs after mount, so the static/placeholder icon
+// is what shows until this query resolves.
+function FaviconSync() {
+  const { data: favicon } = trpc.siteImages.getBySlot.useQuery({ slotKey: "site_favicon" });
+
+  useEffect(() => {
+    if (!favicon?.url) return;
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    link?.setAttribute("href", favicon.url);
+  }, [favicon]);
+
+  return null;
+}
+
 function App() {
   useEffect(() => {
     initLenis();
@@ -167,6 +182,7 @@ function App() {
                 <Toaster position="top-right" />
                 <ScrollToTop />
                 <BackgroundPatternSync />
+                <FaviconSync />
                 <Router />
                 <CartDrawer />
                 <FloatingCartButton />
