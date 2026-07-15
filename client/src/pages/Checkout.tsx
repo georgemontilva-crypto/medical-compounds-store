@@ -289,21 +289,28 @@ function ShippingStep({
     type = "text",
     placeholder = "",
     required = true
-  ) => (
-    <div>
-      <label className="block text-sm font-medium mb-1.5">
-        {label} {required && <span className="text-destructive">*</span>}
-      </label>
+  ) => {
+    const isDate = type === "date";
+    const input = (
       <input
         type={type}
         placeholder={placeholder}
         value={shipping[key]}
         onChange={(e) => setShipping({ ...shipping, [key]: e.target.value })}
-        className={`lab-input${type === "date" ? " min-w-0 max-w-full box-border" : ""}`}
+        className={`lab-input${isDate ? " min-w-0 max-w-full box-border" : ""}`}
+        style={isDate ? { fontSize: 16 } : undefined}
         required={required}
       />
-    </div>
-  );
+    );
+    return (
+      <div className="min-w-0">
+        <label className="block text-sm font-medium mb-1.5">
+          {label} {required && <span className="text-destructive">*</span>}
+        </label>
+        {isDate ? <div className="overflow-hidden rounded-xl">{input}</div> : input}
+      </div>
+    );
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
