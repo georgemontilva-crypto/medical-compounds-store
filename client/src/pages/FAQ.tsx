@@ -55,7 +55,7 @@ const FAQS: { question: string; answer: string }[] = [
   {
     question: "How can I contact support?",
     answer:
-      "Reach us through the Contact page or by emailing support@biolabcompounds.com. We respond to all inquiries within one business day.",
+      "Reach us through the Contact page or by emailing info@brighterdayslabs.com. We respond to all inquiries within one business day.",
   },
 ];
 

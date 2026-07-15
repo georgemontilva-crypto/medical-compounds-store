@@ -98,6 +98,17 @@ function injectKBStyle() {
   kbStyleInjected = true;
 }
 
+// Converts a slide's solid hex accent (e.g. "#dbcfba") to an rgba() string
+// so the CTA button background can carry alpha without a second color token.
+function hexToRgba(hex: string, alpha: number) {
+  const clean = hex.replace("#", "");
+  const bigint = parseInt(clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // ── HeroSlider ─────────────────────────────────────────────────────────────────
 export default function HeroSlider() {
   const [current, setCurrent] = useState(0);
@@ -275,8 +286,8 @@ export default function HeroSlider() {
             >
               <Link href={slide.ctaHref}>
                 <button
-                  className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl text-white transition-all duration-200 active:scale-[0.97] shadow-lg"
-                  style={{ backgroundColor: slide.accent }}
+                  className="inline-flex items-center gap-2 text-sm font-bold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.97] shadow-lg"
+                  style={{ backgroundColor: hexToRgba(slide.accent, 0.6), color: "#3a2f1f" }}
                 >
                   {slide.cta}
                   <ArrowRight size={15} />

@@ -299,7 +299,7 @@ function ShippingStep({
         placeholder={placeholder}
         value={shipping[key]}
         onChange={(e) => setShipping({ ...shipping, [key]: e.target.value })}
-        className="lab-input"
+        className={`lab-input${type === "date" ? " min-w-0 max-w-full box-border" : ""}`}
         required={required}
       />
     </div>

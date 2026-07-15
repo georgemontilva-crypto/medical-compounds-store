@@ -1010,7 +1010,7 @@ export default function Home() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/compounds">
-                  <button className="inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-[#d3c4ab]/20">
+                  <button className="inline-flex items-center gap-2 bg-[#d3c4ab]/60 hover:bg-[#baac96]/60 text-gray-950 font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-[#d3c4ab]/20">
                     Browse Compounds
                     <ArrowRight size={16} />
                   </button>

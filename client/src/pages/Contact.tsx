@@ -230,7 +230,7 @@ export default function Contact() {
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-[#f2ede6] dark:bg-white/10">
                     <Mail size={15} style={{color:'#d3c4ab'}} />
                   </div>
-                  <span className="text-sm text-gray-700 break-all dark:text-gray-300">support@biolabcompounds.com</span>
+                  <span className="text-sm text-gray-700 break-all dark:text-gray-300">info@brighterdayslabs.com</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-[#f2ede6] dark:bg-white/10">
@@ -245,7 +245,7 @@ export default function Contact() {
                   Company Information
                 </p>
                 <p className="text-sm text-gray-500 leading-relaxed dark:text-gray-400">
-                  Brighter Days Labs is a research-grade peptide supplier · United States · support@biolabcompounds.com
+                  Brighter Days Labs is a research-grade peptide supplier · United States · info@brighterdayslabs.com
                 </p>
               </div>
             </div>
