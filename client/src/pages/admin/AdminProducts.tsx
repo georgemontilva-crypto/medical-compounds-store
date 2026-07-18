@@ -117,6 +117,11 @@ export default function AdminProducts() {
     onError: (e) => toast.error(e.message),
   });
 
+  const updateVariation = trpc.products.updateVariation.useMutation({
+    onSuccess: () => { utils.products.variations.invalidate(); toast.success("Variation updated"); },
+    onError: (e) => toast.error(e.message),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = {
@@ -374,6 +379,7 @@ export default function AdminProducts() {
                   })
                 }
                 onDeleteVariation={(id) => deleteVariation.mutate({ id })}
+                onUpdateVariation={(id, data) => updateVariation.mutate({ id, ...data })}
                 fileInputRef={fileInputRef}
                 uploadingFor={uploadingFor}
                 setUploadingFor={setUploadingFor}
@@ -400,6 +406,7 @@ function ProductRow({
   setVariationForm,
   onAddVariation,
   onDeleteVariation,
+  onUpdateVariation,
   fileInputRef,
   uploadingFor,
   setUploadingFor,
@@ -417,6 +424,7 @@ function ProductRow({
   setVariationForm: (v: VariationForm) => void;
   onAddVariation: () => void;
   onDeleteVariation: (id: number) => void;
+  onUpdateVariation: (id: number, data: { unit: "mg" | "ml"; value: string; price: string; stock: number }) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   uploadingFor: number | null;
   setUploadingFor: (id: number | null) => void;
@@ -431,6 +439,25 @@ function ProductRow({
   useEffect(() => {
     if (images) setNextOrder(images.length);
   }, [images]);
+
+  const [editingVariationId, setEditingVariationId] = useState<number | null>(null);
+  const [editVariationForm, setEditVariationForm] = useState<VariationForm>(emptyVariation);
+
+  const startEditVariation = (v: { id: number; unit: "mg" | "ml"; value: string; price: string; stock: number }) => {
+    setEditingVariationId(v.id);
+    setEditVariationForm({ unit: v.unit, value: v.value, price: v.price, stock: String(v.stock), sku: "" });
+  };
+
+  const saveEditVariation = () => {
+    if (editingVariationId == null) return;
+    onUpdateVariation(editingVariationId, {
+      unit: editVariationForm.unit,
+      value: editVariationForm.value,
+      price: editVariationForm.price,
+      stock: Number(editVariationForm.stock),
+    });
+    setEditingVariationId(null);
+  };
 
   return (
     <div className="lab-card overflow-hidden">
@@ -544,6 +571,72 @@ function ProductRow({
               {variations && variations.length > 0 ? (
                 variations.map((v) => {
                   const variationImage = images?.find((img) => img.variationId === v.id);
+
+                  if (editingVariationId === v.id) {
+                    return (
+                      <div
+                        key={v.id}
+                        className="flex flex-wrap gap-2 items-end bg-card border border-primary rounded-xl px-3 py-2"
+                      >
+                        <div>
+                          <label className="block text-[10px] text-muted-foreground mb-1">Unit</label>
+                          <select
+                            className="lab-input py-1.5 text-xs w-20"
+                            value={editVariationForm.unit}
+                            onChange={(e) => setEditVariationForm({ ...editVariationForm, unit: e.target.value as "mg" | "ml" })}
+                          >
+                            <option value="mg">mg</option>
+                            <option value="ml">ml</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted-foreground mb-1">Value</label>
+                          <input
+                            className="lab-input py-1.5 text-xs w-20"
+                            type="number"
+                            step="0.01"
+                            value={editVariationForm.value}
+                            onChange={(e) => setEditVariationForm({ ...editVariationForm, value: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted-foreground mb-1">Price ($)</label>
+                          <input
+                            className="lab-input py-1.5 text-xs w-24"
+                            type="number"
+                            step="0.01"
+                            value={editVariationForm.price}
+                            onChange={(e) => setEditVariationForm({ ...editVariationForm, price: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted-foreground mb-1">Stock</label>
+                          <input
+                            className="lab-input py-1.5 text-xs w-20"
+                            type="number"
+                            value={editVariationForm.stock}
+                            onChange={(e) => setEditVariationForm({ ...editVariationForm, stock: e.target.value })}
+                          />
+                        </div>
+                        <button
+                          onClick={saveEditVariation}
+                          disabled={!editVariationForm.value || !editVariationForm.price}
+                          className="lab-btn-primary py-1.5 px-3 text-xs"
+                        >
+                          <Check size={12} />
+                          Guardar
+                        </button>
+                        <button
+                          onClick={() => setEditingVariationId(null)}
+                          className="lab-btn-secondary py-1.5 px-3 text-xs"
+                        >
+                          <X size={12} />
+                          Cancelar
+                        </button>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={v.id}
@@ -579,6 +672,13 @@ function ProductRow({
                           }}
                         />
                       </label>
+                      <button
+                        onClick={() => startEditVariation(v)}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title="Edit variation"
+                      >
+                        <Pencil size={12} />
+                      </button>
                       <button
                         onClick={() => onDeleteVariation(v.id)}
                         className="text-muted-foreground hover:text-destructive transition-colors"
