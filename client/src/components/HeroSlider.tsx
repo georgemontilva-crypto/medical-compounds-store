@@ -14,7 +14,7 @@ const SLIDES = [
     // unless we shift the crop origin toward it. Tune per-slide as needed.
     mobileFocal: "80% center",
     gradient: "from-[#0d1a18] via-[#0f2420] to-[#071510]",
-    overlay: "bg-[#0d1a18]/65",
+    overlay: "#0d1a18",
     badge: "MADE IN USA",
     badgeColor: "bg-[#dbcfba]/20 border-[#dbcfba]/40 text-[#dbcfba]",
     showFlag: true,
@@ -32,7 +32,7 @@ const SLIDES = [
     bgImage: "/manus-storage/peptide-synthesis_a782e21c.jpg",
     mobileFocal: "90% center",
     gradient: "from-[#1a1408] via-[#2a1f0a] to-[#1a1005]",
-    overlay: "bg-[#1a1408]/65",
+    overlay: "#1a1408",
     badge: "Cellular Research · Neural Peptides",
     badgeColor: "bg-[#C8A84B]/20 border-[#C8A84B]/40 text-[#C8A84B]",
     tag: "02 · CELLULAR & NEURAL",
@@ -50,7 +50,7 @@ const SLIDES = [
     bgImage: "/manus-storage/modern-lab_a86acfc6.jpg",
     mobileFocal: "80% center",
     gradient: "from-[#0d1a18] via-[#163028] to-[#0a1f18]",
-    overlay: "bg-[#0a1f18]/60",
+    overlay: "#0a1f18",
     badge: "Metabolic Research · Energy Metabolism",
     badgeColor: "bg-[#d7cab3]/20 border-[#d7cab3]/40 text-[#d7cab3]",
     tag: "03 · METABOLIC",
@@ -218,8 +218,17 @@ export default function HeroSlider() {
             style={animationEnabled ? { willChange: "transform" } : undefined}
           />
         )}
-        {/* Dark overlay for text readability */}
-        <div className={`absolute inset-0 ${slide.overlay}`} />
+        {/* Dark overlay for text readability — darkest over the text (left), fading
+            to fully transparent on the right so the image shows through unobscured */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(to right, ${hexToRgba(slide.overlay, 0.75)} 0%, ${hexToRgba(
+              slide.overlay,
+              0.35
+            )} 40%, ${hexToRgba(slide.overlay, 0)} 70%)`,
+          }}
+        />
         {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/40 to-transparent" />
       </div>
