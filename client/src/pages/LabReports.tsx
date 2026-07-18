@@ -25,6 +25,12 @@ export default function LabReports() {
     { enabled: !!product?.id }
   );
 
+  const { data: images } = trpc.products.images.useQuery(
+    { productId: product?.id ?? 0 },
+    { enabled: !!product?.id }
+  );
+  const productImage = images?.find((img) => img.variationId == null) ?? images?.[0];
+
   const isLoading = productLoading || reportsLoading;
 
   if (isLoading) {
@@ -76,8 +82,19 @@ export default function LabReports() {
         {/* Header */}
         <div className="bg-white rounded-3xl border border-gray-100 p-8 mb-8 shadow-sm">
           <div className="flex items-start gap-5">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{backgroundColor:'#f2ede6'}}>
-              <FlaskConical size={24} style={{color:'#d3c4ab'}} />
+            <div
+              className={`h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden ${productImage ? "" : "w-14"}`}
+              style={productImage ? undefined : { backgroundColor: '#f2ede6' }}
+            >
+              {productImage ? (
+                <img
+                  src={productImage.url}
+                  alt={product.name}
+                  className="h-full w-auto object-contain"
+                />
+              ) : (
+                <FlaskConical size={24} style={{color:'#d3c4ab'}} />
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
