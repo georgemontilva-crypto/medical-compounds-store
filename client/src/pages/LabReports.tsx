@@ -83,7 +83,7 @@ export default function LabReports() {
         <div className="bg-white rounded-3xl border border-gray-100 p-8 mb-8 shadow-sm">
           <div className="flex items-start gap-5">
             <div
-              className={`h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden ${productImage ? "" : "w-14"}`}
+              className={`rounded-2xl flex items-center justify-center shrink-0 overflow-hidden ${productImage ? "h-24" : "h-14 w-14"}`}
               style={productImage ? undefined : { backgroundColor: '#f2ede6' }}
             >
               {productImage ? (
