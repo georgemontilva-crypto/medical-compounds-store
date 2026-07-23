@@ -10,6 +10,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import { sendEmail, escapeHtml } from "./email";
 import { notifyOwner } from "./_core/notification";
+import type { InsertLabReport } from "../drizzle/schema";
 import {
   addProductImage,
   clearCart,
@@ -777,14 +778,29 @@ export const appRouter = router({
       .input(
         z.object({
           id: z.number(),
-          title: z.string().optional(),
-          description: z.string().optional(),
-          batchNumber: z.string().optional(),
+          title: z.string().min(1).optional(),
+          description: optionalTrimmedString,
+          batchNumber: optionalTrimmedString,
+          testDate: optionalTrimmedString,
           active: z.boolean().optional(),
+          fileBase64: z.string().optional(),
+          fileName: z.string().optional(),
+          fileSize: z.number().optional(),
         })
       )
-      .mutation(({ input }) => {
-        const { id, ...data } = input;
+      .mutation(async ({ input }) => {
+        const { id, fileBase64, fileName, fileSize, testDate, ...rest } = input;
+        const data: Partial<InsertLabReport> = { ...rest };
+        if (testDate !== undefined) data.testDate = testDate ? new Date(testDate) : null;
+        if (fileBase64 && fileName) {
+          const buffer = Buffer.from(fileBase64, "base64");
+          const key = `lab-reports/${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+          const { url } = await storagePut(key, buffer, "application/pdf");
+          data.fileUrl = url;
+          data.fileKey = key;
+          data.fileName = fileName;
+          data.fileSize = fileSize ?? null;
+        }
         return updateLabReport(id, data);
       }),
   }),

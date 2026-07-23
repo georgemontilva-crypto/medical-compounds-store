@@ -13,7 +13,16 @@ import {
   EyeOff,
   X,
   FlaskConical,
+  Pencil,
+  Check,
 } from "lucide-react";
+
+function toDateInputValue(d: string | Date | null | undefined) {
+  if (!d) return "";
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
 
 export default function AdminLabReports() {
   const utils = trpc.useUtils();
@@ -21,6 +30,19 @@ export default function AdminLabReports() {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    batchNumber: "",
+    testDate: "",
+    fileName: "",
+    fileBase64: "",
+    fileSize: 0,
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -56,6 +78,15 @@ export default function AdminLabReports() {
 
   const toggleMutation = trpc.labReports.update.useMutation({
     onSuccess: () => utils.labReports.all.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const updateMutation = trpc.labReports.update.useMutation({
+    onSuccess: () => {
+      toast.success("Lab report updated");
+      utils.labReports.all.invalidate();
+      setEditingId(null);
+    },
     onError: (err) => toast.error(err.message),
   });
 
@@ -96,6 +127,64 @@ export default function AdminLabReports() {
         fileSize: form.fileSize,
       },
       { onSettled: () => setUploading(false) }
+    );
+  }
+
+  function startEdit(report: (typeof allReports)[number]) {
+    setEditingId(report.id);
+    setEditForm({
+      title: report.title,
+      description: report.description ?? "",
+      batchNumber: report.batchNumber ?? "",
+      testDate: toDateInputValue(report.testDate),
+      fileName: "",
+      fileBase64: "",
+      fileSize: 0,
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  function handleEditFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Only PDF files are allowed");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("File must be under 20 MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = (ev.target?.result as string).split(",")[1];
+      setEditForm((f) => ({ ...f, fileBase64: base64, fileName: file.name, fileSize: file.size }));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function saveEdit() {
+    if (editingId == null) return;
+    if (!editForm.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    setSavingEdit(true);
+    updateMutation.mutate(
+      {
+        id: editingId,
+        title: editForm.title,
+        description: editForm.description || undefined,
+        batchNumber: editForm.batchNumber || undefined,
+        testDate: editForm.testDate || undefined,
+        ...(editForm.fileBase64
+          ? { fileBase64: editForm.fileBase64, fileName: editForm.fileName, fileSize: editForm.fileSize }
+          : {}),
+      },
+      { onSettled: () => setSavingEdit(false) }
     );
   }
 
@@ -312,63 +401,173 @@ export default function AdminLabReports() {
 
                   {/* Reports */}
                   <div className="divide-y divide-gray-50">
-                    {reports.map((report) => (
-                      <div key={report.id} className="flex items-center gap-4 px-6 py-4">
-                        <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                          <FileText size={16} className="text-red-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold ${report.active ? "text-gray-900" : "text-gray-400 line-through"}`}>
-                            {report.title}
-                          </p>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            {report.batchNumber && (
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
-                                <Hash size={10} /> {report.batchNumber}
-                              </span>
-                            )}
-                            {report.testDate && (
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
-                                <Calendar size={10} />
-                                {new Date(report.testDate).toLocaleDateString()}
-                              </span>
-                            )}
-                            <span className="text-xs text-gray-400">{report.fileName}</span>
+                    {reports.map((report) => {
+                      if (editingId === report.id) {
+                        return (
+                          <div key={report.id} className="px-6 py-4 bg-[#f2ede6]/30 space-y-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                                Report Title *
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.title}
+                                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                                Description
+                              </label>
+                              <textarea
+                                value={editForm.description}
+                                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                                rows={2}
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba] resize-none"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                                  Batch Number
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editForm.batchNumber}
+                                  onChange={(e) => setEditForm((f) => ({ ...f, batchNumber: e.target.value }))}
+                                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                                  Test Date
+                                </label>
+                                <input
+                                  type="date"
+                                  value={editForm.testDate}
+                                  onChange={(e) => setEditForm((f) => ({ ...f, testDate: e.target.value }))}
+                                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#dbcfba]/30 focus:border-[#dbcfba]"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                                Replace PDF (optional)
+                              </label>
+                              <div
+                                onClick={() => editFileInputRef.current?.click()}
+                                className={`border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-colors ${
+                                  editForm.fileBase64
+                                    ? "border-emerald-300 bg-emerald-50"
+                                    : "border-gray-200 hover:border-[#dbcfba] hover:bg-[#f2ede6]/30"
+                                }`}
+                              >
+                                {editForm.fileBase64 ? (
+                                  <div className="flex items-center justify-center gap-2 text-emerald-700">
+                                    <FileText size={14} />
+                                    <span className="text-xs font-medium">{editForm.fileName}</span>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-400">
+                                    Current file: {report.fileName} — click to replace
+                                  </p>
+                                )}
+                              </div>
+                              <input
+                                ref={editFileInputRef}
+                                type="file"
+                                accept="application/pdf"
+                                onChange={handleEditFileChange}
+                                className="hidden"
+                              />
+                            </div>
+                            <div className="flex gap-3 pt-1">
+                              <button
+                                onClick={cancelEdit}
+                                className="flex items-center gap-1.5 border border-gray-200 text-gray-700 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+                              >
+                                <X size={12} />
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={saveEdit}
+                                disabled={savingEdit || updateMutation.isPending || !editForm.title.trim()}
+                                className="flex items-center gap-1.5 bg-[#d3c4ab] hover:bg-[#baac96] disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors"
+                              >
+                                <Check size={12} />
+                                {savingEdit || updateMutation.isPending ? "Guardando..." : "Guardar"}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={report.id} className="flex items-center gap-4 px-6 py-4">
+                          <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                            <FileText size={16} className="text-red-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold ${report.active ? "text-gray-900" : "text-gray-400 line-through"}`}>
+                              {report.title}
+                            </p>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              {report.batchNumber && (
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                  <Hash size={10} /> {report.batchNumber}
+                                </span>
+                              )}
+                              {report.testDate && (
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                  <Calendar size={10} />
+                                  {new Date(report.testDate).toLocaleDateString()}
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-400">{report.fileName}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <a
+                              href={report.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#d3c4ab] hover:text-[#baac96] font-medium px-3 py-1.5 rounded-lg hover:bg-[#f2ede6] transition-colors"
+                            >
+                              View PDF
+                            </a>
+                            <button
+                              onClick={() => toggleMutation.mutate({ id: report.id, active: !report.active })}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                report.active
+                                  ? "text-emerald-600 hover:bg-emerald-50"
+                                  : "text-gray-400 hover:bg-gray-100"
+                              }`}
+                              title={report.active ? "Hide from public" : "Show to public"}
+                            >
+                              {report.active ? <Eye size={14} /> : <EyeOff size={14} />}
+                            </button>
+                            <button
+                              onClick={() => startEdit(report)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                              title="Edit report"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm("Delete this lab report?")) {
+                                  deleteMutation.mutate({ id: report.id });
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <a
-                            href={report.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-[#d3c4ab] hover:text-[#baac96] font-medium px-3 py-1.5 rounded-lg hover:bg-[#f2ede6] transition-colors"
-                          >
-                            View PDF
-                          </a>
-                          <button
-                            onClick={() => toggleMutation.mutate({ id: report.id, active: !report.active })}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              report.active
-                                ? "text-emerald-600 hover:bg-emerald-50"
-                                : "text-gray-400 hover:bg-gray-100"
-                            }`}
-                            title={report.active ? "Hide from public" : "Show to public"}
-                          >
-                            {report.active ? <Eye size={14} /> : <EyeOff size={14} />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm("Delete this lab report?")) {
-                                deleteMutation.mutate({ id: report.id });
-                              }
-                            }}
-                            className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
