@@ -231,6 +231,11 @@ export default function HeroSlider() {
         />
         {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/40 to-transparent" />
+        {/* Mobile-only vertical vignette — additional layer stacked on top of the
+            horizontal overlay above (not a replacement). Darkest at the bottom
+            (where text/badges sit), fading to transparent at 50% height.
+            Desktop is untouched: the class resolves to no background above 767px. */}
+        <div className="absolute inset-0 hero-mobile-vignette pointer-events-none" />
       </div>
 
       {/* ── Content ── */}
@@ -263,7 +268,7 @@ export default function HeroSlider() {
             {/* Tag */}
             <p
               key={`tag-${current}`}
-              className="text-xs font-bold tracking-[0.2em] uppercase text-white/40 mb-3"
+              className="text-xs font-bold tracking-[0.2em] uppercase text-white mb-3"
               style={{ animation: "fadeSlideUp 0.6s ease-out both", animationDelay: "0.2s" }}
             >
               {slide.tag}
@@ -281,7 +286,7 @@ export default function HeroSlider() {
             {/* Sub */}
             <p
               key={`sub-${current}`}
-              className="text-base sm:text-lg text-white/60 leading-relaxed mb-8 max-w-lg"
+              className="text-base sm:text-lg text-white leading-relaxed mb-8 max-w-lg"
               style={{ animation: "fadeSlideUp 0.7s ease-out both", animationDelay: "0.35s" }}
             >
               {slide.sub}
@@ -312,12 +317,12 @@ export default function HeroSlider() {
             >
               <div>
                 <p className="text-2xl font-extrabold text-white">{stat1.value}</p>
-                <p className="text-xs text-white/40 font-medium mt-0.5">{stat1.label}</p>
+                <p className="text-xs text-white font-medium mt-0.5">{stat1.label}</p>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div>
                 <p className="text-2xl font-extrabold text-white">{stat2.value}</p>
-                <p className="text-xs text-white/40 font-medium mt-0.5">{stat2.label}</p>
+                <p className="text-xs text-white font-medium mt-0.5">{stat2.label}</p>
               </div>
             </div>
           </div>
@@ -374,6 +379,12 @@ export default function HeroSlider() {
         .hero-bg-img { object-position: center; }
         @media (max-width: 767px) {
           .hero-bg-img { object-position: var(--hero-mobile-focal, center); }
+        }
+        .hero-mobile-vignette { background: transparent; }
+        @media (max-width: 767px) {
+          .hero-mobile-vignette {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 50%);
+          }
         }
       `}</style>
     </section>
