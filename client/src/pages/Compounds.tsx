@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { Link, useSearch } from "wouter";
-import { Search, FlaskConical, Plus, Check, SlidersHorizontal, ChevronDown, X } from "lucide-react";
+import { Search, FlaskConical, Plus, Check, ChevronDown, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ProductCard, { VialPlaceholder } from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
@@ -90,13 +90,13 @@ function StaticCard({ product, onAdd, added }: {
         </div>
       </Link>
       <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
           {product.isMock ? (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">Coming soon</span>
+            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">Coming soon</span>
           ) : product.popular && (
-            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
+            <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
@@ -128,7 +128,6 @@ export default function Compounds() {
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [sortOpen, setSortOpen] = useState(false);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { addItem } = useCart();
 
   const { data: categories = [] } = trpc.categories.list.useQuery();
@@ -303,11 +302,6 @@ export default function Compounds() {
                   </>
                 )}
               </div>
-              {/* Mobile filter */}
-              <button onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-                className="lg:hidden flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:bg-card dark:border-border dark:text-gray-300">
-                <SlidersHorizontal size={14} />
-              </button>
             </div>
 
             {/* Mobile category pills */}

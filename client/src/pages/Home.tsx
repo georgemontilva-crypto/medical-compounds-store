@@ -135,13 +135,13 @@ function CatalogVialCard({ product, onAdd, added }: {
         </div>
       </Link>
       <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
           {product.isMock ? (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">Coming soon</span>
+            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">Coming soon</span>
           ) : product.popular && (
-            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
+            <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${catBg} ${catText}`}>Popular</span>
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>

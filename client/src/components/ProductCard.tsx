@@ -103,12 +103,12 @@ export default function ProductCard({
         </div>
       </Link>
       <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: catColor }}>{catName}</span>
           {product.featured && (
             <span
-              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+              className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
               style={{ backgroundColor: `${catColor}20`, color: catColor }}
             >
               Popular
