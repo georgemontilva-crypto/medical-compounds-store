@@ -18,7 +18,6 @@ const SLIDES = [
     badge: "MADE IN USA",
     badgeColor: "bg-[#dbcfba]/20 border-[#dbcfba]/40 text-[#dbcfba]",
     showFlag: true,
-    tag: "01 · TISSUE REPAIR",
     headline: "Precision Peptides\nfor Advanced Research",
     sub: "High-purity lyophilized compounds manufactured to the strictest laboratory standards.",
     cta: "Browse Compounds",
@@ -35,7 +34,6 @@ const SLIDES = [
     overlay: "#1a1408",
     badge: "Cellular Research · Neural Peptides",
     badgeColor: "bg-[#C8A84B]/20 border-[#C8A84B]/40 text-[#C8A84B]",
-    tag: "02 · CELLULAR & NEURAL",
     headline: "Cellular Signaling\nCompounds",
     sub: "Explore our catalog of cellular and neural research peptides with documented mechanisms.",
     cta: "View Catalog",
@@ -53,7 +51,6 @@ const SLIDES = [
     overlay: "#0a1f18",
     badge: "Metabolic Research · Energy Metabolism",
     badgeColor: "bg-[#d7cab3]/20 border-[#d7cab3]/40 text-[#d7cab3]",
-    tag: "03 · METABOLIC",
     headline: "Metabolic Research\nGrade Compounds",
     sub: "NAD+, MOTS-C and more — compounds studied for their role in cellular energy and longevity pathways.",
     cta: "Metabolic Compounds",
@@ -265,15 +262,6 @@ export default function HeroSlider() {
               {slide.badge}
             </div>
 
-            {/* Tag */}
-            <p
-              key={`tag-${current}`}
-              className="text-xs font-bold tracking-[0.2em] uppercase text-white mb-3"
-              style={{ animation: "fadeSlideUp 0.6s ease-out both", animationDelay: "0.2s" }}
-            >
-              {slide.tag}
-            </p>
-
             {/* Headline */}
             <h1
               key={`h1-${current}`}
@@ -383,7 +371,7 @@ export default function HeroSlider() {
         .hero-mobile-vignette { background: transparent; }
         @media (max-width: 767px) {
           .hero-mobile-vignette {
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 50%);
+            background: linear-gradient(to top, rgba(61, 53, 39, 0.8) 0%, transparent 50%);
           }
         }
       `}</style>
