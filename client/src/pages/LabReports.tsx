@@ -80,50 +80,52 @@ export default function LabReports() {
         </Link>
 
         {/* Header */}
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 mb-8 shadow-sm">
-          <div className="flex items-start gap-5">
-            <div
-              className={`rounded-2xl flex items-center justify-center shrink-0 overflow-hidden ${productImage ? "h-24" : "h-14 w-14"}`}
-              style={productImage ? undefined : { backgroundColor: '#f2ede6' }}
-            >
-              {productImage ? (
-                <img
-                  src={productImage.url}
-                  alt={product.name}
-                  className="h-full w-auto object-contain"
-                />
-              ) : (
-                <FlaskConical size={24} style={{color:'#d3c4ab'}} />
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-bold tracking-widest uppercase" style={{color:'#d3c4ab'}}>
-                  Laboratory Analysis
-                </span>
+        <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 mb-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5">
+            <div className="flex items-start gap-4 sm:gap-5 flex-1 min-w-0">
+              <div
+                className={`rounded-2xl flex items-center justify-center shrink-0 overflow-hidden ${productImage ? "h-20 w-20 sm:h-24 sm:w-24" : "h-14 w-14"}`}
+                style={productImage ? undefined : { backgroundColor: '#f2ede6' }}
+              >
+                {productImage ? (
+                  <img
+                    src={productImage.url}
+                    alt={product.name}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <FlaskConical size={24} style={{color:'#d3c4ab'}} />
+                )}
               </div>
-              <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-                {product.name} — Lab Reports
-              </h1>
-              {product.casNumber && (
-                <p className="text-sm text-gray-400 mt-1">CAS: {product.casNumber}</p>
-              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold tracking-widest uppercase" style={{color:'#d3c4ab'}}>
+                    Laboratory Analysis
+                  </span>
+                </div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight break-words">
+                  {product.name} — Lab Reports
+                </h1>
+                {product.casNumber && (
+                  <p className="text-sm text-gray-400 mt-1">CAS: {product.casNumber}</p>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 self-start">
               <ShieldCheck size={13} />
               Third-party Tested
             </div>
           </div>
 
           {/* Trust badges */}
-          <div className="mt-6 pt-6 border-t border-gray-50 grid grid-cols-3 gap-4">
+          <div className="mt-6 pt-6 border-t border-gray-50 grid grid-cols-3 gap-2 sm:gap-4">
             {[
               { label: "Purity", value: "≥99%" },
               { label: "Testing", value: "HPLC/MS" },
               { label: "Standards", value: "cGMP-aligned" },
             ].map((b) => (
               <div key={b.label} className="text-center">
-                <p className="text-lg font-extrabold text-gray-900">{b.value}</p>
+                <p className="text-base sm:text-lg font-extrabold text-gray-900">{b.value}</p>
                 <p className="text-xs text-gray-400 font-medium mt-0.5">{b.label}</p>
               </div>
             ))}
@@ -153,52 +155,54 @@ export default function LabReports() {
                 key={report.id}
                 className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow group"
               >
-                <div className="flex items-start gap-4">
-                  {/* PDF icon */}
-                  <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                    <FileText size={20} className="text-red-500" />
-                  </div>
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    {/* PDF icon */}
+                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                      <FileText size={20} className="text-red-500" />
+                    </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-base leading-snug">
-                      {report.title}
-                    </h3>
-                    {report.description && (
-                      <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                        {report.description}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-4 mt-3">
-                      {report.batchNumber && (
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                          <Hash size={11} />
-                          <span>Batch: {report.batchNumber}</span>
-                        </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-base leading-snug break-words">
+                        {report.title}
+                      </h3>
+                      {report.description && (
+                        <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                          {report.description}
+                        </p>
                       )}
-                      {report.testDate && (
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                          <Calendar size={11} />
-                          <span>
-                            {new Date(report.testDate).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
+                        {report.batchNumber && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                            <Hash size={11} />
+                            <span>Batch: {report.batchNumber}</span>
+                          </div>
+                        )}
+                        {report.testDate && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                            <Calendar size={11} />
+                            <span>
+                              {new Date(report.testDate).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        {report.fileSize && (
+                          <span className="text-xs text-gray-400">
+                            {(report.fileSize / 1024 / 1024).toFixed(2)} MB
                           </span>
-                        </div>
-                      )}
-                      {report.fileSize && (
-                        <span className="text-xs text-gray-400">
-                          {(report.fileSize / 1024 / 1024).toFixed(2)} MB
-                        </span>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 sm:self-start">
                     <a
                       href={report.fileUrl}
                       target="_blank"

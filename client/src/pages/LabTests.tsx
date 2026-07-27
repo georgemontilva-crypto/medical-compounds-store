@@ -13,21 +13,23 @@ export default function LabTests() {
 
       <main className="max-w-5xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 mb-8 shadow-sm dark:bg-card dark:border-border">
-          <div className="flex items-start gap-5">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-[#f2ede6] dark:bg-white/10">
-              <FileText size={24} className="text-[#d3c4ab]" />
+        <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 mb-8 shadow-sm dark:bg-card dark:border-border">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5">
+            <div className="flex items-start gap-4 sm:gap-5 flex-1 min-w-0">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-[#f2ede6] dark:bg-white/10">
+                <FileText size={24} className="text-[#d3c4ab]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold tracking-widest uppercase text-[#d3c4ab] mb-1">
+                  Laboratory Analysis
+                </p>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight dark:text-white break-words">Lab Tests</h1>
+                <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                  Certificates of Analysis for every tested batch, published as soon as they're available.
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-xs font-bold tracking-widest uppercase text-[#d3c4ab] mb-1">
-                Laboratory Analysis
-              </p>
-              <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight dark:text-white">Lab Tests</h1>
-              <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
-                Certificates of Analysis for every tested batch, published as soon as they're available.
-              </p>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 self-start dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
               <ShieldCheck size={13} />
               Third-party Tested
             </div>
@@ -66,38 +68,40 @@ export default function LabTests() {
                 key={report.id}
                 className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow dark:bg-card dark:border-border"
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0 dark:bg-red-500/10">
-                    <FileText size={20} className="text-red-500 dark:text-red-400" />
-                  </div>
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0 dark:bg-red-500/10">
+                      <FileText size={20} className="text-red-500 dark:text-red-400" />
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[#d3c4ab] uppercase tracking-wide mb-0.5">
-                      {report.productName}
-                    </p>
-                    <h3 className="font-semibold text-gray-900 text-base leading-snug dark:text-white">{report.title}</h3>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-[#d3c4ab] uppercase tracking-wide mb-0.5">
+                        {report.productName}
+                      </p>
+                      <h3 className="font-semibold text-gray-900 text-base leading-snug break-words dark:text-white">{report.title}</h3>
 
-                    <div className="flex flex-wrap items-center gap-4 mt-3">
-                      {report.batchNumber && (
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
+                        {report.batchNumber && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+                            <Hash size={11} />
+                            <span>Batch: {report.batchNumber}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                          <Hash size={11} />
-                          <span>Batch: {report.batchNumber}</span>
+                          <Calendar size={11} />
+                          <span>
+                            {new Date(report.testDate ?? report.createdAt).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </span>
                         </div>
-                      )}
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                        <Calendar size={11} />
-                        <span>
-                          {new Date(report.testDate ?? report.createdAt).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 sm:self-start">
                     <a
                       href={report.fileUrl}
                       target="_blank"
