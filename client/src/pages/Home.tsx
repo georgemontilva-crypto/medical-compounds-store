@@ -102,7 +102,7 @@ function CatalogVialCard({ product, onAdd, added }: {
   const shortLabel = product.name.length > 9 ? product.name.slice(0, 9) : product.name;
 
   return (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300 dark:bg-card dark:border-border dark:hover:border-white/20">
+    <div className="group relative h-full flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300 dark:bg-card dark:border-border dark:hover:border-white/20">
       <Link href={`/compounds/${product.slug}`}>
         <div className="relative h-48 cursor-pointer overflow-hidden bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed]">
           <div className="w-full h-full flex items-center justify-center">
@@ -134,7 +134,7 @@ function CatalogVialCard({ product, onAdd, added }: {
           </button>
         </div>
       </Link>
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
@@ -145,14 +145,14 @@ function CatalogVialCard({ product, onAdd, added }: {
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
         </Link>
         <div className="flex flex-wrap gap-1 mb-2">
           {product.sizes.map((s) => (
             <span key={s} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono dark:text-gray-500 dark:bg-white/10">{s}</span>
           ))}
         </div>
-        <p className="font-semibold text-gray-900 text-sm dark:text-white">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
+        <p className="font-semibold text-gray-900 text-sm mt-auto dark:text-white">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
       </div>
     </div>
   );
@@ -893,7 +893,7 @@ function ResearchCatalogSection() {
 
             {/* Product grid */}
             {isLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4 items-stretch">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden animate-pulse dark:bg-card dark:border-border">
                     <div className="h-48 bg-gray-100 dark:bg-white/10" />
@@ -910,7 +910,7 @@ function ResearchCatalogSection() {
                   <p className="font-medium">No compounds found</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4 items-stretch">
                   {filteredStatic.map((product) => (
                     <CatalogVialCard
                       key={product.id}
@@ -927,7 +927,7 @@ function ResearchCatalogSection() {
                 <p className="font-medium">No compounds found</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4 items-stretch">
                 {filteredLive.map((product) => (
                   <ProductCard
                     key={product.id}

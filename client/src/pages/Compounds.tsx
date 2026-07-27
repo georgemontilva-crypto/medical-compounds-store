@@ -68,7 +68,7 @@ function StaticCard({ product, onAdd, added }: {
 
   return (
     <div
-      className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300 dark:bg-card dark:border-border"
+      className="group relative h-full flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300 dark:bg-card dark:border-border"
       style={{ "--cat-glow": catGlow } as React.CSSProperties}
     >
       <Link href={`/compounds/${product.slug}`}>
@@ -89,7 +89,7 @@ function StaticCard({ product, onAdd, added }: {
           </button>
         </div>
       </Link>
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className={`text-[10px] font-semibold tracking-widest uppercase ${catText}`}>{product.category}</span>
@@ -100,14 +100,14 @@ function StaticCard({ product, onAdd, added }: {
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
         </Link>
         <div className="flex flex-wrap gap-1 mb-2">
           {product.sizes.map((s) => (
             <span key={s} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono dark:text-gray-500 dark:bg-white/10">{s}</span>
           ))}
         </div>
-        <p className="font-semibold text-gray-900 text-sm dark:text-white">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
+        <p className="font-semibold text-gray-900 text-sm mt-auto dark:text-white">{hasVariations ? "From " : ""}${product.price.toFixed(2)}</p>
       </div>
     </div>
   );
@@ -334,7 +334,7 @@ export default function Compounds() {
 
             {/* Grid */}
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden animate-pulse dark:bg-card dark:border-border">
                     <div className="h-48 bg-gray-100 dark:bg-white/10" />
@@ -353,7 +353,7 @@ export default function Compounds() {
                   <button onClick={() => { setSearch(""); setSelectedStaticCat(null); }} className="mt-4 text-sm text-[#d3c4ab] font-semibold hover:underline">Clear filters</button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
                   {filteredStatic.map((p) => (
                     <Reveal key={p.id}>
                       <StaticCard product={p} onAdd={() => handleStaticAdd(p)} added={addedIds.has(`static-${p.id}`)} />
@@ -368,7 +368,7 @@ export default function Compounds() {
                 <p className="text-sm text-gray-400 dark:text-gray-500">Try adjusting your search or filters</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
                 {dbProducts.map((product) => (
                   <Reveal key={product.id}>
                     <ProductCard

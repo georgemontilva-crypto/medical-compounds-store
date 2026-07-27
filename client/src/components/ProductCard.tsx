@@ -81,7 +81,7 @@ export default function ProductCard({
 
   return (
     <div
-      className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300 dark:bg-card dark:border-border"
+      className="group relative h-full flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300 dark:bg-card dark:border-border"
       style={{ "--cat-glow": catGlow } as React.CSSProperties}
     >
       <Link href={`/compounds/${product.slug}`}>
@@ -102,7 +102,7 @@ export default function ProductCard({
           </button>
         </div>
       </Link>
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: catColor }}>{catName}</span>
@@ -116,7 +116,7 @@ export default function ProductCard({
           )}
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
         </Link>
         {variations && variations.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
@@ -125,7 +125,7 @@ export default function ProductCard({
             ))}
           </div>
         )}
-        <p className="font-semibold text-gray-900 text-sm dark:text-white">{hasVariations ? "From " : ""}${minPrice.toFixed(2)}</p>
+        <p className="font-semibold text-gray-900 text-sm mt-auto dark:text-white">{hasVariations ? "From " : ""}${minPrice.toFixed(2)}</p>
       </div>
     </div>
   );
