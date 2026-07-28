@@ -84,6 +84,14 @@ export default function ProductCard({
       className="group relative h-full flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-[var(--cat-glow)] transition-all duration-300 dark:bg-card dark:border-border"
       style={{ "--cat-glow": catGlow } as React.CSSProperties}
     >
+      {product.featured && (
+        <span
+          className="absolute top-3 left-3 z-10 shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm"
+          style={{ backgroundColor: `${catColor}20`, color: catColor }}
+        >
+          Popular
+        </span>
+      )}
       <Link href={`/compounds/${product.slug}`}>
         <div className="relative h-48 cursor-pointer overflow-hidden bg-white p-2 dark:bg-card">
           {image ? (
@@ -103,28 +111,18 @@ export default function ProductCard({
         </div>
       </Link>
       <div className="p-4 flex-1 flex flex-col">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
+        <div className="flex items-center gap-1.5 h-4 mb-2 min-w-0">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
-          <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: catColor }}>{catName}</span>
-          {product.featured && (
-            <span
-              className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-              style={{ backgroundColor: `${catColor}20`, color: catColor }}
-            >
-              Popular
-            </span>
-          )}
+          <span className="text-[10px] font-semibold tracking-widest uppercase truncate" style={{ color: catColor }}>{catName}</span>
         </div>
         <Link href={`/compounds/${product.slug}`}>
-          <h3 className="font-bold text-gray-950 text-sm mb-1 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
+          <h3 className="font-bold text-gray-950 text-sm mb-2 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
         </Link>
-        {variations && variations.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {variations.slice(0, 3).map((v) => (
-              <span key={v.id} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono dark:text-gray-500 dark:bg-white/10">{formatVariationValue(v.value)}{v.unit}</span>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-1 mb-2 min-h-[22px]">
+          {variations && variations.length > 0 && variations.slice(0, 3).map((v) => (
+            <span key={v.id} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full font-mono dark:text-gray-500 dark:bg-white/10">{formatVariationValue(v.value)}{v.unit}</span>
+          ))}
+        </div>
         <p className="font-semibold text-gray-900 text-sm mt-auto dark:text-white">{hasVariations ? "From " : ""}${minPrice.toFixed(2)}</p>
       </div>
     </div>
