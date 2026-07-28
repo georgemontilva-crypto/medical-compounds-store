@@ -97,7 +97,7 @@ export default function Footer() {
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 pb-12">
             <div>
               {logoImage?.url ? (
-                <img src={logoImage.url} alt="Logo" className="h-14 w-auto object-contain mb-4" />
+                <img src={logoImage.url} alt="Brighter Days Labs logo" className="h-14 w-auto object-contain mb-4" />
               ) : (
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-lg bg-[#dbcfba] flex items-center justify-center">

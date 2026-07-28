@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import { useEffect } from "react";
+import { HelmetProvider } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
@@ -171,29 +172,31 @@ function App() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" switchable>
-        <TooltipProvider>
-          <AuthProvider>
-            <CartProvider>
-              <ComplianceProvider>
-                <AgeVerificationModal />
-                <LoadingScreen />
-                <Toaster position="top-right" />
-                <ScrollToTop />
-                <BackgroundPatternSync />
-                <FaviconSync />
-                <Router />
-                <CartDrawer />
-                <FloatingCartButton />
-                <ComplianceModal />
-                <GuestOrRegisterModal />
-              </ComplianceProvider>
-            </CartProvider>
-          </AuthProvider>
-        </TooltipProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <HelmetProvider>
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="light" switchable>
+          <TooltipProvider>
+            <AuthProvider>
+              <CartProvider>
+                <ComplianceProvider>
+                  <AgeVerificationModal />
+                  <LoadingScreen />
+                  <Toaster position="top-right" />
+                  <ScrollToTop />
+                  <BackgroundPatternSync />
+                  <FaviconSync />
+                  <Router />
+                  <CartDrawer />
+                  <FloatingCartButton />
+                  <ComplianceModal />
+                  <GuestOrRegisterModal />
+                </ComplianceProvider>
+              </CartProvider>
+            </AuthProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </HelmetProvider>
   );
 }
 

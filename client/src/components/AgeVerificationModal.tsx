@@ -55,7 +55,7 @@ export default function AgeVerificationModal() {
       <div className="relative z-10 w-full max-w-md bg-white rounded-3xl border border-gray-100 shadow-2xl p-8 text-center dark:bg-card dark:border-border dark:shadow-black/40">
         <div className="flex justify-center mb-6">
           {activeLogoUrl ? (
-            <img src={activeLogoUrl} alt="Logo" className="h-10 w-auto object-contain" />
+            <img src={activeLogoUrl} alt="Brighter Days Labs logo" className="h-10 w-auto object-contain" />
           ) : (
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#d3c4ab] to-[#d7cab3] flex items-center justify-center shadow-md shadow-[#d3c4ab]/20">

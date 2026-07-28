@@ -74,7 +74,7 @@ export default function LoadingScreen() {
 
       <div className="relative z-10 flex flex-col items-center gap-6">
         {activeLogoUrl ? (
-          <img src={activeLogoUrl} alt="Logo" className="h-14 w-auto object-contain" />
+          <img src={activeLogoUrl} alt="Brighter Days Labs logo" className="h-14 w-auto object-contain" />
         ) : (
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#d3c4ab] to-[#d7cab3] flex items-center justify-center shadow-lg shadow-[#d3c4ab]/30">

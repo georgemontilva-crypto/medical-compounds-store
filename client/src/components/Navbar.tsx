@@ -156,7 +156,7 @@ export default function Navbar() {
           <Link href="/">
             {activeLogoUrl ? (
               <div className="flex items-center cursor-pointer shrink-0">
-                <img src={activeLogoUrl} alt="Logo" className="h-12 w-auto object-contain" />
+                <img src={activeLogoUrl} alt="Brighter Days Labs logo" className="h-12 w-auto object-contain" />
               </div>
             ) : (
               <div className="flex items-center gap-2.5 cursor-pointer shrink-0">

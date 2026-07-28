@@ -48,7 +48,7 @@ export default function Login() {
           <Link href="/">
             {activeLogoUrl ? (
               <div className="inline-flex items-center cursor-pointer">
-                <img src={activeLogoUrl} alt="Logo" className="h-16 w-auto object-contain" />
+                <img src={activeLogoUrl} alt="Brighter Days Labs logo" className="h-16 w-auto object-contain" />
               </div>
             ) : (
               <div className="inline-flex items-center gap-2.5 cursor-pointer">

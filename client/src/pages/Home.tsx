@@ -3,46 +3,13 @@ import { getLenis } from "@/lib/lenis";
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
-import { ArrowRight, FlaskConical, Shield, Microscope, Award, Plus, Check, Search, ChevronDown, X } from "lucide-react";
+import { ArrowRight, FlaskConical, Plus, Check, Search, ChevronDown, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
 import Reveal from "@/components/Reveal";
 import ProductCard from "@/components/ProductCard";
 import ParticleBackground from "@/components/ParticleBackground";
 import { useTheme } from "@/contexts/ThemeContext";
-
-// ── Placeholder image component ──────────────────────────────────────────────
-function VialPlaceholder({ label, size = "10mg", color = "#a78bfa", large = false }: { label: string; size?: string; color?: string; large?: boolean }) {
-  const shortLabel = label.length > 9 ? label.slice(0, 9) : label;
-  return (
-    <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed] relative overflow-hidden">
-      <svg viewBox="0 0 80 120" className={large ? "w-24 h-36 drop-shadow-lg" : "w-16 h-24 drop-shadow"} fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="28" y="2" width="24" height="14" rx="4" fill={color} opacity="0.85" />
-        <rect x="32" y="14" width="16" height="6" rx="2" fill="#d1d5db" />
-        <rect x="20" y="20" width="40" height="70" rx="8" fill="white" stroke="#e5e7eb" strokeWidth="1.5" />
-        <rect x="24" y="32" width="32" height="46" rx="4" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1" />
-        <text x="40" y="50" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="#374151" fontFamily="system-ui">{shortLabel}</text>
-        <text x="40" y="59" textAnchor="middle" fontSize="4" fill="#9ca3af" fontFamily="system-ui">LYOPHILIZED POWDER</text>
-        <text x="40" y="69" textAnchor="middle" fontSize="7" fontWeight="800" fill={color} fontFamily="system-ui">{size}</text>
-        <rect x="20" y="88" width="40" height="8" rx="0" fill={color} opacity="0.25" />
-        <text x="40" y="95" textAnchor="middle" fontSize="3.5" fill="#6b7280" fontFamily="system-ui">FOR RESEARCH USE ONLY</text>
-        <rect x="20" y="90" width="40" height="8" rx="4" fill="#e5e7eb" />
-      </svg>
-    </div>
-  );
-}
-
-// ── Static product data for hero display ─────────────────────────────────────
-const FEATURED_PRODUCTS = [
-  { name: "BPC-157", category: "Tissue", size: "10mg", color: "#dbcfba", description: "Pentadecapeptide with potent tissue repair and cytoprotective properties.", price: "$60.00", slug: "bpc-157" },
-  { name: "TB-500", category: "Tissue", size: "10mg", color: "#dbcfba", description: "Thymosin Beta-4 fragment promoting actin regulation and tissue recovery.", price: "$60.00", slug: "tb-500" },
-  { name: "NAD+", category: "Metabolic", size: "500mg", color: "#C8A84B", description: "Nicotinamide Adenine Dinucleotide — essential coenzyme for cellular energy metabolism.", price: "$85.00", slug: "nad-plus" },
-  { name: "GHK-Cu", category: "Tissue", size: "50mg", color: "#d7cab3", description: "Copper peptide with regenerative and anti-inflammatory signaling properties.", price: "$60.00", slug: "ghk-cu" },
-  { name: "Sermorelin", category: "Endocrine", size: "5mg", color: "#B8943A", description: "GHRH analogue that stimulates natural growth hormone secretion.", price: "$55.00", slug: "sermorelin" },
-  { name: "MOTS-C", category: "Metabolic", size: "10mg", color: "#C8A84B", description: "Mitochondrial-derived peptide regulating metabolic homeostasis.", price: "$90.00", slug: "mots-c" },
-  { name: "PT-141", category: "Endocrine", size: "10mg", color: "#B8943A", description: "Melanocortin receptor agonist studied for central nervous system effects.", price: "$65.00", slug: "pt-141" },
-  { name: "Semax", category: "Neural", size: "10mg", color: "#d3c4ab", description: "Synthetic peptide analogue of ACTH with neuroprotective properties.", price: "$70.00", slug: "semax" },
-];
 
 // ── Category color maps (shared) ─────────────────────────────────────────────
 const CAT_COLORS_MAP: Record<string, string> = {
@@ -971,121 +938,6 @@ export default function Home() {
       <Reveal>
         <HeroSlider />
       </Reveal>
-
-      {/* ── HERO STATIC (hidden - replaced by slider) ─────────────────────── */}
-      <section className="relative overflow-hidden bg-white hidden">
-        {/* Background geometry */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#dbcfba]/20 to-[#E8DCC8]/20 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[#E8DCC8]/30 to-[#dbcfba]/20 blur-2xl" />
-          {/* Grid dots */}
-          <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.5" fill="#6366f1" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#dots)" />
-          </svg>
-        </div>
-
-        <div className="container relative">
-          <div className="grid lg:grid-cols-2 gap-12 items-center py-20 lg:py-28">
-            {/* Left: Copy */}
-            <div className="max-w-xl">
-              <div className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-6" style={{backgroundColor:"#f2ede6", borderColor:"#dbcfba", border:"1px solid", color:"#d3c4ab"}}>
-                <FlaskConical size={12} />
-                Research Grade · ≥99% Purity
-              </div>
-              <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-950 leading-[1.05] mb-6">
-                Precision<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d3c4ab] to-[#C8A84B]">
-                  Compounds
-                </span>{" "}
-                for<br />
-                Advanced Research
-              </h1>
-              <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-md">
-                High-purity lyophilized peptides and research compounds manufactured to the strictest laboratory standards. Trusted by researchers worldwide.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/compounds">
-                  <button className="inline-flex items-center gap-2 bg-[#d3c4ab]/60 hover:bg-[#baac96]/60 text-gray-950 font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-[#d3c4ab]/20">
-                    Browse Compounds
-                    <ArrowRight size={16} />
-                  </button>
-                </Link>
-                <Link href="/compounds">
-                  <button className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 active:scale-[0.98]">
-                    View Categories
-                  </button>
-                </Link>
-              </div>
-              {/* Trust badges */}
-              <div className="flex flex-wrap items-center gap-6 mt-10 pt-8 border-t border-gray-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#f2ede6] flex items-center justify-center">
-                    <Shield size={15} style={{color:"#d3c4ab"}} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-800">Third-party Tested</p>
-                    <p className="text-[11px] text-gray-400">COA on every batch</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#f2ede6] flex items-center justify-center">
-                    <Microscope size={15} style={{color:"#d3c4ab"}} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-800">Lab Manufactured</p>
-                    <p className="text-[11px] text-gray-400">GMP-compliant facilities</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                    <Award size={15} className="text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-800">≥99% Purity</p>
-                    <p className="text-[11px] text-gray-400">HPLC verified</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Vial grid */}
-            <div className="hidden lg:block relative">
-              {/* Main large vial */}
-              <div className="relative">
-                <Link href="/compounds/bpc-157">
-                  <div className="group bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed] rounded-3xl h-72 flex items-center justify-center cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 mb-4 relative">
-                    <VialPlaceholder label="BPC-157" size="10mg" color="#7c3aed" large />
-                    <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-5 py-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                      <p className="text-sm font-extrabold text-gray-900">BPC-157</p>
-                      <p className="text-xs text-gray-400">Tissue Repair · 10mg / 20mg · From $55.00</p>
-                    </div>
-                    <div className="absolute top-3 left-3 bg-[#d3c4ab] text-white text-[10px] font-bold px-2 py-1 rounded-full">Popular</div>
-                  </div>
-                </Link>
-                {/* Small vials row */}
-                <div className="grid grid-cols-3 gap-3">
-                  {FEATURED_PRODUCTS.slice(1, 4).map((p) => (
-                    <Link key={p.name} href={`/compounds/${p.slug}`}>
-                      <div className="group bg-gradient-to-b from-[#f2f2f5] to-[#e8e8ed] rounded-2xl h-36 flex items-center justify-center cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all duration-200 overflow-hidden border border-gray-100 relative">
-                        <VialPlaceholder label={p.name} size={p.size} color={p.color} />
-                        <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm px-2 py-1.5 translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-                          <p className="text-[11px] font-bold text-gray-900">{p.name}</p>
-                          <p className="text-[9px] text-gray-400">{p.price}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ── STATS BAR ────────────────────────────────────────────────────── */}
       <section className="bg-gray-950 dark:bg-black text-white py-8">

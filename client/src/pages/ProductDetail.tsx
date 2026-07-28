@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import { formatVariationValue, getBulkDiscountPercent, BULK_DISCOUNT_QUANTITIES } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
@@ -145,8 +146,36 @@ export default function ProductDetail({ params }: Props) {
     );
   }
 
+  const canonicalUrl = `https://www.brighterdayslabs.com/compounds/${product.slug}`;
+  const metaDescription = (
+    product.shortDescription
+      ? product.shortDescription
+      : `${product.name} — research-grade compound with a batch-specific Certificate of Analysis. ≥99% HPLC verified. Research Use Only.`
+  ).slice(0, 160);
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: metaDescription,
+    ...(displayImages[0]?.url ? { image: [displayImages[0].url] } : {}),
+    sku: String(product.id),
+    offers: {
+      "@type": "Offer",
+      url: canonicalUrl,
+      priceCurrency: "USD",
+      price: price.toFixed(2),
+      availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    },
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{`${product.name} | Brighter Days Labs`}</title>
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
+      </Helmet>
       <div className="container py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
