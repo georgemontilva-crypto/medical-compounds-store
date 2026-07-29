@@ -5,6 +5,7 @@ import { formatVariationValue, getBulkDiscountPercent, BULK_DISCOUNT_QUANTITIES 
 import { useCart } from "@/contexts/CartContext";
 import { useCompliance } from "@/contexts/ComplianceContext";
 import { Link } from "wouter";
+import ProductCard from "@/components/ProductCard";
 import {
   FlaskConical,
   ChevronLeft,
@@ -31,11 +32,16 @@ export default function ProductDetail({ params }: Props) {
   );
   const { data: categories } = trpc.categories.list.useQuery();
   const { data: bulkTiers } = trpc.bulkDiscount.get.useQuery();
+  const { data: relatedProducts } = trpc.products.list.useQuery(
+    { categoryId: product?.categoryId ?? undefined, limit: 5 },
+    { enabled: !!product?.categoryId }
+  );
 
   const [selectedVariationId, setSelectedVariationId] = useState<number | undefined>();
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [added, setAdded] = useState(false);
+  const [addedRelatedIds, setAddedRelatedIds] = useState<Set<number>>(new Set());
   const { addItem, closeCart } = useCart();
   const { requestCheckout } = useCompliance();
 
@@ -80,6 +86,11 @@ export default function ProductDetail({ params }: Props) {
     return productLevel.length > 0 ? productLevel : images;
   }, [images, selectedVariation]);
 
+  const related = useMemo(
+    () => (relatedProducts ?? []).filter((p) => p.id !== product?.id).slice(0, 4),
+    [relatedProducts, product?.id]
+  );
+
   useEffect(() => {
     setActiveImage(0);
     setQuantity(1);
@@ -116,6 +127,19 @@ export default function ProductDetail({ params }: Props) {
     if (!addSelectionToCart()) return;
     closeCart();
     requestCheckout();
+  };
+
+  const handleRelatedAdd = (payload: {
+    productId: number; variationId?: number; productName: string;
+    variationLabel?: string; unitPrice: number; image?: string; slug: string;
+  }) => {
+    addItem({ ...payload, quantity: 1 });
+    setAddedRelatedIds((prev) => {
+      const next = new Set(prev);
+      next.add(payload.productId);
+      setTimeout(() => setAddedRelatedIds((p) => { const n = new Set(p); n.delete(payload.productId); return n; }), 2000);
+      return next;
+    });
   };
 
   if (isLoading) {
@@ -243,8 +267,12 @@ export default function ProductDetail({ params }: Props) {
                 </div>
               )}
               <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
-              {product.casNumber && (
-                <p className="text-sm text-muted-foreground mt-1">CAS: {product.casNumber}</p>
+              {(product.casNumber || selectedVariation?.sku) && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {product.casNumber && <>CAS: {product.casNumber}</>}
+                  {product.casNumber && selectedVariation?.sku && " · "}
+                  {selectedVariation?.sku && <>SKU: {selectedVariation.sku}</>}
+                </p>
               )}
             </div>
 
@@ -392,6 +420,26 @@ export default function ProductDetail({ params }: Props) {
             )}
           </div>
         </div>
+
+        {/* Related Products */}
+        {related.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-2xl font-extrabold text-gray-950 dark:text-white mb-6">
+              Related Research Compounds
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+              {related.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  categories={categories}
+                  onAdd={handleRelatedAdd}
+                  added={addedRelatedIds.has(p.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -424,9 +472,15 @@ function ProductTabs({ product }: { product: { description?: string | null; mech
         ))}
       </div>
       <div className="p-5">
-        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-          {tabs.find((t) => t.id === tab)?.content}
-        </p>
+        {tabs.map((t) => (
+          <p
+            key={t.id}
+            hidden={tab !== t.id}
+            className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap"
+          >
+            {t.content}
+          </p>
+        ))}
       </div>
     </div>
   );

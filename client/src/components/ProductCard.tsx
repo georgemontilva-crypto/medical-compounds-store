@@ -95,7 +95,7 @@ export default function ProductCard({
       <Link href={`/compounds/${product.slug}`}>
         <div className="relative h-48 cursor-pointer overflow-hidden bg-white p-2 dark:bg-card">
           {image ? (
-            <img src={image.url} alt={image.altText || product.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+            <img src={image.url} alt={image.altText || `${product.name} — ${catName} research compound`} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <VialPlaceholder label={product.name} size={mainSize || "10mg"} color={catColor} />
           )}
