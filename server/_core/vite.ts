@@ -58,6 +58,16 @@ export function serveStatic(app: Express) {
     );
   }
 
+  // Vite's build output uses content-hashed filenames under assets/
+  // (e.g. index-KCZBoZZ2.js) — a given URL's content never changes, so it's
+  // safe to cache for a year. Everything else (index.html, favicon.ico,
+  // robots.txt) keeps the default of no long-lived caching, since index.html
+  // in particular must always be re-fetched to pick up the latest asset
+  // hashes after a new deploy.
+  app.use(
+    "/assets",
+    express.static(path.join(distPath, "assets"), { maxAge: "1y", immutable: true })
+  );
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist

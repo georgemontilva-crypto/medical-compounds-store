@@ -150,10 +150,30 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+// Vite sets NODE_ENV to "production" for the `build` command before this
+// file is evaluated (same signal vitePluginManusDebugCollector's own
+// transformIndexHtml already relies on below) — kept as a plain object
+// export rather than defineConfig's (command) => ({...}) function form
+// because server/_core/vite.ts imports this module's default export and
+// spreads it directly ({...viteConfig, ...}) to boot the dev server; a
+// function export would spread to nothing and silently drop every plugin,
+// alias, and server setting from the dev server.
+const isProductionBuild = process.env.NODE_ENV === "production";
 
 export default defineConfig({
-  plugins,
+  plugins: [
+    react(),
+    tailwindcss(),
+    jsxLocPlugin(),
+    // Injects a ~300KB synchronous inline script (the Manus platform's
+    // in-browser editor/preview runtime) at the top of <body>. Only useful
+    // while working through Manus's own dev/preview UI — the deployed
+    // Railway site is managed via this repo's own admin panel instead, so
+    // there's no reason to ship it (and block initial render with it) in
+    // the production build.
+    ...(isProductionBuild ? [] : [vitePluginManusRuntime()]),
+    vitePluginManusDebugCollector(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

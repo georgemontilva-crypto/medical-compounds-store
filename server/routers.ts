@@ -82,6 +82,7 @@ import {
   updateWholesaleApplicationStatus,
 } from "./db";
 import { storagePut } from "./storage";
+import { compressImage } from "./imageProcessing";
 
 // ─── Admin middleware ─────────────────────────────────────────────────────────
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -261,9 +262,9 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        const buffer = Buffer.from(input.fileBase64, "base64");
+        const { buffer, mimeType } = await compressImage(Buffer.from(input.fileBase64, "base64"), input.mimeType, 1600);
         const relKey = `categories/${input.categoryId}/${nanoid(10)}_${input.fileName}`;
-        const { key: heroImageKey, url: heroImageUrl } = await storagePut(relKey, buffer, input.mimeType);
+        const { key: heroImageKey, url: heroImageUrl } = await storagePut(relKey, buffer, mimeType);
         return updateCategory(input.categoryId, { heroImageUrl, heroImageKey });
       }),
   }),
@@ -363,11 +364,11 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        const buffer = Buffer.from(input.fileBase64, "base64");
+        const { buffer, mimeType } = await compressImage(Buffer.from(input.fileBase64, "base64"), input.mimeType, 1200);
         const relKey = input.variationId
           ? `products/${input.productId}/variations/${input.variationId}/${nanoid(10)}_${input.fileName}`
           : `products/${input.productId}/${nanoid(10)}_${input.fileName}`;
-        const { key: fileKey, url } = await storagePut(relKey, buffer, input.mimeType);
+        const { key: fileKey, url } = await storagePut(relKey, buffer, mimeType);
         await addProductImage({
           productId: input.productId,
           variationId: input.variationId,
@@ -840,9 +841,9 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        const buffer = Buffer.from(input.fileBase64, "base64");
+        const { buffer, mimeType } = await compressImage(Buffer.from(input.fileBase64, "base64"), input.mimeType, 1600);
         const relKey = `site-images/${input.slotKey}/${nanoid(10)}_${input.fileName}`;
-        const { key: fileKey, url } = await storagePut(relKey, buffer, input.mimeType);
+        const { key: fileKey, url } = await storagePut(relKey, buffer, mimeType);
         return upsertSiteImage({ slotKey: input.slotKey, url, fileKey, label: input.label });
       }),
   }),
@@ -941,9 +942,9 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        const buffer = Buffer.from(input.fileBase64, "base64");
+        const { buffer, mimeType } = await compressImage(Buffer.from(input.fileBase64, "base64"), input.mimeType, 1600);
         const relKey = `doc-integrity/${nanoid(10)}_${input.fileName}`;
-        const { key: heroImageKey, url: heroImageUrl } = await storagePut(relKey, buffer, input.mimeType);
+        const { key: heroImageKey, url: heroImageUrl } = await storagePut(relKey, buffer, mimeType);
         return updateDocIntegritySection({ heroImageUrl, heroImageKey });
       }),
   }),

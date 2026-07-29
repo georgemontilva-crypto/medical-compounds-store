@@ -72,6 +72,9 @@ export async function storagePut(
       Key: key,
       Body: data,
       ContentType: contentType,
+      // Every key gets a random hash suffix above, so nothing at this URL
+      // is ever overwritten in place — safe to cache aggressively forever.
+      CacheControl: "public, max-age=31536000, immutable",
     }),
   );
 
