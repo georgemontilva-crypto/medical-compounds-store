@@ -18,7 +18,7 @@ const SLIDES = [
     badge: "MADE IN USA",
     badgeColor: "bg-[#dbcfba]/20 border-[#dbcfba]/40 text-[#dbcfba]",
     showFlag: true,
-    headline: "Brighter Days Labs\nPrecision Peptides for\nAdvanced Research",
+    headline: "Precision Peptides for\nAdvanced Research",
     sub: "High-purity lyophilized compounds manufactured to the strictest laboratory standards.",
     cta: "Browse Compounds",
     ctaHref: "/compounds",
@@ -34,7 +34,7 @@ const SLIDES = [
     overlay: "#1a1408",
     badge: "Cellular Research · Neural Peptides",
     badgeColor: "bg-[#C8A84B]/20 border-[#C8A84B]/40 text-[#C8A84B]",
-    headline: "Brighter Days Labs\nCellular Signaling\nCompounds",
+    headline: "Cellular Signaling\nCompounds",
     sub: "Explore our catalog of cellular and neural research peptides with documented mechanisms.",
     cta: "View Catalog",
     ctaHref: "/compounds?category=cellular-research",
@@ -51,7 +51,7 @@ const SLIDES = [
     overlay: "#0a1f18",
     badge: "Metabolic Research · Energy Metabolism",
     badgeColor: "bg-[#d7cab3]/20 border-[#d7cab3]/40 text-[#d7cab3]",
-    headline: "Brighter Days Labs\nMetabolic Research\nGrade Compounds",
+    headline: "Metabolic Research\nGrade Compounds",
     sub: "NAD+, MOTS-C and more — compounds studied for their role in cellular energy and longevity pathways.",
     cta: "Metabolic Compounds",
     ctaHref: "/compounds?category=metabolic-research",
@@ -64,6 +64,10 @@ const SLIDES = [
   // Neural-Cognitive/Cellular exist), so its CTA had nothing real to link
   // to. Re-add once a real Endocrine category exists.
 ];
+
+// Brand kicker rendered above the varying headline text — identical across
+// all slides, so it lives outside SLIDES rather than being repeated per-slide.
+const BRAND_NAME = "Brighter Days Labs";
 
 // Slide 2's stats are compound/category counts, not qualitative badges like
 // the other slides' (≥99% Purity, COA, GMP, HPLC) — those stay hardcoded,
@@ -262,13 +266,19 @@ export default function HeroSlider() {
               {slide.badge}
             </div>
 
-            {/* Headline */}
+            {/* Headline — single semantic h1: brand kicker + varying title,
+                styled via internal spans rather than split into two elements */}
             <h1
               key={`h1-${current}`}
-              className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.04] mb-6 whitespace-pre-line"
+              className="text-white mb-6 whitespace-pre-line"
               style={{ animation: "fadeSlideUp 0.7s ease-out both", animationDelay: "0.25s" }}
             >
-              {slide.headline}
+              <span className="block text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-white/70 mb-2 sm:mb-3">
+                {BRAND_NAME}
+              </span>
+              <span className="block text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+                {slide.headline}
+              </span>
             </h1>
 
             {/* Sub */}
