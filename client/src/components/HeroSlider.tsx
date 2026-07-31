@@ -99,6 +99,20 @@ function injectKBStyle() {
   kbStyleInjected = true;
 }
 
+// Mobile headline variant: forces exactly one hard break, right before the
+// final word, so the last word never gets stranded alone by an awkward
+// auto-wrap inside an earlier multi-word segment (e.g. "for" splitting off
+// "Advanced Research" on narrow viewports). Everything before the last word
+// is left to wrap naturally. Desktop keeps the slide's authored `headline`
+// break untouched.
+function mobileLastWordBreak(headline: string) {
+  const words = headline.replace(/\n/g, " ").trim().split(/\s+/);
+  if (words.length < 2) return headline;
+  const last = words[words.length - 1];
+  const rest = words.slice(0, -1).join(" ");
+  return `${rest}\n${last}`;
+}
+
 // Converts a slide's solid hex accent (e.g. "#dbcfba") to an rgba() string
 // so the CTA button background can carry alpha without a second color token.
 function hexToRgba(hex: string, alpha: number) {
@@ -276,7 +290,12 @@ export default function HeroSlider() {
               <span className="block text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-white/70 mb-2 sm:mb-3">
                 {BRAND_NAME}
               </span>
-              <span className="block text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+              {/* Mobile: hard break forced before the last word only (see
+                  mobileLastWordBreak). Desktop/tablet: slide's authored break. */}
+              <span className="block text-4xl font-extrabold tracking-tight leading-[1.05] sm:hidden">
+                {mobileLastWordBreak(slide.headline)}
+              </span>
+              <span className="hidden sm:block sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
                 {slide.headline}
               </span>
             </h1>
