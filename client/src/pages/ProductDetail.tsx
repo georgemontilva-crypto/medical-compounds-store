@@ -214,9 +214,24 @@ export default function ProductDetail({ params }: Props) {
           <span className="text-foreground font-medium">{product.name}</span>
         </nav>
 
-        <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
-          {/* Gallery */}
-          <div className="space-y-3">
+        <div className="grid md:grid-cols-2 gap-10 lg:gap-16 items-start">
+          {/*
+            Gallery — sticks while the (usually much longer) info column
+            scrolls past it. Only from `md` up, which is exactly where the
+            layout becomes two columns; stacked on mobile a sticky image would
+            just sit on top of the content the user is trying to read.
+
+            `items-start` on the grid is what makes this work at all: grid
+            items stretch to the full row height by default, so the gallery's
+            containing block would be as tall as the info column and it would
+            never have any room to stick within.
+
+            `top-20` clears the 64px sticky navbar with a little breathing
+            room, and the max-height keeps a tall gallery (big image plus a
+            row of thumbnails) scrollable inside itself rather than running off
+            the bottom of the viewport where the thumbnails can't be reached.
+          */}
+          <div className="space-y-3 md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-6rem)] md:overflow-y-auto">
             <div className="aspect-square rounded-2xl bg-secondary/40 overflow-hidden border border-border">
               {displayImages.length > 0 ? (
                 <img
