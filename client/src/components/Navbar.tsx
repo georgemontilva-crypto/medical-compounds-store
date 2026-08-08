@@ -16,6 +16,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  Sparkles,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -277,6 +278,17 @@ export default function Navbar() {
               </button>
             </Link>
 
+            {/* Ask Sunny — a separate site, so a plain anchor: wouter's <Link>
+                only does client-side routing and would try to resolve this as
+                an in-app route. Solid fill against Wholesale's outline so the
+                two read as different kinds of action rather than a pair. */}
+            <a href="https://sunny-ai-production.up.railway.app/" target="_blank" rel="noopener noreferrer">
+              <button className="ml-2 inline-flex items-center gap-1.5 text-sm font-semibold bg-[#d3c4ab] hover:bg-[#baac96] text-white px-4 py-1.5 rounded-full transition-colors duration-150 shadow-sm shadow-[#d3c4ab]/20">
+                <Sparkles size={14} />
+                Ask Sunny
+              </button>
+            </a>
+
             <Link href="/contact">
               <button className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg transition-colors ml-1 dark:text-gray-300 dark:hover:text-white">
                 Contact
@@ -466,6 +478,19 @@ export default function Navbar() {
               Apply for Wholesale
             </div>
           </Link>
+          {/* Ask Sunny — external, so an anchor rather than <Link>. Matches the
+              Wholesale pill's footprint here but filled, to stay distinct. */}
+          <a
+            href="https://sunny-ai-production.up.railway.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileOpen(false)}
+          >
+            <div className="mx-3 my-1 flex items-center justify-center gap-1.5 bg-[#d3c4ab] hover:bg-[#baac96] text-white px-4 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors duration-150 shadow-sm shadow-[#d3c4ab]/20">
+              <Sparkles size={14} />
+              Ask Sunny
+            </div>
+          </a>
           <Link href="/contact">
             <div
               className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"
