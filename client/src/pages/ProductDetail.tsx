@@ -176,6 +176,7 @@ export default function ProductDetail({ params }: Props) {
       ? product.shortDescription
       : `${product.name} — research-grade compound with a batch-specific Certificate of Analysis. ≥99% HPLC verified. Research Use Only.`
   ).slice(0, 160);
+  const ogTitle = `${product.name} | Brighter Days Labs`;
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -195,9 +196,18 @@ export default function ProductDetail({ params }: Props) {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>{`${product.name} | Brighter Days Labs`}</title>
+        <title>{ogTitle}</title>
         <meta name="description" content={metaDescription} />
         <link rel="canonical" href={canonicalUrl} />
+
+        {/* No og:/twitter: tags here on purpose — server/_core/ogMeta.ts
+            writes them into the HTML before it's served. They have to come
+            from the server anyway (the Facebook/WhatsApp crawlers don't run
+            JS), and rendering them here as well produced a second copy of
+            each: jsxLocPlugin stamps a data-loc attribute onto these JSX
+            elements, which stops react-helmet-async from recognising the
+            server's tags as the same ones and makes it append instead of
+            replace. */}
         <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
       </Helmet>
       <div className="container py-8">
