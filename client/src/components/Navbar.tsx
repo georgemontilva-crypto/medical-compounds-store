@@ -278,15 +278,16 @@ export default function Navbar() {
               </button>
             </Link>
 
-            {/* Ask Sunny — /ask-sunny.html is a static page in client/public
-                that embeds the Lynx chat in an iframe, so the visitor stays on
-                our own domain instead of being sent off to lynxaiassistant.com.
-                It is not an app route, so it must stay a plain anchor: wouter's
-                <Link> would handle it client-side and render the SPA fallback
-                instead of fetching the file. Solid fill against Wholesale's
-                outline so the two read as different kinds of action rather
-                than a pair. */}
-            <a href="/ask-sunny.html" target="_blank" rel="noopener noreferrer">
+            {/* Ask Sunny — links straight to the hosted Lynx chat rather than
+                the old /ask-sunny.html iframe wrapper. External destination, so
+                it stays a plain anchor opening in a new tab. Solid fill against
+                Wholesale's outline so the two read as different kinds of action
+                rather than a pair. */}
+            <a
+              href="https://www.lynxaiassistant.com/chat/lx_d9bc4b4dded89638fd1ade26797509c4936fa6dd257117de"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <button className="ml-2 inline-flex items-center gap-1.5 text-sm font-semibold bg-[#d3c4ab] hover:bg-[#baac96] text-white px-4 py-1.5 rounded-full transition-colors duration-150 shadow-sm shadow-[#d3c4ab]/20">
                 <Sparkles size={14} />
                 Ask Sunny
@@ -482,12 +483,11 @@ export default function Navbar() {
               Apply for Wholesale
             </div>
           </Link>
-          {/* Ask Sunny — anchor rather than <Link> for the same reason as the
-              desktop one above: /ask-sunny.html is a static file, not a client
-              route. Matches the Wholesale pill's footprint here but filled, to
-              stay distinct. */}
+          {/* Ask Sunny — same hosted Lynx chat as the desktop button above, so
+              likewise a plain anchor to an external URL. Matches the Wholesale
+              pill's footprint here but filled, to stay distinct. */}
           <a
-            href="/ask-sunny.html"
+            href="https://www.lynxaiassistant.com/chat/lx_d9bc4b4dded89638fd1ade26797509c4936fa6dd257117de"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMobileOpen(false)}
