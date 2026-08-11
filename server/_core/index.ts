@@ -6,7 +6,6 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerSitemapRoute } from "./sitemap";
-import { registerAskSunnyRoute } from "./askSunny";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -40,10 +39,6 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerSitemapRoute(app);
-  // Must stay ahead of setupVite/serveStatic below: both end in an
-  // app.use("*") that serves index.html for any unmatched path, which would
-  // swallow this route and render the SPA instead of redirecting.
-  registerAskSunnyRoute(app);
 
   // TEMPORARY diagnostic route — remove once the production R2 "Access Denied"
   // issue is confirmed fixed. Gated by a throwaway query-param token, not by
