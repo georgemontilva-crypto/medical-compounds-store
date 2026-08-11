@@ -13,6 +13,7 @@ const STATIC_PATHS = [
   "/science/manufacturing",
   "/science/research-standards",
   "/science/responsible-supply",
+  "/lab-tests",
   "/faq",
   "/contact",
   "/wholesale",
