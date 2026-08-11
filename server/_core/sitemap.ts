@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { getAllCategories, getProducts } from "../db";
+import { getAllCategories, getProductSlugsWithLabReports, getProducts } from "../db";
 
 const SITE_URL = "https://www.brighterdayslabs.com";
 
@@ -42,15 +42,17 @@ function urlEntry(loc: string, lastmod?: Date | string | null) {
 export function registerSitemapRoute(app: Express) {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
-      const [products, categories] = await Promise.all([
+      const [products, categories, labReported] = await Promise.all([
         getProducts({ active: true, limit: 10000 }),
         getAllCategories(),
+        getProductSlugsWithLabReports(),
       ]);
 
       const entries = [
         ...STATIC_PATHS.map((p) => urlEntry(`${SITE_URL}${p}`)),
         ...categories.map((c) => urlEntry(`${SITE_URL}/compounds?category=${c.slug}`, c.updatedAt)),
         ...products.map((p) => urlEntry(`${SITE_URL}/compounds/${p.slug}`, p.updatedAt)),
+        ...labReported.map((r) => urlEntry(`${SITE_URL}/lab-reports/${r.slug}`, r.lastmod)),
       ];
 
       const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</urlset>\n`;

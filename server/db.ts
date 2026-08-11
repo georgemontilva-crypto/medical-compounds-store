@@ -757,3 +757,21 @@ export async function getRecentPublicLabReports(limit: number) {
     .orderBy(desc(labReports.createdAt))
     .limit(limit);
 }
+
+// Product slugs whose /lab-reports/:slug page actually has something on it.
+// Requires both an active report and an active product, so the sitemap never
+// advertises an empty (or unlisted-product) report page. lastmod is the newest
+// report for that product.
+export async function getProductSlugsWithLabReports() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      slug: products.slug,
+      lastmod: sql<string | Date>`max(${labReports.updatedAt})`,
+    })
+    .from(labReports)
+    .innerJoin(products, eq(labReports.productId, products.id))
+    .where(and(eq(labReports.active, true), eq(products.active, true)))
+    .groupBy(products.slug);
+}
