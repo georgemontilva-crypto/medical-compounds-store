@@ -278,13 +278,12 @@ export default function Navbar() {
               </button>
             </Link>
 
-            {/* Ask Sunny — links straight to the hosted Lynx chat rather than
-                the old /ask-sunny.html iframe wrapper. External destination, so
-                it stays a plain anchor opening in a new tab. Solid fill against
+            {/* Ask Sunny — the chat lives on its own domain now, so this stays
+                a plain anchor opening in a new tab. Solid fill against
                 Wholesale's outline so the two read as different kinds of action
                 rather than a pair. */}
             <a
-              href="https://www.lynxaiassistant.com/chat/lx_d9bc4b4dded89638fd1ade26797509c4936fa6dd257117de"
+              href="https://www.asksunny.io/chat"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -483,11 +482,11 @@ export default function Navbar() {
               Apply for Wholesale
             </div>
           </Link>
-          {/* Ask Sunny — same hosted Lynx chat as the desktop button above, so
-              likewise a plain anchor to an external URL. Matches the Wholesale
-              pill's footprint here but filled, to stay distinct. */}
+          {/* Ask Sunny — same external chat as the desktop button above, so
+              likewise a plain anchor. Matches the Wholesale pill's footprint
+              here but filled, to stay distinct. */}
           <a
-            href="https://www.lynxaiassistant.com/chat/lx_d9bc4b4dded89638fd1ade26797509c4936fa6dd257117de"
+            href="https://www.asksunny.io/chat"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMobileOpen(false)}
