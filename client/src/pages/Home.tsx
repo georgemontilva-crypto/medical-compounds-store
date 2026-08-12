@@ -971,7 +971,7 @@ export default function Home() {
           bg-gray-950, so a dark banner here would read as one continuous slab
           instead of a separate section. */}
       <Reveal>
-        <section className="relative h-[400px] overflow-hidden bg-[#F5F2EC] dark:bg-background">
+        <section className="relative min-h-[400px] overflow-hidden bg-[#F5F2EC] dark:bg-background">
           {imageBySlot["home_sunny_banner_image"] ? (
             <>
               {/* Full-bleed backdrop on mobile; right half only from md up. */}
@@ -982,7 +982,7 @@ export default function Home() {
                 className="absolute inset-0 h-full w-full object-cover object-center md:left-auto md:w-1/2"
               />
               {/* Flat wash on mobile, where text sits over the whole image. */}
-              <div className="absolute inset-0 bg-[#F5F2EC]/85 md:hidden dark:bg-background/85" />
+              <div className="absolute inset-0 bg-[#F5F2EC]/90 md:hidden dark:bg-background/90" />
               {/* On desktop, fade the image's inner edge into the text side
                   instead of leaving a hard seam down the middle. */}
               <div className="absolute inset-0 hidden bg-gradient-to-r from-[#F5F2EC] via-[#F5F2EC]/85 to-transparent md:block dark:from-background dark:via-background/85" />
@@ -999,26 +999,32 @@ export default function Home() {
               className="absolute inset-0 h-full w-full"
             />
           )}
-          <div className="relative z-10 flex h-full items-center">
+          {/* min-h rather than h on the row too, so the text block sets the
+              section's height once the display type outgrows 400px. */}
+          <div className="relative z-10 flex min-h-[400px] items-center py-16 md:py-20">
             <div className="container">
-              <div className="max-w-lg md:w-1/2 md:max-w-none md:pr-10 lg:pr-16">
-                <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-2 dark:text-white">
+              {/* w-1/2 keeps the column clear of the image; max-w-xl stops the
+                  lines from running too long to scan on wide screens. */}
+              <div className="max-w-xl md:w-1/2 md:max-w-xl md:pr-8 lg:pr-12">
+                {/* "Meet" is near-black on the cream light theme and white in
+                    dark — pure white would vanish against #F5F2EC. */}
+                <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight text-gray-950 dark:text-white">
                   Meet <span className="text-[#d3c4ab]">Sunny</span>
                 </h2>
-                <p className="text-gray-500 text-sm md:text-base mb-6 dark:text-gray-400">
+                <p className="mt-4 text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-gray-300">
                   Your intelligent peptide assistant
                 </p>
-                <ul className="space-y-2.5 mb-8">
+                <ul className="mt-8 space-y-3 md:space-y-4">
                   {[
                     "Get fast answers to your questions",
                     "Explore products with clarity",
                     "Move forward with confidence",
                   ].map((point) => (
-                    <li key={point} className="flex items-center gap-2.5">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#d3c4ab]/20">
-                        <Check size={12} strokeWidth={3} className="text-[#a08d6d] dark:text-[#d3c4ab]" />
+                    <li key={point} className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d3c4ab]/20">
+                        <Check size={14} strokeWidth={3} className="text-[#a08d6d] dark:text-[#d3c4ab]" />
                       </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-300">{point}</span>
+                      <span className="text-base md:text-lg text-gray-700 dark:text-gray-200">{point}</span>
                     </li>
                   ))}
                 </ul>
@@ -1028,9 +1034,9 @@ export default function Home() {
                   href="https://www.asksunny.io/chat"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-colors duration-150 shadow-sm shadow-[#d3c4ab]/20"
+                  className="mt-10 inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-base md:text-lg font-semibold px-8 py-4 rounded-full shadow-sm shadow-[#d3c4ab]/20 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-[#d3c4ab]/40"
                 >
-                  <Sparkles size={16} />
+                  <Sparkles size={18} />
                   Ask Sunny
                 </a>
               </div>
