@@ -20,6 +20,7 @@ const KNOWN_SLOTS: Array<{ slotKey: string; label: string; section: string; reco
   { slotKey: "hero_slide_3", label: "Home — Hero Slider, slide 3 (Metabolic)", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1920×1080, full-bleed background" },
   { slotKey: "hero_slide_3_mobile", label: "Hero Slide 3 — Versión Mobile/Tablet", section: "Home — Hero & Secciones", recommended: "Opcional — si no se sube, usa la imagen desktop reposicionada. Portrait o cuadrada, ≥1080×1350, foco recortado para pantallas angostas" },
   { slotKey: "home_lab_banner", label: "Home — Lab Quality Banner", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1600×500, wide banner" },
+  { slotKey: "home_sunny_banner_image", label: "Home — Meet Sunny Banner Image", section: "Home — Hero & Secciones", recommended: "Landscape, ≥1000×800. Ocupa la mitad derecha de un banner de 400px de alto (en móvil se usa de fondo completo). Si no se sube, muestra el patrón de partículas." },
   { slotKey: "home_how_it_works", label: "Home — How It Works", section: "Home — Hero & Secciones", recommended: "≥900×900, square to slightly portrait" },
   { slotKey: "approach_documentation_image", label: "Documentation trust signal image", section: "Página: Approach", recommended: "661×281 (landscape, ~2.35:1), product/vial or COA-style photo. Falls back to the vial mockup if empty." },
   { slotKey: "manufacturing_hero_image", label: "Hero image", section: "Página: Manufacturing", recommended: "Portrait or square, ≥900×900, lab/manufacturing photo" },

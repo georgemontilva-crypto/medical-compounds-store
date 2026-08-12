@@ -4,7 +4,7 @@ import { getLenis } from "@/lib/lenis";
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
-import { ArrowRight, FlaskConical, Plus, Check, Search, ChevronDown, X } from "lucide-react";
+import { ArrowRight, FlaskConical, Plus, Check, Search, ChevronDown, X, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
 import Reveal from "@/components/Reveal";
@@ -965,6 +965,79 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── MEET SUNNY BANNER ────────────────────────────────────────────── */}
+      {/* Cream rather than dark on purpose: the stats bar directly above is
+          bg-gray-950, so a dark banner here would read as one continuous slab
+          instead of a separate section. */}
+      <Reveal>
+        <section className="relative h-[400px] overflow-hidden bg-[#F5F2EC] dark:bg-background">
+          {imageBySlot["home_sunny_banner_image"] ? (
+            <>
+              {/* Full-bleed backdrop on mobile; right half only from md up. */}
+              <img
+                src={imageBySlot["home_sunny_banner_image"]}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 h-full w-full object-cover object-center md:left-auto md:w-1/2"
+              />
+              {/* Flat wash on mobile, where text sits over the whole image. */}
+              <div className="absolute inset-0 bg-[#F5F2EC]/85 md:hidden dark:bg-background/85" />
+              {/* On desktop, fade the image's inner edge into the text side
+                  instead of leaving a hard seam down the middle. */}
+              <div className="absolute inset-0 hidden bg-gradient-to-r from-[#F5F2EC] via-[#F5F2EC]/85 to-transparent md:block dark:from-background dark:via-background/85" />
+            </>
+          ) : (
+            /* No upload yet — reuse the site's particle field so an empty slot
+               still looks deliberate rather than like a blank panel. */
+            <ParticleBackground
+              color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
+              particleRadius={3.5}
+              particleOpacity={0.22}
+              lineOpacity={0.14}
+              linkDistance={150}
+              className="absolute inset-0 h-full w-full"
+            />
+          )}
+          <div className="relative z-10 flex h-full items-center">
+            <div className="container">
+              <div className="max-w-lg md:w-1/2 md:max-w-none md:pr-10 lg:pr-16">
+                <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-950 leading-tight mb-2 dark:text-white">
+                  Meet <span className="text-[#d3c4ab]">Sunny</span>
+                </h2>
+                <p className="text-gray-500 text-sm md:text-base mb-6 dark:text-gray-400">
+                  Your intelligent peptide assistant
+                </p>
+                <ul className="space-y-2.5 mb-8">
+                  {[
+                    "Get fast answers to your questions",
+                    "Explore products with clarity",
+                    "Move forward with confidence",
+                  ].map((point) => (
+                    <li key={point} className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#d3c4ab]/20">
+                        <Check size={12} strokeWidth={3} className="text-[#a08d6d] dark:text-[#d3c4ab]" />
+                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+                {/* Same external chat as the navbar's Ask Sunny button, so
+                    likewise a plain anchor opening in a new tab. */}
+                <a
+                  href="https://www.asksunny.io/chat"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-colors duration-150 shadow-sm shadow-[#d3c4ab]/20"
+                >
+                  <Sparkles size={16} />
+                  Ask Sunny
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </Reveal>
 
       {/* ── RESEARCH CATEGORIES (sticky horizontal showcase) ──────────────── */}
       <CategoryShowcase />
