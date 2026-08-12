@@ -923,6 +923,180 @@ function ResearchCatalogSection() {
   );
 }
 
+// ── Meet Sunny banner ────────────────────────────────────────────────────────
+// The copy lives in these constants because the section renders twice — a
+// stacked card on phones and the horizontal hero from md up. Edit the strings
+// here; never in the two layouts below.
+const SUNNY_SUBTITLE = "Your intelligent peptide assistant";
+const SUNNY_POINTS = [
+  "Get fast answers to your questions",
+  "Explore products with clarity",
+  "Move forward with confidence",
+];
+const SUNNY_CTA_LABEL = "Ask Sunny";
+const SUNNY_CHAT_URL = "https://www.asksunny.io/chat";
+
+// Two-tone wordmark shared by both variants — only size and the color of
+// "Meet" change between them, so those arrive via className.
+function SunnyWordmark({ className }: { className?: string }) {
+  return (
+    <h2 className={className}>
+      Meet <span className="text-[#d3c4ab]">Sunny</span>
+    </h2>
+  );
+}
+
+// `mobileImage` is optional: the card falls back to the desktop photo, same
+// convention the hero slides use for their own mobile crops.
+function MeetSunnyBanner({ image, mobileImage }: { image?: string; mobileImage?: string }) {
+  const { theme } = useTheme();
+  const cardImage = mobileImage ?? image;
+
+  return (
+    <>
+      {/* ── Mobile: stacked card ───────────────────────────────────────────
+          Black-and-gold card regardless of theme — it reads as an object
+          sitting on the page rather than a full-bleed band, which is what
+          makes the stacked format work at phone widths. */}
+      <section className="md:hidden bg-[#F5F2EC] px-4 py-12 dark:bg-background">
+        <div className="mx-auto max-w-sm overflow-hidden rounded-3xl border border-[#d3c4ab]/25 bg-[#0d0d0d] shadow-2xl shadow-[#d3c4ab]/20">
+          {/* Photo runs edge to edge; the card's overflow-hidden clips it to
+              exactly the same top rounding, so no double radius to keep in
+              sync.
+
+              Crop anchor: a dedicated mobile upload is already composed for
+              3/4, so it just anchors top. Falling back to the desktop photo
+              means cropping a landscape frame down to portrait, and its
+              subject sits right of centre — 50% decapitates her. 70% was
+              picked by comparing renders at 50/60/70/80 and is the only one
+              holding both the face and the vial. Re-check it if the desktop
+              image is ever replaced. */}
+          <div className="relative aspect-[3/4]">
+            {cardImage ? (
+              <img
+                src={cardImage}
+                alt=""
+                aria-hidden="true"
+                className={`absolute inset-0 h-full w-full object-cover ${
+                  mobileImage ? "object-top" : "object-[70%_top]"
+                }`}
+              />
+            ) : (
+              <ParticleBackground
+                color="211, 196, 171"
+                particleRadius={3.5}
+                particleOpacity={0.22}
+                lineOpacity={0.14}
+                linkDistance={150}
+                className="absolute inset-0 h-full w-full"
+              />
+            )}
+            {/* Bottom third dissolves into the card so the title floats over
+                the photo instead of sitting on a hard crop line. */}
+            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent to-[#0d0d0d]" />
+            <SunnyWordmark className="absolute inset-x-0 bottom-5 text-center text-3xl font-bold tracking-tight text-white" />
+          </div>
+          <div className="px-6 pb-6 pt-4">
+            <p className="text-center text-sm text-gray-300">{SUNNY_SUBTITLE}</p>
+            <div className="my-5 h-px bg-white/10" />
+            <ul className="space-y-3">
+              {SUNNY_POINTS.map((point) => (
+                <li key={point} className="flex items-center gap-3">
+                  {/* Explicit 10px, not rounded-lg: this project overrides
+                      --radius-lg to 1rem, which on a 32px box renders a full
+                      circle instead of the intended rounded square. */}
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#d3c4ab]/10">
+                    <Check size={16} strokeWidth={3} className="text-[#d3c4ab]" />
+                  </span>
+                  <span className="text-sm text-gray-200">{point}</span>
+                </li>
+              ))}
+            </ul>
+            {/* Dark label on gold here, rather than the desktop hero's white —
+                the fill sits on black, so white-on-gold would be the weaker
+                pairing of the two. */}
+            <a
+              href={SUNNY_CHAT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#d3c4ab] py-3.5 text-sm font-semibold text-[#1a1a1a] transition-colors duration-150 hover:bg-[#baac96]"
+            >
+              {SUNNY_CTA_LABEL}
+              <Sparkles size={16} />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Desktop: horizontal hero ───────────────────────────────────────
+          Cream rather than dark on purpose: the stats bar directly above is
+          bg-gray-950, so a dark band here would read as one continuous slab
+          instead of a separate section. */}
+      <section className="relative hidden min-h-[400px] overflow-hidden bg-[#F5F2EC] md:block dark:bg-background">
+        {image ? (
+          <>
+            <img
+              src={image}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-y-0 right-0 h-full w-1/2 object-cover object-center"
+            />
+            {/* Fades the image's inner edge into the text side instead of
+                leaving a hard seam down the middle. */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#F5F2EC] via-[#F5F2EC]/85 to-transparent dark:from-background dark:via-background/85" />
+          </>
+        ) : (
+          /* No upload yet — reuse the site's particle field so an empty slot
+             still looks deliberate rather than like a blank panel. */
+          <ParticleBackground
+            color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
+            particleRadius={3.5}
+            particleOpacity={0.22}
+            lineOpacity={0.14}
+            linkDistance={150}
+            className="absolute inset-0 h-full w-full"
+          />
+        )}
+        {/* min-h rather than h on the row too, so the text block sets the
+            section's height once the display type outgrows 400px. */}
+        <div className="relative z-10 flex min-h-[400px] items-center py-20">
+          <div className="container">
+            {/* w-1/2 keeps the column clear of the image; max-w-xl stops the
+                lines from running too long to scan on wide screens. */}
+            <div className="w-1/2 max-w-xl pr-8 lg:pr-12">
+              {/* "Meet" is near-black on the cream light theme and white in
+                  dark — pure white would vanish against #F5F2EC. */}
+              <SunnyWordmark className="text-6xl lg:text-7xl font-bold tracking-tight leading-tight text-gray-950 dark:text-white" />
+              <p className="mt-4 text-xl lg:text-2xl text-gray-600 dark:text-gray-300">{SUNNY_SUBTITLE}</p>
+              <ul className="mt-8 space-y-4">
+                {SUNNY_POINTS.map((point) => (
+                  <li key={point} className="flex items-center gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d3c4ab]/20">
+                      <Check size={14} strokeWidth={3} className="text-[#a08d6d] dark:text-[#d3c4ab]" />
+                    </span>
+                    <span className="text-lg text-gray-700 dark:text-gray-200">{point}</span>
+                  </li>
+                ))}
+              </ul>
+              {/* Same external chat as the navbar's Ask Sunny button, so
+                  likewise a plain anchor opening in a new tab. */}
+              <a
+                href={SUNNY_CHAT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-10 inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-lg font-semibold px-8 py-4 rounded-full shadow-sm shadow-[#d3c4ab]/20 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-[#d3c4ab]/40"
+              >
+                <Sparkles size={18} />
+                {SUNNY_CTA_LABEL}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
 // ── Main Home ─────────────────────────────────────────────────────────────────
 export default function Home() {
   const { theme } = useTheme();
@@ -967,82 +1141,11 @@ export default function Home() {
       </section>
 
       {/* ── MEET SUNNY BANNER ────────────────────────────────────────────── */}
-      {/* Cream rather than dark on purpose: the stats bar directly above is
-          bg-gray-950, so a dark banner here would read as one continuous slab
-          instead of a separate section. */}
       <Reveal>
-        <section className="relative min-h-[400px] overflow-hidden bg-[#F5F2EC] dark:bg-background">
-          {imageBySlot["home_sunny_banner_image"] ? (
-            <>
-              {/* Full-bleed backdrop on mobile; right half only from md up. */}
-              <img
-                src={imageBySlot["home_sunny_banner_image"]}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 h-full w-full object-cover object-center md:left-auto md:w-1/2"
-              />
-              {/* Flat wash on mobile, where text sits over the whole image. */}
-              <div className="absolute inset-0 bg-[#F5F2EC]/90 md:hidden dark:bg-background/90" />
-              {/* On desktop, fade the image's inner edge into the text side
-                  instead of leaving a hard seam down the middle. */}
-              <div className="absolute inset-0 hidden bg-gradient-to-r from-[#F5F2EC] via-[#F5F2EC]/85 to-transparent md:block dark:from-background dark:via-background/85" />
-            </>
-          ) : (
-            /* No upload yet — reuse the site's particle field so an empty slot
-               still looks deliberate rather than like a blank panel. */
-            <ParticleBackground
-              color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
-              particleRadius={3.5}
-              particleOpacity={0.22}
-              lineOpacity={0.14}
-              linkDistance={150}
-              className="absolute inset-0 h-full w-full"
-            />
-          )}
-          {/* min-h rather than h on the row too, so the text block sets the
-              section's height once the display type outgrows 400px. */}
-          <div className="relative z-10 flex min-h-[400px] items-center py-16 md:py-20">
-            <div className="container">
-              {/* w-1/2 keeps the column clear of the image; max-w-xl stops the
-                  lines from running too long to scan on wide screens. */}
-              <div className="max-w-xl md:w-1/2 md:max-w-xl md:pr-8 lg:pr-12">
-                {/* "Meet" is near-black on the cream light theme and white in
-                    dark — pure white would vanish against #F5F2EC. */}
-                <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight text-gray-950 dark:text-white">
-                  Meet <span className="text-[#d3c4ab]">Sunny</span>
-                </h2>
-                <p className="mt-4 text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-gray-300">
-                  Your intelligent peptide assistant
-                </p>
-                <ul className="mt-8 space-y-3 md:space-y-4">
-                  {[
-                    "Get fast answers to your questions",
-                    "Explore products with clarity",
-                    "Move forward with confidence",
-                  ].map((point) => (
-                    <li key={point} className="flex items-center gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d3c4ab]/20">
-                        <Check size={14} strokeWidth={3} className="text-[#a08d6d] dark:text-[#d3c4ab]" />
-                      </span>
-                      <span className="text-base md:text-lg text-gray-700 dark:text-gray-200">{point}</span>
-                    </li>
-                  ))}
-                </ul>
-                {/* Same external chat as the navbar's Ask Sunny button, so
-                    likewise a plain anchor opening in a new tab. */}
-                <a
-                  href="https://www.asksunny.io/chat"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-10 inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-base md:text-lg font-semibold px-8 py-4 rounded-full shadow-sm shadow-[#d3c4ab]/20 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-[#d3c4ab]/40"
-                >
-                  <Sparkles size={18} />
-                  Ask Sunny
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
+        <MeetSunnyBanner
+          image={imageBySlot["home_sunny_banner_image"]}
+          mobileImage={imageBySlot["home_sunny_banner_image_mobile"]}
+        />
       </Reveal>
 
       {/* ── RESEARCH CATEGORIES (sticky horizontal showcase) ──────────────── */}
