@@ -7,7 +7,7 @@ import {
   FlaskConical,
   ChevronRight,
   Tag,
-  CreditCard,
+  Mail,
   CheckCircle,
   Loader2,
   Lock,
@@ -465,22 +465,16 @@ function PaymentStep({
       <div className="lab-card p-6">
         <h2 className="font-semibold text-lg mb-2">Payment</h2>
         <p className="text-sm text-muted-foreground mb-5">
-          Secure payment processing. Your order will be confirmed and we'll contact you with payment instructions.
+          We'll contact you with payment instructions after your order is placed.
         </p>
 
-        <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
-          <CreditCard size={32} className="text-muted-foreground/40 mx-auto mb-3" />
-          <p className="font-medium text-sm">Payment Gateway</p>
+        <div className="border border-border rounded-xl p-6 text-center">
+          <Mail size={32} className="text-muted-foreground/40 mx-auto mb-3" />
+          <p className="font-medium text-sm">No payment is taken now</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Payment integration will be configured here. Your order details are saved and we'll process payment securely.
+            Placing your order reserves your items and saves your details. Our team
+            will email you to arrange payment before anything ships.
           </p>
-          <div className="flex items-center justify-center gap-4 mt-4">
-            {["Visa", "Mastercard", "PayPal", "Stripe"].map((p) => (
-              <span key={p} className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-                {p}
-              </span>
-            ))}
-          </div>
         </div>
 
         <div className="flex items-center gap-2 mt-4 p-3 rounded-xl bg-secondary/50">
