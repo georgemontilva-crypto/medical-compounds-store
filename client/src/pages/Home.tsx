@@ -1042,8 +1042,14 @@ function MeetSunnyBanner({ image, mobileImage }: { image?: string; mobileImage?:
               className="absolute inset-y-0 right-0 h-full w-1/2 object-cover object-center"
             />
             {/* Fades the image's inner edge into the text side instead of
-                leaving a hard seam down the middle. */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#F5F2EC] via-[#F5F2EC]/85 to-transparent dark:from-background dark:via-background/85" />
+                leaving a hard seam down the middle. The stops are pinned
+                because this spans the whole section while the photo only
+                occupies the right half: left to itself the fade would run all
+                the way to 100% and lay cream over the entire photo (0.43 alpha
+                still at its centre), which reads as a washed-out image rather
+                than a seam. Clean by 62% keeps the feather just past the
+                seam at 50% and leaves the rest of the photo untouched. */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#F5F2EC] from-45% via-[#F5F2EC]/75 via-50% to-transparent to-62% dark:from-background dark:via-background/75" />
           </>
         ) : (
           /* No upload yet — reuse the site's particle field so an empty slot
