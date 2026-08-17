@@ -512,6 +512,52 @@ export async function updateOrderStatus(
   await db.update(orders).set(updateData).where(eq(orders.id, id));
 }
 
+/** Records the processor session an order is waiting on, before any money moves. */
+export async function setOrderPaymentSession(id: number, sessionId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(orders)
+    .set({ paymentMethod: "stripe", paymentReference: sessionId })
+    .where(eq(orders.id, id));
+}
+
+export type MarkOrderPaidResult =
+  | { updated: true }
+  | { updated: false; reason: "not_found" | "already_paid" };
+
+/**
+ * Settles an order from a verified processor event.
+ *
+ * Separate from updateOrderStatus because that one requires a fulfillment
+ * status, and a payment webhook has no business deciding whether an order has
+ * shipped. Idempotent: Stripe retries deliveries, and a replay must not
+ * overwrite a status an admin has already moved forward.
+ */
+export async function markOrderPaid(
+  id: number,
+  paymentReference: string
+): Promise<MarkOrderPaidResult> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const existing = await getOrderById(id);
+  if (!existing) return { updated: false, reason: "not_found" };
+  if (existing.paymentStatus === "paid") return { updated: false, reason: "already_paid" };
+
+  await db
+    .update(orders)
+    .set({
+      paymentStatus: "paid",
+      paymentMethod: "stripe",
+      paymentReference,
+      ...(existing.status === "pending" ? { status: "confirmed" as const } : {}),
+    })
+    .where(eq(orders.id, id));
+
+  return { updated: true };
+}
+
 export async function countOrders() {
   const db = await getDb();
   if (!db) return 0;

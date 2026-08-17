@@ -35,7 +35,6 @@ import {
   getAllUsers,
   getCartItems,
   getCategoryById,
-  getCouponByCode,
   getCouponById,
   getWelcomeRedemption,
   createWelcomeRedemption,
@@ -80,9 +79,18 @@ import {
   createWholesaleApplication,
   getWholesaleApplications,
   updateWholesaleApplicationStatus,
+  markOrderPaid,
+  setOrderPaymentSession,
 } from "./db";
 import { storagePut } from "./storage";
 import { compressImage } from "./imageProcessing";
+import { getBulkDiscountTiers, priceOrder, resolveCoupon } from "./pricing";
+import {
+  buildCheckoutReturnUrls,
+  buildCheckoutSessionParams,
+  getStripe,
+  isStripeConfigured,
+} from "./stripe";
 
 // ─── Admin middleware ─────────────────────────────────────────────────────────
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -472,45 +480,17 @@ export const appRouter = router({
 
   // ─── Coupons ───────────────────────────────────────────────────────────────
   coupons: router({
+    // Preview only. The binding calculation happens in orders.create, through
+    // the same resolveCoupon(), so the quote here can never differ from the
+    // amount actually charged.
     validate: publicProcedure
       .input(z.object({ code: z.string(), orderAmount: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        const coupon = await getCouponByCode(input.code);
-        if (!coupon || !coupon.active) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Coupon not found or inactive" });
-        }
-        if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Coupon has expired" });
-        }
-        if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Coupon usage limit reached" });
-        }
-        if (coupon.minOrderAmount && input.orderAmount < Number(coupon.minOrderAmount)) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Minimum order amount is $${coupon.minOrderAmount}`,
-          });
-        }
-        if (coupon.isNewCustomerOffer) {
-          const redemption = ctx.user ? await getWelcomeRedemption(ctx.user.id, coupon.id) : undefined;
-          if (!redemption) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "This code is reserved for new customers who registered through the welcome offer.",
-            });
-          }
-          if (redemption.usedAt) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: "This welcome code has already been used." });
-          }
-        }
-        const discount =
-          coupon.type === "percentage"
-            ? (input.orderAmount * Number(coupon.value)) / 100
-            : Number(coupon.value);
+        const coupon = await resolveCoupon(input.code, input.orderAmount, ctx.user?.id);
         return {
           valid: true,
-          coupon: { id: coupon.id, code: coupon.code, type: coupon.type, value: Number(coupon.value) },
-          discount: Math.min(discount, input.orderAmount),
+          coupon: { id: coupon.id, code: coupon.code, type: coupon.type, value: coupon.value },
+          discount: coupon.discount,
         };
       }),
 
@@ -587,19 +567,16 @@ export const appRouter = router({
     create: publicProcedure
       .input(
         z.object({
+          // Only what the shopper chose. Names and prices are looked up server
+          // side — see priceOrder() — because this total is what Stripe charges.
           items: z.array(
             z.object({
               productId: z.number(),
               variationId: z.number().optional(),
-              productName: z.string(),
-              variationLabel: z.string().optional(),
               quantity: z.number().min(1),
-              unitPrice: z.number(),
             })
           ),
           couponCode: z.string().optional(),
-          couponId: z.number().optional(),
-          discountAmount: z.number().optional(),
           researcherType: z.enum([
             "private_researcher",
             "lab_company_researcher",
@@ -621,17 +598,16 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const subtotal = input.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
-        const discount = input.discountAmount ?? 0;
-        const total = Math.max(0, subtotal - discount);
+        const priced = await priceOrder(input.items, input.couponCode, ctx.user?.id);
+        const { subtotal, discount, total } = priced;
 
         const newOrderId = await createOrder({
           userId: ctx.user?.id ?? null,
           subtotal: subtotal.toFixed(2),
           discountAmount: discount.toFixed(2),
           total: total.toFixed(2),
-          couponId: input.couponId,
-          couponCode: input.couponCode,
+          couponId: priced.coupon?.id,
+          couponCode: priced.coupon?.code,
           researcherType: input.researcherType,
           dateOfBirth: input.dateOfBirth,
           shippingFirstName: input.shipping.firstName,
@@ -650,7 +626,7 @@ export const appRouter = router({
 
         const newOrder = { id: newOrderId };
 
-        for (const item of input.items) {
+        for (const item of priced.items) {
           await createOrderItem({
             orderId: newOrder.id,
             productId: item.productId,
@@ -659,14 +635,14 @@ export const appRouter = router({
             variationLabel: item.variationLabel,
             quantity: item.quantity,
             unitPrice: item.unitPrice.toFixed(2),
-            subtotal: (item.unitPrice * item.quantity).toFixed(2),
+            subtotal: item.subtotal.toFixed(2),
           });
         }
 
-        if (input.couponId) {
-          await incrementCouponUsage(input.couponId);
+        if (priced.coupon) {
+          await incrementCouponUsage(priced.coupon.id);
           if (ctx.user) {
-            await markWelcomeRedemptionUsed(ctx.user.id, input.couponId, newOrder.id);
+            await markWelcomeRedemptionUsed(ctx.user.id, priced.coupon.id, newOrder.id);
           }
         }
 
@@ -676,8 +652,8 @@ export const appRouter = router({
 
         // Notify admin
         try {
-          const itemsList = input.items
-            .map((i) => `${i.productName}${i.variationLabel ? ` (${i.variationLabel})` : ""} x${i.quantity} — $${(i.unitPrice * i.quantity).toFixed(2)}`)
+          const itemsList = priced.items
+            .map((i) => `${i.productName}${i.variationLabel ? ` (${i.variationLabel})` : ""} x${i.quantity} — $${i.subtotal.toFixed(2)}`)
             .join("\n");
           await notifyOwner({
             title: `New Order #${newOrder.id}`,
@@ -723,6 +699,75 @@ export const appRouter = router({
         })
       )
       .mutation(({ input }) => updateOrderStatus(input.id, input.status, input.paymentStatus)),
+  }),
+
+  // ─── Payments ──────────────────────────────────────────────────────────────
+  payments: router({
+    /**
+     * Opens a Stripe Checkout session for an already-created order.
+     *
+     * publicProcedure because checkout allows guests, but an order that belongs
+     * to a registered account can only be paid by that account — otherwise the
+     * endpoint would confirm the existence and total of anyone's order id.
+     */
+    createCheckoutSession: publicProcedure
+      .input(z.object({ orderId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!isStripeConfigured()) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Card payments are not available right now.",
+          });
+        }
+
+        const order = await getOrderById(input.orderId);
+        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+
+        if (order.userId !== null && order.userId !== ctx.user?.id) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        if (order.paymentStatus === "paid") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This order has already been paid.",
+          });
+        }
+        if (order.status === "cancelled") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "This order was cancelled." });
+        }
+        // Stripe refuses charges under ~$0.50, so a fully-discounted order can
+        // never go through Checkout. Fail with something a human can act on
+        // instead of surfacing a raw Stripe amount error.
+        if (Number(order.total) < 0.5) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "This order total is too low to charge online. We'll contact you to complete it.",
+          });
+        }
+
+        const items = await getOrderItems(order.id);
+
+        // buildCheckoutSessionParams runs assertPayloadIsSanitized over
+        // everything below before it is handed to the SDK.
+        const params = buildCheckoutSessionParams(
+          order,
+          items,
+          buildCheckoutReturnUrls(order.id)
+        );
+
+        const session = await getStripe().checkout.sessions.create(params);
+        if (!session.url) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Stripe did not return a checkout URL.",
+          });
+        }
+
+        await setOrderPaymentSession(order.id, session.id);
+
+        return { url: session.url };
+      }),
   }),
 
   // ─── Admin Dashboard ───────────────────────────────────────────────────────
@@ -878,16 +923,9 @@ export const appRouter = router({
   // product; only the percentages are admin-editable, stored as 2 rows in
   // site_settings rather than a dedicated table ────────────────────────────
   bulkDiscount: router({
-    get: publicProcedure.query(async () => {
-      const [t2, t5] = await Promise.all([
-        getSiteSetting("bulk_discount_tier_2"),
-        getSiteSetting("bulk_discount_tier_5"),
-      ]);
-      return {
-        tier2Percent: t2 ? Number(t2.value) : 10,
-        tier5Percent: t5 ? Number(t5.value) : 20,
-      };
-    }),
+    // Same reader the server prices orders with, so the percentages shown on
+    // the product page are literally the ones applied at checkout.
+    get: publicProcedure.query(() => getBulkDiscountTiers()),
 
     update: adminProcedure
       .input(

@@ -7,4 +7,12 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // Stripe. The secret key never leaves the server; the webhook secret is what
+  // makes an incoming "this order is paid" event trustworthy, so a missing one
+  // is treated as "reject every webhook" rather than "skip verification".
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+  /** Absolute origin Stripe sends the shopper back to. */
+  publicSiteUrl: process.env.PUBLIC_SITE_URL ?? "https://www.brighterdayslabs.com",
 };

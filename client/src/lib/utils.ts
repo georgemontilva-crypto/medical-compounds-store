@@ -5,27 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Product variation "value" columns are MySQL decimals, which come back as
-// strings like "10.00" — Number(...).toString() drops insignificant
-// trailing zeros ("10.00" -> "10") while still showing real decimals
-// ("2.50" -> "2.5") correctly.
-export function formatVariationValue(value: string | number): string {
-  const num = typeof value === "number" ? value : Number(value);
-  if (Number.isNaN(num)) return String(value);
-  return num.toString();
-}
-
-// ─── Bulk (volume) discount tiers — same global thresholds for every
-// product; only the percentages come from admin config (bulkDiscount.get).
-export interface BulkDiscountTiers {
-  tier2Percent: number;
-  tier5Percent: number;
-}
-
-export const BULK_DISCOUNT_QUANTITIES = [1, 2, 5] as const;
-
-export function getBulkDiscountPercent(quantity: number, tiers: BulkDiscountTiers): number {
-  if (quantity >= 5) return tiers.tier5Percent;
-  if (quantity >= 2) return tiers.tier2Percent;
-  return 0;
-}
+// Pricing rules moved to @shared/pricing so the server can re-derive order
+// totals with the exact same functions the cart prices with. Re-exported here
+// because the rest of the client imports them from "@/lib/utils".
+export {
+  BULK_DISCOUNT_QUANTITIES,
+  applyBulkDiscount,
+  formatVariationValue,
+  getBulkDiscountPercent,
+  type BulkDiscountTiers,
+} from "@shared/pricing";

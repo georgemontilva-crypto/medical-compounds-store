@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Tag,
   Mail,
+  CreditCard,
   CheckCircle,
   Loader2,
   Lock,
@@ -36,12 +37,30 @@ interface ShippingForm {
   dateOfBirth: string;
 }
 
+/**
+ * Stripe returns the shopper to /checkout with the outcome in the query string.
+ * Read synchronously during the first render: resolving it in an effect would
+ * flash the empty-cart screen before the confirmation appears.
+ */
+function readPaymentReturn(): { paid: boolean; orderId: number | null } | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const payment = params.get("payment");
+  if (payment !== "success" && payment !== "cancelled") return null;
+  const id = Number(params.get("orderId"));
+  return {
+    paid: payment === "success",
+    orderId: Number.isInteger(id) && id > 0 ? id : null,
+  };
+}
+
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
   const { user, isAuthenticated } = useAuthContext();
   const [, navigate] = useLocation();
 
-  const [step, setStep] = useState<Step>("shipping");
+  const [paymentReturn] = useState(readPaymentReturn);
+  const [step, setStep] = useState<Step>(paymentReturn ? "confirmation" : "shipping");
   const [shipping, setShipping] = useState<ShippingForm>({
     firstName: "",
     lastName: "",
@@ -63,8 +82,12 @@ export default function Checkout() {
     value: number;
     discount: number;
   } | null>(null);
-  const [orderId, setOrderId] = useState<number | null>(null);
+  const [orderId, setOrderId] = useState<number | null>(paymentReturn?.orderId ?? null);
   const [notes, setNotes] = useState("");
+  /** How the confirmation screen should read: payment taken, or still owed. */
+  const [paymentOutcome, setPaymentOutcome] = useState<"paid" | "unpaid">(
+    paymentReturn && !paymentReturn.paid ? "unpaid" : "paid"
+  );
 
   const validateCoupon = trpc.coupons.validate.useMutation({
     onSuccess: (data) => {
@@ -82,16 +105,47 @@ export default function Checkout() {
     },
   });
 
+  // Sends the shopper to Stripe Checkout. The order already exists at this
+  // point, so a failure here is recoverable — we fall back to the confirmation
+  // screen and the order can be settled by hand rather than being lost.
+  const createCheckoutSession = trpc.payments.createCheckoutSession.useMutation({
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (err) => {
+      toast.error(
+        err.message || "We couldn't open the payment page. We'll email you to arrange payment."
+      );
+      setPaymentOutcome("unpaid");
+      setStep("confirmation");
+    },
+  });
+
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: (data) => {
       setOrderId(data.orderId);
-      setStep("confirmation");
       clearCart();
+      createCheckoutSession.mutate({ orderId: data.orderId });
     },
     onError: (err) => {
       toast.error(err.message || "Failed to place order");
     },
   });
+
+  // Side effects of that return. The screen state itself is already set above.
+  const paymentReturnHandled = useRef(false);
+  useEffect(() => {
+    if (!paymentReturn || paymentReturnHandled.current) return;
+    paymentReturnHandled.current = true;
+
+    if (paymentReturn.paid) {
+      clearCart();
+    } else {
+      toast.info("Payment cancelled. Your order is saved — we'll email you about payment.");
+    }
+    // Drop the params so a refresh doesn't replay this.
+    window.history.replaceState({}, "", "/checkout");
+  }, [paymentReturn, clearCart]);
 
   const discount = appliedCoupon?.discount ?? 0;
   const finalTotal = Math.max(0, total - discount);
@@ -127,12 +181,24 @@ export default function Checkout() {
     return (
       <div className="min-h-screen hex-cream flex items-center justify-center p-4">
         <div className="lab-card p-10 max-w-md w-full text-center">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={32} className="text-green-600" />
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
+              paymentOutcome === "paid" ? "bg-green-100" : "bg-amber-100"
+            }`}
+          >
+            {paymentOutcome === "paid" ? (
+              <CheckCircle size={32} className="text-green-600" />
+            ) : (
+              <Mail size={32} className="text-amber-600" />
+            )}
           </div>
-          <h1 className="text-2xl font-bold mb-2">Order Confirmed!</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            {paymentOutcome === "paid" ? "Payment Received!" : "Order Saved"}
+          </h1>
           <p className="text-muted-foreground mb-2">
-            Thank you for your order. We'll process it shortly.
+            {paymentOutcome === "paid"
+              ? "Thank you — your payment went through and we'll process your order shortly."
+              : "Your order is saved but payment wasn't completed. Our team will email you to arrange it."}
           </p>
           {orderId && (
             <p className="text-sm font-medium text-primary mb-6">Order #{orderId}</p>
@@ -211,17 +277,14 @@ export default function Checkout() {
                 onBack={() => setStep("shipping")}
                 onPlaceOrder={() => {
                   createOrder.mutate({
+                    // Prices and names are re-derived server side; sending them
+                    // from here would let the browser set what Stripe charges.
                     items: items.map((i) => ({
                       productId: i.productId,
                       variationId: i.variationId,
-                      productName: i.productName,
-                      variationLabel: i.variationLabel,
                       quantity: i.quantity,
-                      unitPrice: i.unitPrice,
                     })),
                     couponCode: appliedCoupon?.code,
-                    couponId: appliedCoupon?.id,
-                    discountAmount: discount,
                     researcherType: shipping.researcherType as
                       | "private_researcher"
                       | "lab_company_researcher"
@@ -241,7 +304,7 @@ export default function Checkout() {
                     notes,
                   });
                 }}
-                isPlacingOrder={createOrder.isPending}
+                isPlacingOrder={createOrder.isPending || createCheckoutSession.isPending}
                 finalTotal={finalTotal}
               />
             )}
@@ -465,22 +528,24 @@ function PaymentStep({
       <div className="lab-card p-6">
         <h2 className="font-semibold text-lg mb-2">Payment</h2>
         <p className="text-sm text-muted-foreground mb-5">
-          We'll contact you with payment instructions after your order is placed.
+          You'll pay by card on Stripe's secure checkout page, right after this step.
         </p>
 
         <div className="border border-border rounded-xl p-6 text-center">
-          <Mail size={32} className="text-muted-foreground/40 mx-auto mb-3" />
-          <p className="font-medium text-sm">No payment is taken now</p>
+          <CreditCard size={32} className="text-muted-foreground/40 mx-auto mb-3" />
+          <p className="font-medium text-sm">Secure card payment</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Placing your order reserves your items and saves your details. Our team
-            will email you to arrange payment before anything ships.
+            Continuing takes you to Stripe to complete payment. Your order is
+            confirmed as soon as the payment goes through, and we start
+            processing it right away.
           </p>
         </div>
 
         <div className="flex items-center gap-2 mt-4 p-3 rounded-xl bg-secondary/50">
           <Lock size={14} className="text-muted-foreground flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            Your order information is encrypted and secure. For research purposes only.
+            Card details are entered on Stripe and never touch our servers. For
+            research purposes only.
           </p>
         </div>
       </div>
@@ -497,12 +562,12 @@ function PaymentStep({
           {isPlacingOrder ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              Placing Order...
+              Redirecting to payment...
             </>
           ) : (
             <>
               <Lock size={16} />
-              Place Order — ${finalTotal.toFixed(2)}
+              Continue to Payment — ${finalTotal.toFixed(2)}
             </>
           )}
         </button>
