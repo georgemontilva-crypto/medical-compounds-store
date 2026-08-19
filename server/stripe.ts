@@ -64,7 +64,9 @@ export type CheckoutItem = Pick<OrderItem, "productName" | "variationLabel" | "q
 export function buildCheckoutSessionParams(
   order: CheckoutOrder,
   items: CheckoutItem[],
-  urls: { successUrl: string; cancelUrl: string }
+  urls: { successUrl: string; cancelUrl: string },
+  /** Order-specific strings that must not reach Stripe, e.g. a referral code. */
+  alsoForbidden: Array<string | null | undefined> = []
 ): Stripe.Checkout.SessionCreateParams {
   const payload = buildSanitizedProcessorPayload(order, items);
 
@@ -99,7 +101,7 @@ export function buildCheckoutSessionParams(
   // writing from something like "peptidefan@gmail.com" would otherwise fail a
   // restricted-term check and be unable to pay.
   const { customer_email: _shopperEmail, ...generated } = params;
-  assertPayloadIsSanitized(generated, items);
+  assertPayloadIsSanitized(generated, items, alsoForbidden);
 
   return params;
 }

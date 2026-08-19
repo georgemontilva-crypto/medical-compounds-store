@@ -1,4 +1,4 @@
-import { and, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   CartItem,
@@ -19,6 +19,13 @@ import {
   InsertWholesaleApplication,
   InsertWelcomeCouponRedemption,
   Order,
+  AffiliateCode,
+  InsertAffiliateCode,
+  InsertAffiliatePayoutRequest,
+  InsertAffiliateReferral,
+  affiliateCodes,
+  affiliatePayoutRequests,
+  affiliateReferrals,
   cartItems,
   categories,
   coupons,
@@ -91,6 +98,13 @@ export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result[0];
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result[0];
 }
 
@@ -899,4 +913,350 @@ export async function getProductSlugsWithLabReports() {
     .innerJoin(products, eq(labReports.productId, products.id))
     .where(and(eq(labReports.active, true), eq(products.active, true)))
     .groupBy(products.slug);
+}
+
+// ─── Affiliates ───────────────────────────────────────────────────────────────
+
+export async function getAffiliateCodeByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(affiliateCodes)
+    .where(eq(affiliateCodes.userId, userId))
+    .limit(1);
+  return result[0];
+}
+
+export async function getAffiliateCodeById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(affiliateCodes)
+    .where(eq(affiliateCodes.id, id))
+    .limit(1);
+  return result[0];
+}
+
+export async function getAffiliateCodeByCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(affiliateCodes)
+    .where(eq(affiliateCodes.code, code))
+    .limit(1);
+  return result[0];
+}
+
+export async function createAffiliateCode(data: InsertAffiliateCode): Promise<AffiliateCode> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.insert(affiliateCodes).values(data);
+  const created = await getAffiliateCodeByUserId(data.userId);
+  if (!created) throw new Error("Failed to read back the created affiliate code");
+  return created;
+}
+
+export async function createAffiliateReferral(data: InsertAffiliateReferral) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.insert(affiliateReferrals).values(data);
+}
+
+export async function getReferralsByAffiliateCodeId(affiliateCodeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(affiliateReferrals)
+    .where(eq(affiliateReferrals.affiliateCodeId, affiliateCodeId))
+    .orderBy(desc(affiliateReferrals.createdAt));
+}
+
+export async function getReferralByOrderId(orderId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(affiliateReferrals)
+    .where(eq(affiliateReferrals.orderId, orderId))
+    .limit(1);
+  return result[0];
+}
+
+/**
+ * Promotes a referral to "eligible" once its order is paid for.
+ *
+ * Only a "pending" row moves: a rejected self-referral must never become
+ * payable, and an already-eligible or paid one must not be re-counted when
+ * Stripe redelivers the event.
+ */
+export async function markReferralEligible(orderId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const existing = await getReferralByOrderId(orderId);
+  if (!existing || existing.status !== "pending") return false;
+
+  await db
+    .update(affiliateReferrals)
+    .set({ status: "eligible" })
+    .where(eq(affiliateReferrals.id, existing.id));
+  return true;
+}
+
+/** Every referral belonging to a user, via their own code. */
+export async function getReferralsByUserId(userId: number) {
+  const code = await getAffiliateCodeByUserId(userId);
+  if (!code) return [];
+  return getReferralsByAffiliateCodeId(code.id);
+}
+
+// ─── Payout requests ──────────────────────────────────────────────────────────
+
+export async function getPendingPayoutRequest(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(affiliatePayoutRequests)
+    .where(
+      and(
+        eq(affiliatePayoutRequests.userId, userId),
+        eq(affiliatePayoutRequests.status, "pending")
+      )
+    )
+    .limit(1);
+  return result[0];
+}
+
+export async function getPayoutRequestsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(affiliatePayoutRequests)
+    .where(eq(affiliatePayoutRequests.userId, userId))
+    .orderBy(desc(affiliatePayoutRequests.requestedAt));
+}
+
+/**
+ * Opens a payout request and stamps the commissions it covers.
+ *
+ * The eligible referrals are linked to the request as it is created, so
+ * settling it later pays exactly the rows the balance was computed from.
+ * Commissions that become eligible afterwards belong to the next request.
+ */
+export async function createPayoutRequest(
+  userId: number,
+  affiliateCodeId: number,
+  amountRequested: number
+): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const result = await db
+    .insert(affiliatePayoutRequests)
+    .values({ userId, amountRequested: amountRequested.toFixed(2), status: "pending" });
+  const requestId = (result[0] as unknown as { insertId: number }).insertId;
+  if (!requestId) throw new Error("Failed to get payout request insertId");
+
+  await db
+    .update(affiliateReferrals)
+    .set({ payoutRequestId: requestId })
+    .where(
+      and(
+        eq(affiliateReferrals.affiliateCodeId, affiliateCodeId),
+        eq(affiliateReferrals.status, "eligible"),
+        isNull(affiliateReferrals.payoutRequestId)
+      )
+    );
+
+  return requestId;
+}
+
+export async function getAllPayoutRequests(status?: "pending" | "paid" | "rejected") {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      request: affiliatePayoutRequests,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(affiliatePayoutRequests)
+    .leftJoin(users, eq(users.id, affiliatePayoutRequests.userId))
+    .where(status ? eq(affiliatePayoutRequests.status, status) : undefined)
+    .orderBy(desc(affiliatePayoutRequests.requestedAt));
+
+  return rows.map((r) => ({ ...r.request, userName: r.userName, userEmail: r.userEmail }));
+}
+
+/**
+ * Settles a payout request. Only the commissions stamped with this request id
+ * are marked paid, so anything that became eligible after the request was
+ * opened stays available for the next one.
+ */
+export async function settlePayoutRequest(
+  id: number,
+  status: "paid" | "rejected",
+  adminNotes?: string
+): Promise<{ updated: boolean; reason?: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const result = await db
+    .select()
+    .from(affiliatePayoutRequests)
+    .where(eq(affiliatePayoutRequests.id, id))
+    .limit(1);
+  const request = result[0];
+  if (!request) return { updated: false, reason: "not_found" };
+  if (request.status !== "pending") return { updated: false, reason: "already_settled" };
+
+  await db
+    .update(affiliatePayoutRequests)
+    .set({
+      status,
+      adminNotes: adminNotes ?? null,
+      ...(status === "paid" ? { paidAt: new Date() } : {}),
+    })
+    .where(eq(affiliatePayoutRequests.id, id));
+
+  if (status === "paid") {
+    await db
+      .update(affiliateReferrals)
+      .set({ status: "paid" })
+      .where(eq(affiliateReferrals.payoutRequestId, id));
+  } else {
+    // A rejected request releases its commissions back to the balance.
+    await db
+      .update(affiliateReferrals)
+      .set({ payoutRequestId: null })
+      .where(eq(affiliateReferrals.payoutRequestId, id));
+  }
+
+  return { updated: true };
+}
+
+// ─── Admin overview ───────────────────────────────────────────────────────────
+
+/** Every affiliate with their commission totals, for the admin table. */
+export async function getAffiliatesOverview() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      code: affiliateCodes,
+      userName: users.name,
+      userEmail: users.email,
+      status: affiliateReferrals.status,
+      commissionAmount: affiliateReferrals.commissionAmount,
+    })
+    .from(affiliateCodes)
+    .leftJoin(users, eq(users.id, affiliateCodes.userId))
+    .leftJoin(affiliateReferrals, eq(affiliateReferrals.affiliateCodeId, affiliateCodes.id));
+
+  const byCode = new Map<
+    number,
+    {
+      codeId: number;
+      code: string;
+      userId: number;
+      userName: string | null;
+      userEmail: string | null;
+      referralCount: number;
+      eligibleTotal: number;
+      paidTotal: number;
+      rejectedCount: number;
+    }
+  >();
+
+  for (const row of rows) {
+    const entry = byCode.get(row.code.id) ?? {
+      codeId: row.code.id,
+      code: row.code.code,
+      userId: row.code.userId,
+      userName: row.userName,
+      userEmail: row.userEmail,
+      referralCount: 0,
+      eligibleTotal: 0,
+      paidTotal: 0,
+      rejectedCount: 0,
+    };
+
+    const amount = Number(row.commissionAmount ?? 0);
+    if (row.status === "rejected") entry.rejectedCount += 1;
+    else if (row.status) entry.referralCount += 1;
+    if (row.status === "eligible") entry.eligibleTotal += amount;
+    if (row.status === "paid") entry.paidTotal += amount;
+
+    byCode.set(row.code.id, entry);
+  }
+
+  return Array.from(byCode.values()).map((e) => ({
+    ...e,
+    eligibleTotal: Math.round(e.eligibleTotal * 100) / 100,
+    paidTotal: Math.round(e.paidTotal * 100) / 100,
+  }));
+}
+
+/** Self-referral attempts, for abuse monitoring. */
+export async function getRejectedReferrals() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      referral: affiliateReferrals,
+      code: affiliateCodes.code,
+      ownerEmail: users.email,
+      orderEmail: orders.shippingEmail,
+      orderTotal: orders.total,
+    })
+    .from(affiliateReferrals)
+    .innerJoin(affiliateCodes, eq(affiliateCodes.id, affiliateReferrals.affiliateCodeId))
+    .leftJoin(users, eq(users.id, affiliateCodes.userId))
+    .leftJoin(orders, eq(orders.id, affiliateReferrals.orderId))
+    .where(eq(affiliateReferrals.status, "rejected"))
+    .orderBy(desc(affiliateReferrals.createdAt));
+
+  return rows.map((r) => ({
+    ...r.referral,
+    code: r.code,
+    ownerEmail: r.ownerEmail,
+    orderEmail: r.orderEmail,
+    orderTotal: r.orderTotal,
+  }));
+}
+
+// ─── Points ───────────────────────────────────────────────────────────────────
+
+/** Adds loyalty points to a user. Called once per order, when it is paid. */
+export async function addUserPoints(userId: number, points: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  if (points <= 0) return;
+  await db
+    .update(users)
+    .set({ points: sql`${users.points} + ${points}` })
+    .where(eq(users.id, userId));
+}
+
+/** Order count and lifetime spend, counting only orders that were paid for. */
+export async function getUserOrderStats(userId: number) {
+  const db = await getDb();
+  if (!db) return { orderCount: 0, totalSpent: 0 };
+  const result = await db
+    .select({
+      orderCount: sql<number>`count(*)`,
+      totalSpent: sql<string>`coalesce(sum(${orders.total}), 0)`,
+    })
+    .from(orders)
+    .where(and(eq(orders.userId, userId), eq(orders.paymentStatus, "paid")));
+
+  return {
+    orderCount: Number(result[0]?.orderCount ?? 0),
+    totalSpent: Number(result[0]?.totalSpent ?? 0),
+  };
 }

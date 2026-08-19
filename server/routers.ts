@@ -81,6 +81,23 @@ import {
   updateWholesaleApplicationStatus,
   markOrderPaid,
   setOrderPaymentSession,
+  createAffiliateCode,
+  createAffiliateReferral,
+  createPayoutRequest,
+  getAffiliateCodeByCode,
+  getAffiliateCodeByUserId,
+  getAffiliatesOverview,
+  getAllPayoutRequests,
+  getPayoutRequestsByUserId,
+  getPendingPayoutRequest,
+  getRejectedReferrals,
+  getAffiliateCodeById,
+  getReferralByOrderId,
+  getReferralsByAffiliateCodeId,
+  getReferralsByUserId,
+  getUserById,
+  getUserOrderStats,
+  settlePayoutRequest,
 } from "./db";
 import { storagePut } from "./storage";
 import { compressImage } from "./imageProcessing";
@@ -91,6 +108,18 @@ import {
   getStripe,
   isStripeConfigured,
 } from "./stripe";
+import { settleOrderRewards } from "./rewards";
+import {
+  MIN_PAYOUT_AMOUNT,
+  REFERRAL_DISCOUNT_PERCENT,
+  buildCodeBase,
+  buildCodeCandidate,
+  buildFallbackBase,
+  checkPayoutEligibility,
+  computePayoutBalance,
+  isSelfReferral,
+  normalizeReferralCode,
+} from "./affiliate";
 
 // ─── Admin middleware ─────────────────────────────────────────────────────────
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -153,7 +182,14 @@ export const appRouter = router({
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
   auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
+    // Explicit field list rather than the raw row: ctx.user is the full users
+    // record, and returning it whole shipped every bcrypt passwordHash to the
+    // browser on each session check.
+    me: publicProcedure.query(({ ctx }) => {
+      if (!ctx.user) return null;
+      const { id, name, email, role, points, createdAt } = ctx.user;
+      return { id, name, email, role, points, createdAt };
+    }),
 
     register: publicProcedure
       .input(
@@ -564,6 +600,56 @@ export const appRouter = router({
 
   // ─── Orders ────────────────────────────────────────────────────────────────
   orders: router({
+    /**
+     * Prices the cart without creating anything.
+     *
+     * The checkout summary used to add up prices the browser captured when each
+     * item was added, while the charge was re-derived from the catalog. Those
+     * two numbers drift apart whenever a line crosses a volume tier or an admin
+     * edits a price, so the shopper could be quoted one amount and charged
+     * another. This runs the identical priceOrder() the order will be built
+     * from, making the summary and the Stripe amount the same number by
+     * construction.
+     *
+     * Deliberately not tolerant of a bad cart: if this throws, orders.create
+     * would throw the same way, and the shopper is better off seeing it here.
+     */
+    quote: publicProcedure
+      .input(
+        z.object({
+          items: z.array(
+            z.object({
+              productId: z.number(),
+              variationId: z.number().optional(),
+              quantity: z.number().min(1),
+            })
+          ),
+          couponCode: z.string().optional(),
+          referralCode: z.string().optional(),
+          email: z.string().optional(),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        const priced = await priceOrder(input.items, {
+          couponCode: input.couponCode,
+          referralCode: input.referralCode,
+          userId: ctx.user?.id,
+          buyerEmails: [input.email, ctx.user?.email],
+        });
+
+        return {
+          items: priced.items,
+          subtotal: priced.subtotal,
+          discount: priced.discount,
+          total: priced.total,
+          appliedDiscount: priced.appliedDiscount,
+          couponCode: priced.coupon?.code,
+          // A self-referral resolves to a zero-value referral; the summary needs
+          // to know not to promise a discount that will not arrive.
+          referralRejected: priced.referral?.rejectedReason !== undefined,
+        };
+      }),
+
     create: publicProcedure
       .input(
         z.object({
@@ -577,6 +663,7 @@ export const appRouter = router({
             })
           ),
           couponCode: z.string().optional(),
+          referralCode: z.string().optional(),
           researcherType: z.enum([
             "private_researcher",
             "lab_company_researcher",
@@ -598,7 +685,14 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const priced = await priceOrder(input.items, input.couponCode, ctx.user?.id);
+        const priced = await priceOrder(input.items, {
+          couponCode: input.couponCode,
+          referralCode: input.referralCode,
+          userId: ctx.user?.id,
+          // Both addresses that identify the buyer, so a self-referral cannot
+          // hide behind a different shipping email.
+          buyerEmails: [input.shipping.email, ctx.user?.email],
+        });
         const { subtotal, discount, total } = priced;
 
         const newOrderId = await createOrder({
@@ -606,8 +700,8 @@ export const appRouter = router({
           subtotal: subtotal.toFixed(2),
           discountAmount: discount.toFixed(2),
           total: total.toFixed(2),
-          couponId: priced.coupon?.id,
-          couponCode: priced.coupon?.code,
+          couponId: priced.appliedDiscount === "coupon" ? priced.coupon?.id : undefined,
+          couponCode: priced.appliedDiscount === "coupon" ? priced.coupon?.code : undefined,
           researcherType: input.researcherType,
           dateOfBirth: input.dateOfBirth,
           shippingFirstName: input.shipping.firstName,
@@ -639,11 +733,27 @@ export const appRouter = router({
           });
         }
 
-        if (priced.coupon) {
+        // Only burn the coupon if it is the discount that actually applied.
+        // When a referral beats it, the code was never spent — and marking a
+        // single-use welcome coupon as redeemed for a discount the buyer did
+        // not receive would quietly destroy it.
+        if (priced.coupon && priced.appliedDiscount === "coupon") {
           await incrementCouponUsage(priced.coupon.id);
           if (ctx.user) {
             await markWelcomeRedemptionUsed(ctx.user.id, priced.coupon.id, newOrder.id);
           }
+        }
+
+        // A rejected referral is still recorded: the commission is zero and no
+        // discount was given, but the attempt has to be visible to the admin.
+        if (priced.referral) {
+          await createAffiliateReferral({
+            affiliateCodeId: priced.referral.affiliateCodeId,
+            orderId: newOrder.id,
+            referredUserId: ctx.user?.id ?? null,
+            commissionAmount: priced.referral.commission.toFixed(2),
+            status: priced.referral.rejectedReason ? "rejected" : "pending",
+          });
         }
 
         if (ctx.user) {
@@ -698,7 +808,214 @@ export const appRouter = router({
           paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
         })
       )
-      .mutation(({ input }) => updateOrderStatus(input.id, input.status, input.paymentStatus)),
+      .mutation(async ({ input }) => {
+        // Read first: rewards are owed on the *transition* into paid, not on
+        // every save of an already-paid order.
+        const before = await getOrderById(input.id);
+        await updateOrderStatus(input.id, input.status, input.paymentStatus);
+
+        const becamePaid =
+          input.paymentStatus === "paid" && before !== undefined && before.paymentStatus !== "paid";
+        if (becamePaid) {
+          // Same path the Stripe webhook takes, so an order settled by transfer
+          // earns the buyer the same points and the affiliate the same
+          // commission as one paid by card.
+          await settleOrderRewards(input.id);
+        }
+
+        return { success: true };
+      }),
+  }),
+
+  // ─── Account ───────────────────────────────────────────────────────────────
+  account: router({
+    /** Everything the My Account stat grid shows. */
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      const [orderStats, referrals] = await Promise.all([
+        getUserOrderStats(ctx.user.id),
+        getReferralsByUserId(ctx.user.id),
+      ]);
+
+      return {
+        orderCount: orderStats.orderCount,
+        totalSpent: orderStats.totalSpent,
+        points: ctx.user.points,
+        // Self-referral attempts are not achievements — they never count here.
+        referralCount: referrals.filter((r) => r.status !== "rejected").length,
+      };
+    }),
+  }),
+
+  // ─── Affiliate ─────────────────────────────────────────────────────────────
+  affiliate: router({
+    /**
+     * The caller's share code, created on first view. There is no application
+     * step: opening the affiliate tab is the enrolment.
+     */
+    myCode: protectedProcedure.mutation(async ({ ctx }) => {
+      const existing = await getAffiliateCodeByUserId(ctx.user.id);
+      if (existing) return existing;
+
+      const base =
+        buildCodeBase(ctx.user.name, ctx.user.email) ?? buildFallbackBase(ctx.user.id);
+
+      // Walk candidates until one is free. Bounded so a pathological run of
+      // collisions fails loudly instead of looping.
+      for (let attempt = 0; attempt < 50; attempt++) {
+        const candidate = buildCodeCandidate(base, attempt);
+        if (await getAffiliateCodeByCode(candidate)) continue;
+        try {
+          return await createAffiliateCode({ userId: ctx.user.id, code: candidate });
+        } catch {
+          // Lost a race on the unique index — either someone took the code, or
+          // this user got one in a parallel request. Re-read before retrying.
+          const raced = await getAffiliateCodeByUserId(ctx.user.id);
+          if (raced) return raced;
+        }
+      }
+
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Could not allocate an affiliate code. Please try again.",
+      });
+    }),
+
+    /** Referral history plus the balance and payout state behind the button. */
+    myDashboard: protectedProcedure.query(async ({ ctx }) => {
+      const code = await getAffiliateCodeByUserId(ctx.user.id);
+      if (!code) {
+        return {
+          code: null,
+          referrals: [],
+          balance: 0,
+          minPayout: MIN_PAYOUT_AMOUNT,
+          canRequestPayout: false,
+          payoutBlockedReason: "below_minimum" as const,
+          payoutRequests: [],
+        };
+      }
+
+      const [referrals, pending, payoutRequests] = await Promise.all([
+        getReferralsByAffiliateCodeId(code.id),
+        getPendingPayoutRequest(ctx.user.id),
+        getPayoutRequestsByUserId(ctx.user.id),
+      ]);
+
+      const balance = computePayoutBalance(referrals);
+      const eligibility = checkPayoutEligibility(balance, pending !== undefined);
+
+      return {
+        code: code.code,
+        referrals,
+        balance,
+        minPayout: MIN_PAYOUT_AMOUNT,
+        canRequestPayout: eligibility.allowed,
+        payoutBlockedReason: eligibility.allowed ? null : eligibility.reason,
+        payoutRequests,
+      };
+    }),
+
+    requestPayout: protectedProcedure.mutation(async ({ ctx }) => {
+      const code = await getAffiliateCodeByUserId(ctx.user.id);
+      if (!code) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "You have no affiliate code yet." });
+      }
+
+      // Balance and eligibility are recomputed here rather than trusted from
+      // the dashboard call — this is the request that creates a debt.
+      const [referrals, pending] = await Promise.all([
+        getReferralsByAffiliateCodeId(code.id),
+        getPendingPayoutRequest(ctx.user.id),
+      ]);
+      const balance = computePayoutBalance(referrals);
+      const eligibility = checkPayoutEligibility(balance, pending !== undefined);
+
+      if (!eligibility.allowed) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            eligibility.reason === "request_pending"
+              ? "You already have a payout request awaiting review."
+              : `You need at least ${MIN_PAYOUT_AMOUNT.toFixed(2)} in eligible commissions.`,
+        });
+      }
+
+      const requestId = await createPayoutRequest(ctx.user.id, code.id, balance);
+      return { success: true, requestId, amountRequested: balance };
+    }),
+
+    /**
+     * Checkout-time check, before the order exists.
+     *
+     * Never throws for a self-referral: the buyer is told the code cannot be
+     * used and is free to continue without it. The attempt is only recorded if
+     * they submit the order anyway, since a referral row needs an order to
+     * point at.
+     */
+    validateCode: publicProcedure
+      .input(z.object({ code: z.string(), email: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        const normalized = normalizeReferralCode(input.code);
+        if (!normalized) {
+          return { valid: false as const, reason: "unknown_code" as const, message: "Enter a referral code." };
+        }
+
+        const affiliateCode = await getAffiliateCodeByCode(normalized);
+        if (!affiliateCode) {
+          return {
+            valid: false as const,
+            reason: "unknown_code" as const,
+            message: "That referral code doesn't exist.",
+          };
+        }
+
+        const owner = await getUserById(affiliateCode.userId);
+        if (isSelfReferral([input.email, ctx.user?.email], owner?.email)) {
+          return {
+            valid: false as const,
+            reason: "self_referral" as const,
+            message: "This referral code can't be used on your own account.",
+          };
+        }
+
+        return {
+          valid: true as const,
+          code: affiliateCode.code,
+          discountPercent: REFERRAL_DISCOUNT_PERCENT,
+        };
+      }),
+
+    // ─── Admin ───────────────────────────────────────────────────────────────
+    adminPayoutRequests: adminProcedure
+      .input(z.object({ status: z.enum(["pending", "paid", "rejected"]).optional() }).optional())
+      .query(({ input }) => getAllPayoutRequests(input?.status)),
+
+    adminOverview: adminProcedure.query(() => getAffiliatesOverview()),
+
+    /** Self-referral attempts, for abuse monitoring. */
+    adminRejectedReferrals: adminProcedure.query(() => getRejectedReferrals()),
+
+    adminSettlePayout: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["paid", "rejected"]),
+          adminNotes: optionalTrimmedString,
+        })
+      )
+      .mutation(async ({ input }) => {
+        const result = await settlePayoutRequest(input.id, input.status, input.adminNotes);
+        if (!result.updated) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              result.reason === "already_settled"
+                ? "That payout request was already settled."
+                : "Payout request not found.",
+          });
+        }
+        return { success: true };
+      }),
   }),
 
   // ─── Payments ──────────────────────────────────────────────────────────────
@@ -750,10 +1067,18 @@ export const appRouter = router({
 
         // buildCheckoutSessionParams runs assertPayloadIsSanitized over
         // everything below before it is handed to the SDK.
+        // The referral code is passed as a forbidden value, not because it is
+        // in the payload today, but so that it fails loudly if it ever is.
+        const referral = await getReferralByOrderId(order.id);
+        const referralCode = referral
+          ? (await getAffiliateCodeById(referral.affiliateCodeId))?.code
+          : undefined;
+
         const params = buildCheckoutSessionParams(
           order,
           items,
-          buildCheckoutReturnUrls(order.id)
+          buildCheckoutReturnUrls(order.id),
+          [referralCode]
         );
 
         const session = await getStripe().checkout.sessions.create(params);

@@ -115,3 +115,32 @@ describe("buildCheckoutSessionParams", () => {
     expect(buildCheckoutSessionParams(guest, items, urls).customer_email).toBeUndefined();
   });
 });
+
+// ─── Referral data ───────────────────────────────────────────────────────────
+
+describe("affiliate data never reaches Stripe", () => {
+  const REFERRAL_CODE = "GEORGEMONTILVA";
+
+  it("keeps the referral code out of the params", () => {
+    const params = buildCheckoutSessionParams(order, items, urls, [REFERRAL_CODE]);
+    expect(JSON.stringify(params).toLowerCase()).not.toContain(REFERRAL_CODE.toLowerCase());
+  });
+
+  it("throws if a referral code is ever introduced into the payload", () => {
+    // The guard has no special knowledge of referral codes, so it is handed the
+    // code explicitly. This proves the rule is enforced rather than merely
+    // being an accident of which fields the builder happens to copy.
+    const collidingUrls = {
+      successUrl: `https://www.brighterdayslabs.com/checkout?ref=${REFERRAL_CODE}`,
+      cancelUrl: urls.cancelUrl,
+    };
+    expect(() =>
+      buildCheckoutSessionParams(order, items, collidingUrls, [REFERRAL_CODE])
+    ).toThrow(/leaks forbidden value/i);
+  });
+
+  it("ignores blank forbidden values rather than matching everything", () => {
+    expect(() => buildCheckoutSessionParams(order, items, urls, ["", "   ", null, undefined]))
+      .not.toThrow();
+  });
+});

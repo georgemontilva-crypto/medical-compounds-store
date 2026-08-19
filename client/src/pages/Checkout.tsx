@@ -10,10 +10,13 @@ import {
   Mail,
   CreditCard,
   CheckCircle,
+  Users,
+  AlertCircle,
   Loader2,
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getStoredReferralCode } from "@/lib/referral";
 
 type Step = "shipping" | "payment" | "confirmation";
 
@@ -147,8 +150,81 @@ export default function Checkout() {
     window.history.replaceState({}, "", "/checkout");
   }, [paymentReturn, clearCart]);
 
-  const discount = appliedCoupon?.discount ?? 0;
-  const finalTotal = Math.max(0, total - discount);
+  // ─── Referral ──────────────────────────────────────────────────────────────
+  // Prefilled from a ?ref= click captured up to 30 days ago, and editable.
+  const [referralCode, setReferralCode] = useState(() => getStoredReferralCode() ?? "");
+  const [referralState, setReferralState] = useState<
+    | { kind: "idle" }
+    | { kind: "valid"; code: string; discountPercent: number }
+    | { kind: "invalid"; message: string }
+  >({ kind: "idle" });
+
+  const validateReferral = trpc.affiliate.validateCode.useMutation({
+    onSuccess: (result) => {
+      if (result.valid) {
+        setReferralState({
+          kind: "valid",
+          code: result.code,
+          discountPercent: result.discountPercent,
+        });
+      } else {
+        // Self-referral lands here: the shopper is told before paying, and may
+        // continue without the code rather than being blocked.
+        setReferralState({ kind: "invalid", message: result.message });
+      }
+    },
+    onError: () => {
+      setReferralState({ kind: "invalid", message: "Couldn't check that code. Try again." });
+    },
+  });
+
+  const checkReferral = (code: string) => {
+    if (!code.trim()) {
+      setReferralState({ kind: "idle" });
+      return;
+    }
+    validateReferral.mutate({ code, email: shipping.email || undefined });
+  };
+
+  // Validate a code carried in from a ?ref= click as soon as the shopper
+  // reaches this step, so a self-referral is surfaced before they pay rather
+  // than only if they happen to touch the field.
+  const prefilledReferralChecked = useRef(false);
+  useEffect(() => {
+    if (prefilledReferralChecked.current) return;
+    if (step !== "payment" || !referralCode.trim()) return;
+    prefilledReferralChecked.current = true;
+    checkReferral(referralCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, referralCode]);
+
+  // ─── Authoritative pricing ─────────────────────────────────────────────────
+  // The cart's own arithmetic is only a placeholder until this resolves. It
+  // sums prices captured when each item was added, which drift from the catalog
+  // whenever a line crosses a volume tier or an admin edits a price — the same
+  // numbers the server re-derives and Stripe is charged. Quoting from the
+  // server makes the summary and the charge the same figure by construction.
+  const quote = trpc.orders.quote.useQuery(
+    {
+      items: items.map((i) => ({
+        productId: i.productId,
+        variationId: i.variationId,
+        quantity: i.quantity,
+      })),
+      couponCode: appliedCoupon?.code,
+      referralCode: referralState.kind === "valid" ? referralState.code : undefined,
+      email: shipping.email || undefined,
+    },
+    { enabled: items.length > 0 && step !== "confirmation" }
+  );
+
+  const quoted = quote.data;
+  const subtotal = quoted?.subtotal ?? total;
+  const discount = quoted?.discount ?? 0;
+  const finalTotal = quoted?.total ?? Math.max(0, total - discount);
+  // Blocked rather than merely unpriced: orders.create would reject the same
+  // cart, so sending the shopper to Stripe could only fail later.
+  const quoteError = quote.error?.message ?? null;
 
   // Auto-apply the welcome coupon assigned right after registering via the checkout incentive modal.
   const pendingCouponHandled = useRef(false);
@@ -273,6 +349,11 @@ export default function Checkout() {
                   validateCoupon.mutate({ code: couponCode, orderAmount: total })
                 }
                 isValidating={validateCoupon.isPending}
+                referralCode={referralCode}
+                setReferralCode={setReferralCode}
+                referralState={referralState}
+                onCheckReferral={checkReferral}
+                isCheckingReferral={validateReferral.isPending}
                 onRemoveCoupon={() => setAppliedCoupon(null)}
                 onBack={() => setStep("shipping")}
                 onPlaceOrder={() => {
@@ -285,6 +366,8 @@ export default function Checkout() {
                       quantity: i.quantity,
                     })),
                     couponCode: appliedCoupon?.code,
+                    referralCode:
+                      referralState.kind === "valid" ? referralState.code : undefined,
                     researcherType: shipping.researcherType as
                       | "private_researcher"
                       | "lab_company_researcher"
@@ -306,6 +389,7 @@ export default function Checkout() {
                 }}
                 isPlacingOrder={createOrder.isPending || createCheckoutSession.isPending}
                 finalTotal={finalTotal}
+                canPlaceOrder={!quote.isLoading && quoteError === null}
               />
             )}
           </div>
@@ -314,10 +398,13 @@ export default function Checkout() {
           <div className="lg:col-span-1">
             <OrderSummary
               items={items}
-              subtotal={total}
+              subtotal={subtotal}
               discount={discount}
               finalTotal={finalTotal}
               appliedCoupon={appliedCoupon}
+              quotedLines={quoted?.items}
+              isPricing={quote.isLoading}
+              priceError={quoteError}
             />
           </div>
         </div>
@@ -460,6 +547,11 @@ function ShippingStep({
   );
 }
 
+type ReferralState =
+  | { kind: "idle" }
+  | { kind: "valid"; code: string; discountPercent: number }
+  | { kind: "invalid"; message: string };
+
 function PaymentStep({
   couponCode,
   setCouponCode,
@@ -467,10 +559,16 @@ function PaymentStep({
   onApplyCoupon,
   isValidating,
   onRemoveCoupon,
+  referralCode,
+  setReferralCode,
+  referralState,
+  onCheckReferral,
+  isCheckingReferral,
   onBack,
   onPlaceOrder,
   isPlacingOrder,
   finalTotal,
+  canPlaceOrder,
 }: {
   couponCode: string;
   setCouponCode: (c: string) => void;
@@ -478,10 +576,16 @@ function PaymentStep({
   onApplyCoupon: () => void;
   isValidating: boolean;
   onRemoveCoupon: () => void;
+  referralCode: string;
+  setReferralCode: (c: string) => void;
+  referralState: ReferralState;
+  onCheckReferral: (code: string) => void;
+  isCheckingReferral: boolean;
   onBack: () => void;
   onPlaceOrder: () => void;
   isPlacingOrder: boolean;
   finalTotal: number;
+  canPlaceOrder: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -524,6 +628,51 @@ function PaymentStep({
         )}
       </div>
 
+      {/* Referral code */}
+      <div className="lab-card p-6">
+        <h2 className="font-semibold text-lg mb-1">Referral Code</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Optional. Using a friend's code takes 10% off your order.
+        </p>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Enter referral code"
+            value={referralCode}
+            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+            onBlur={(e) => onCheckReferral(e.target.value)}
+            className="lab-input flex-1"
+          />
+          <button
+            onClick={() => onCheckReferral(referralCode)}
+            disabled={!referralCode || isCheckingReferral}
+            className="lab-btn-secondary px-4 whitespace-nowrap"
+          >
+            {isCheckingReferral ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+          </button>
+        </div>
+
+        {referralState.kind === "valid" && (
+          <div className="flex items-center gap-2 mt-3 p-3 rounded-xl bg-green-50 border border-green-200">
+            <Users size={15} className="text-green-600 flex-shrink-0" />
+            <p className="text-sm text-green-700">
+              Referral code <span className="font-medium">{referralState.code}</span> applied —{" "}
+              {referralState.discountPercent}% off.
+            </p>
+          </div>
+        )}
+
+        {referralState.kind === "invalid" && (
+          // Shown before payment, not after: the shopper can clear the field and
+          // continue without a discount rather than being stuck.
+          <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <AlertCircle size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800">{referralState.message}</p>
+          </div>
+        )}
+      </div>
+
       {/* Payment section */}
       <div className="lab-card p-6">
         <h2 className="font-semibold text-lg mb-2">Payment</h2>
@@ -556,7 +705,7 @@ function PaymentStep({
         </button>
         <button
           onClick={onPlaceOrder}
-          disabled={isPlacingOrder}
+          disabled={isPlacingOrder || !canPlaceOrder}
           className="lab-btn-primary flex-1 py-3"
         >
           {isPlacingOrder ? (
@@ -582,12 +731,20 @@ function OrderSummary({
   discount,
   finalTotal,
   appliedCoupon,
+  quotedLines,
+  isPricing,
+  priceError,
 }: {
-  items: Array<{ id: string; productName: string; variationLabel?: string; quantity: number; unitPrice: number; image?: string }>;
+  items: Array<{ id: string; productId: number; variationId?: number; productName: string; variationLabel?: string; quantity: number; unitPrice: number; image?: string }>;
   subtotal: number;
   discount: number;
   finalTotal: number;
   appliedCoupon: { code: string } | null;
+  quotedLines:
+    | Array<{ productId: number; variationId?: number; unitPrice: number; subtotal: number }>
+    | undefined;
+  isPricing: boolean;
+  priceError: string | null;
 }) {
   return (
     <div className="lab-card p-5 sticky top-24">
@@ -612,7 +769,11 @@ function OrderSummary({
               <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
             </div>
             <p className="text-sm font-medium flex-shrink-0">
-              ${(item.unitPrice * item.quantity).toFixed(2)}
+              ${(
+                quotedLines?.find(
+                  (l) => l.productId === item.productId && l.variationId === item.variationId
+                )?.subtotal ?? item.unitPrice * item.quantity
+              ).toFixed(2)}
             </p>
           </div>
         ))}
@@ -627,7 +788,7 @@ function OrderSummary({
           <div className="flex justify-between text-sm text-green-600">
             <span className="flex items-center gap-1">
               <Tag size={12} />
-              {appliedCoupon?.code}
+              Discount
             </span>
             <span>-${discount.toFixed(2)}</span>
           </div>
@@ -638,8 +799,19 @@ function OrderSummary({
         </div>
         <div className="flex justify-between font-semibold text-base border-t border-border pt-2 mt-2">
           <span>Total</span>
-          <span className="text-primary">${finalTotal.toFixed(2)}</span>
+          {isPricing ? (
+            <Loader2 size={15} className="animate-spin text-muted-foreground" />
+          ) : (
+            <span className="text-primary">${finalTotal.toFixed(2)}</span>
+          )}
         </div>
+
+        {priceError && (
+          <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-red-50 border border-red-200">
+            <AlertCircle size={14} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-red-700">{priceError}</p>
+          </div>
+        )}
       </div>
     </div>
   );

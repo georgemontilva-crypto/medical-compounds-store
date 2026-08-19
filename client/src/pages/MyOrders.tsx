@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { FlaskConical, Package, ChevronRight, Clock } from "lucide-react";
+import CompletePaymentButton, { isAwaitingPayment } from "@/components/CompletePaymentButton";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -87,13 +88,21 @@ export default function MyOrders() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap justify-end">
+                      {isAwaitingPayment(order) && (
+                        <span className="lab-badge text-xs font-medium bg-amber-100 text-amber-700">
+                          Payment due
+                        </span>
+                      )}
                       <span
                         className={`lab-badge text-xs font-medium ${STATUS_COLORS[order.status] ?? "bg-secondary text-muted-foreground"}`}
                       >
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </span>
                       <p className="font-semibold text-primary">${Number(order.total).toFixed(2)}</p>
+                      {isAwaitingPayment(order) && (
+                        <CompletePaymentButton orderId={order.id} size="small" />
+                      )}
                       <ChevronRight
                         size={16}
                         className="text-muted-foreground group-hover:text-foreground transition-colors"

@@ -5,6 +5,7 @@ import {
   int,
   mysqlEnum,
   mysqlTable,
+  index,
   text,
   timestamp,
   varchar,
@@ -19,6 +20,8 @@ export const users = mysqlTable("users", {
   passwordHash: varchar("passwordHash", { length: 255 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  // Loyalty points: floor(order total) awarded once an order is paid.
+  points: int("points").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -352,3 +355,78 @@ export const wholesaleApplications = mysqlTable("wholesale_applications", {
 
 export type WholesaleApplication = typeof wholesaleApplications.$inferSelect;
 export type InsertWholesaleApplication = typeof wholesaleApplications.$inferInsert;
+
+// ─── Affiliates ───────────────────────────────────────────────────────────────
+
+/**
+ * One share code per user, created on demand the first time they open the
+ * affiliate section. There is no application or approval step.
+ */
+export const affiliateCodes = mysqlTable("affiliate_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId")
+    .notNull()
+    .unique()
+    .references(() => users.id),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AffiliateCode = typeof affiliateCodes.$inferSelect;
+export type InsertAffiliateCode = typeof affiliateCodes.$inferInsert;
+
+/**
+ * One row per order placed with a referral code.
+ *
+ * "rejected" records a self-referral attempt: the buyer used their own code,
+ * so no discount was given and no commission is owed, but the attempt is kept
+ * for abuse monitoring. Rejected rows always carry commissionAmount 0.00 so a
+ * balance query that forgets its status filter still cannot pay them out.
+ */
+export const affiliateReferrals = mysqlTable(
+  "affiliate_referrals",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    affiliateCodeId: int("affiliateCodeId")
+      .notNull()
+      .references(() => affiliateCodes.id),
+    orderId: int("orderId")
+      .notNull()
+      .references(() => orders.id),
+    // Null when the buyer checked out as a guest.
+    referredUserId: int("referredUserId").references(() => users.id),
+    commissionAmount: decimal("commissionAmount", { precision: 10, scale: 2 })
+      .default("0")
+      .notNull(),
+    status: mysqlEnum("status", ["pending", "eligible", "paid", "rejected"])
+      .default("pending")
+      .notNull(),
+    // Set when a payout request settles this commission, so the accounting is
+    // an explicit link rather than a guess based on timestamps.
+    payoutRequestId: int("payoutRequestId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [index("affiliate_referrals_code_status_idx").on(table.affiliateCodeId, table.status)]
+);
+
+export type AffiliateReferral = typeof affiliateReferrals.$inferSelect;
+export type InsertAffiliateReferral = typeof affiliateReferrals.$inferInsert;
+
+export const affiliatePayoutRequests = mysqlTable(
+  "affiliate_payout_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id),
+    amountRequested: decimal("amountRequested", { precision: 10, scale: 2 }).notNull(),
+    status: mysqlEnum("status", ["pending", "paid", "rejected"]).default("pending").notNull(),
+    requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+    paidAt: timestamp("paidAt"),
+    adminNotes: text("adminNotes"),
+  },
+  (table) => [index("affiliate_payout_requests_user_status_idx").on(table.userId, table.status)]
+);
+
+export type AffiliatePayoutRequest = typeof affiliatePayoutRequests.$inferSelect;
+export type InsertAffiliatePayoutRequest = typeof affiliatePayoutRequests.$inferInsert;

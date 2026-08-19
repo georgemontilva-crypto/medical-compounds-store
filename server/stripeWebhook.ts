@@ -10,6 +10,7 @@ import {
   markOrderRefunded,
 } from "./db";
 import { constructWebhookEvent } from "./stripe";
+import { settleOrderRewards } from "./rewards";
 import { notifyOwner } from "./_core/notification";
 
 export const STRIPE_WEBHOOK_PATH = "/api/stripe/webhook";
@@ -173,6 +174,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   console.log(`Stripe webhook: order ${orderId} marked paid (${paymentReference})`);
+
+  // Behind markOrderPaid returning updated:true, so a redelivered event cannot
+  // award the same points twice.
+  const rewards = await settleOrderRewards(orderId);
+  if (rewards.pointsAwarded > 0 || rewards.referralMadeEligible) {
+    console.log(
+      `Stripe webhook: order ${orderId} rewards — ${rewards.pointsAwarded} points, referral eligible: ${rewards.referralMadeEligible}`
+    );
+  }
 
   try {
     await notifyOwner({

@@ -124,16 +124,26 @@ export function findRestrictedTerms(text: string): string[] {
 }
 
 /**
- * Throws if any product detail from `items`, or any restricted term, appears
- * anywhere in `payload`. Call this at the integration boundary — right before
- * handing the payload to the processor SDK — so a future edit that reintroduces
- * product names fails loudly instead of reaching the merchant account.
+ * Throws if any product detail from `items`, any restricted term, or any value
+ * in `alsoForbidden` appears anywhere in `payload`. Call this at the
+ * integration boundary — right before handing the payload to the processor SDK
+ * — so a future edit that reintroduces product names fails loudly instead of
+ * reaching the merchant account.
+ *
+ * `alsoForbidden` carries the order-specific strings that are none of the
+ * processor's business but are not product text either — an affiliate referral
+ * code, for instance. Without it the guard would have no opinion on them, and
+ * they would stay out of the payload only by construction.
  */
 export function assertPayloadIsSanitized(
   payload: unknown,
-  items: Pick<OrderItem, "productName" | "variationLabel">[]
+  items: Pick<OrderItem, "productName" | "variationLabel">[],
+  alsoForbidden: Array<string | null | undefined> = []
 ): void {
   const strings = collectStrings(payload);
+  const forbidden = alsoForbidden
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map((value) => value.trim().toLowerCase());
 
   for (const text of strings) {
     const restricted = findRestrictedTerms(text);
@@ -143,8 +153,15 @@ export function assertPayloadIsSanitized(
       );
     }
 
+    const haystack = text.toLowerCase();
+
+    for (const value of forbidden) {
+      if (haystack.includes(value)) {
+        throw new Error(`Processor payload leaks forbidden value "${value}" in: "${text}"`);
+      }
+    }
+
     for (const item of items) {
-      const haystack = text.toLowerCase();
       if (haystack.includes(item.productName.toLowerCase())) {
         throw new Error(
           `Processor payload leaks product name "${item.productName}" in: "${text}"`

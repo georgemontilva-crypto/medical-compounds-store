@@ -2,6 +2,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Package, Truck, CheckCircle, XCircle, Clock, CreditCard } from "lucide-react";
 import { Link, useParams } from "wouter";
+import CompletePaymentButton, { isAwaitingPayment } from "@/components/CompletePaymentButton";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   pending: { label: "Pending", color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
@@ -82,6 +83,18 @@ export default function OrderDetail() {
             <h1 className="text-2xl font-bold text-lab-text">Order #{order.id}</h1>
           </div>
         </div>
+
+        {isAwaitingPayment(order) && (
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-5 rounded-2xl bg-amber-50 border border-amber-200">
+            <div>
+              <p className="font-semibold text-amber-900">This order hasn’t been paid yet</p>
+              <p className="text-sm text-amber-800 mt-0.5">
+                Nothing ships until payment goes through. You can finish it now.
+              </p>
+            </div>
+            <CompletePaymentButton orderId={order.id} />
+          </div>
+        )}
 
         {/* Status row */}
         <div className="flex flex-wrap gap-3 mb-6">

@@ -7,12 +7,20 @@ import {
   type BulkDiscountTiers,
 } from "@shared/pricing";
 import {
+  getAffiliateCodeByCode,
   getCouponByCode,
   getProductById,
   getSiteSetting,
+  getUserById,
   getVariationById,
   getWelcomeRedemption,
 } from "./db";
+import {
+  computeReferralCommission,
+  computeReferralDiscount,
+  isSelfReferral,
+  normalizeReferralCode,
+} from "./affiliate";
 
 /**
  * Authoritative order pricing.
@@ -194,6 +202,66 @@ export async function resolveCoupon(
   };
 }
 
+// ─── Referrals ───────────────────────────────────────────────────────────────
+
+export type ReferralRejectionReason = "unknown_code" | "self_referral";
+
+export interface ResolvedReferral {
+  affiliateCodeId: number;
+  ownerUserId: number;
+  code: string;
+  /** Discount granted to the buyer. Zero when the referral was rejected. */
+  discount: number;
+  /** Commission owed to the affiliate. Zero when the referral was rejected. */
+  commission: number;
+  /** Set when the code was refused; the attempt is still recorded. */
+  rejectedReason?: ReferralRejectionReason;
+}
+
+/**
+ * Resolves a referral code against the catalog of affiliates.
+ *
+ * A self-referral resolves to a *rejected* referral rather than an error: the
+ * order still goes through, simply without a discount, and the attempt is
+ * recorded so it shows up in the admin's abuse view. An unknown code resolves
+ * to null — there is nobody to record it against.
+ */
+export async function resolveReferral(
+  code: string,
+  subtotal: number,
+  buyerEmails: Array<string | null | undefined>
+): Promise<ResolvedReferral | null> {
+  const normalized = normalizeReferralCode(code);
+  if (!normalized) return null;
+
+  const affiliateCode = await getAffiliateCodeByCode(normalized);
+  if (!affiliateCode) return null;
+
+  const owner = await getUserById(affiliateCode.userId);
+
+  if (isSelfReferral(buyerEmails, owner?.email)) {
+    return {
+      affiliateCodeId: affiliateCode.id,
+      ownerUserId: affiliateCode.userId,
+      code: affiliateCode.code,
+      // No benefit flows in either direction. Zero rather than the amount that
+      // would have been owed, so a balance query that forgets its status filter
+      // still cannot pay out a rejected row.
+      discount: 0,
+      commission: 0,
+      rejectedReason: "self_referral",
+    };
+  }
+
+  return {
+    affiliateCodeId: affiliateCode.id,
+    ownerUserId: affiliateCode.userId,
+    code: affiliateCode.code,
+    discount: computeReferralDiscount(subtotal),
+    commission: computeReferralCommission(subtotal),
+  };
+}
+
 // ─── Whole-order pricing ─────────────────────────────────────────────────────
 
 export interface PricedOrder {
@@ -202,18 +270,60 @@ export interface PricedOrder {
   discount: number;
   total: number;
   coupon?: ResolvedCoupon;
+  referral?: ResolvedReferral;
+  /** Which discount actually applied, once the two were compared. */
+  appliedDiscount: "none" | "coupon" | "referral";
 }
 
+export interface PriceOrderOptions {
+  couponCode?: string;
+  referralCode?: string;
+  userId?: number;
+  /** Every address that identifies the buyer, for self-referral detection. */
+  buyerEmails?: Array<string | null | undefined>;
+}
+
+/**
+ * Prices a whole order from the database.
+ *
+ * Coupon and referral discounts do not stack — the larger of the two applies.
+ * A referred order already costs the store its commission on top of the
+ * buyer's discount, and letting an aggressive coupon compound on that can put
+ * the order underwater.
+ *
+ * The affiliate's commission is unaffected by which discount wins: they
+ * brought the sale either way.
+ */
 export async function priceOrder(
   lines: RequestedLine[],
-  couponCode: string | undefined,
-  userId?: number
+  options: PriceOrderOptions = {}
 ): Promise<PricedOrder> {
   const items = await priceOrderLines(lines);
   const subtotal = toCents(items.reduce((sum, i) => sum + i.subtotal, 0));
 
-  const coupon = couponCode ? await resolveCoupon(couponCode, subtotal, userId) : undefined;
-  const discount = coupon?.discount ?? 0;
+  const coupon = options.couponCode
+    ? await resolveCoupon(options.couponCode, subtotal, options.userId)
+    : undefined;
+
+  const referral = options.referralCode
+    ? ((await resolveReferral(options.referralCode, subtotal, options.buyerEmails ?? [])) ??
+      undefined)
+    : undefined;
+
+  const couponDiscount = coupon?.discount ?? 0;
+  const referralDiscount = referral?.discount ?? 0;
+
+  let discount = 0;
+  let appliedDiscount: PricedOrder["appliedDiscount"] = "none";
+  if (couponDiscount > 0 || referralDiscount > 0) {
+    if (referralDiscount > couponDiscount) {
+      discount = referralDiscount;
+      appliedDiscount = "referral";
+    } else {
+      discount = couponDiscount;
+      appliedDiscount = "coupon";
+    }
+  }
 
   return {
     items,
@@ -221,5 +331,7 @@ export async function priceOrder(
     discount,
     total: toCents(Math.max(0, subtotal - discount)),
     coupon,
+    referral,
+    appliedDiscount,
   };
 }

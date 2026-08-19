@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
+import { captureReferralFromUrl } from "@/lib/referral";
 import { useEffect } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
@@ -28,6 +29,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
+import MyAccount from "./pages/MyAccount";
 import OrderDetail from "./pages/OrderDetail";
 
 // Admin pages
@@ -46,6 +48,7 @@ import LabTests from "./pages/LabTests";
 import Contact from "./pages/Contact";
 import WholesaleApplication from "./pages/WholesaleApplication";
 import AdminWholesaleApplications from "./pages/admin/AdminWholesaleApplications";
+import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import ScienceApproach from "./pages/ScienceApproach";
 import ScienceManufacturing from "./pages/ScienceManufacturing";
 import ScienceResearchStandards from "./pages/ScienceResearchStandards";
@@ -65,6 +68,7 @@ function PublicRoutes() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/my-account" component={MyAccount} />
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/my-orders/:id" component={OrderDetail} />
       <Route path="/lab-reports/:slug" component={LabReports} />
@@ -102,6 +106,7 @@ function Router() {
       <Route path="/admin/site-images" component={AdminSiteImages} />
       <Route path="/admin/doc-integrity" component={AdminDocIntegrity} />
       <Route path="/admin/wholesale-applications" component={AdminWholesaleApplications} />
+      <Route path="/admin/affiliates" component={AdminAffiliates} />
 
       {/* Everything else is a public store route, always rendered with the shared Footer */}
       <Route>
@@ -110,6 +115,20 @@ function Router() {
       </Route>
     </Switch>
   );
+}
+
+// Captures ?ref=CODE from whatever page the visitor lands on and remembers it
+// for 30 days, so an affiliate still gets credit when the order happens later.
+// Mounted at the app root rather than on Home because a shared product link is
+// the likeliest entry point.
+function ReferralCapture() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    captureReferralFromUrl();
+  }, [location]);
+
+  return null;
 }
 
 function ScrollToTop() {
@@ -182,6 +201,7 @@ function App() {
                   <AgeVerificationModal />
                   <LoadingScreen />
                   <Toaster position="top-right" />
+                  <ReferralCapture />
                   <ScrollToTop />
                   <BackgroundPatternSync />
                   <FaviconSync />
