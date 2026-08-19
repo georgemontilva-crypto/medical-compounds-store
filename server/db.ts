@@ -558,6 +558,85 @@ export async function markOrderPaid(
   return { updated: true };
 }
 
+
+/** Looks an order up by the processor reference stored on it. */
+export async function getOrderByPaymentReference(reference: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.paymentReference, reference))
+    .limit(1);
+  return result[0];
+}
+
+export type OrderWriteResult =
+  | { updated: true }
+  | { updated: false; reason: string };
+
+/**
+ * Records a declined card.
+ *
+ * Only ever a *pending* order becomes "failed". A decline inside Stripe
+ * Checkout does not end the session — the shopper can retry with another card
+ * and succeed seconds later — so this is an intermediate state that a later
+ * markOrderPaid overwrites. The guard is for the reverse case: webhook
+ * deliveries are not ordered, and a payment_failed arriving after the payment
+ * succeeded must not walk a settled order backwards.
+ */
+export async function markOrderPaymentFailed(id: number): Promise<OrderWriteResult> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const existing = await getOrderById(id);
+  if (!existing) return { updated: false, reason: "not_found" };
+  if (existing.paymentStatus !== "pending") {
+    return { updated: false, reason: `payment_status_is_${existing.paymentStatus}` };
+  }
+
+  await db.update(orders).set({ paymentStatus: "failed" }).where(eq(orders.id, id));
+  return { updated: true };
+}
+
+/**
+ * Settles a refund issued from the Stripe Dashboard.
+ *
+ * Only paymentStatus moves: a refund after delivery does not un-deliver the
+ * order, so the fulfillment status is left to the admin. Refunded orders drop
+ * out of sumOrderRevenue() automatically, which filters on "paid".
+ */
+export async function markOrderRefunded(id: number): Promise<OrderWriteResult> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const existing = await getOrderById(id);
+  if (!existing) return { updated: false, reason: "not_found" };
+  if (existing.paymentStatus === "refunded") {
+    return { updated: false, reason: "already_refunded" };
+  }
+
+  await db.update(orders).set({ paymentStatus: "refunded" }).where(eq(orders.id, id));
+  return { updated: true };
+}
+
+/**
+ * Cancels an order whose checkout session expired unpaid.
+ *
+ * paymentStatus is deliberately left "pending": nothing was declined, the
+ * shopper simply never paid, and "failed" would claim a decline that never
+ * happened. See canExpiredSessionCancelOrder for the guards this enforces.
+ */
+export async function cancelExpiredOrder(id: number): Promise<OrderWriteResult> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const existing = await getOrderById(id);
+  if (!existing) return { updated: false, reason: "not_found" };
+
+  await db.update(orders).set({ status: "cancelled" }).where(eq(orders.id, id));
+  return { updated: true };
+}
 export async function countOrders() {
   const db = await getDb();
   if (!db) return 0;

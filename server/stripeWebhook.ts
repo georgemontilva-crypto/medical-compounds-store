@@ -1,10 +1,29 @@
 import express, { type Express } from "express";
 import type Stripe from "stripe";
-import { getOrderById, markOrderPaid } from "./db";
+import type { Order } from "../drizzle/schema";
+import {
+  cancelExpiredOrder,
+  getOrderById,
+  getOrderByPaymentReference,
+  markOrderPaid,
+  markOrderPaymentFailed,
+  markOrderRefunded,
+} from "./db";
 import { constructWebhookEvent } from "./stripe";
 import { notifyOwner } from "./_core/notification";
 
 export const STRIPE_WEBHOOK_PATH = "/api/stripe/webhook";
+
+/**
+ * Events this endpoint acts on. Subscribe exactly these in the Stripe
+ * Dashboard — anything else is verified, acknowledged and ignored.
+ */
+export const HANDLED_EVENT_TYPES = [
+  "checkout.session.completed",
+  "checkout.session.expired",
+  "payment_intent.payment_failed",
+  "charge.refunded",
+] as const;
 
 /**
  * Stripe webhook receiver.
@@ -37,12 +56,25 @@ export function registerStripeWebhook(app: Express) {
       }
 
       try {
-        if (event.type === "checkout.session.completed") {
-          await handleCheckoutSessionCompleted(event.data.object);
+        switch (event.type) {
+          case "checkout.session.completed":
+            await handleCheckoutSessionCompleted(event.data.object);
+            break;
+          case "checkout.session.expired":
+            await handleCheckoutSessionExpired(event.data.object);
+            break;
+          case "payment_intent.payment_failed":
+            await handlePaymentIntentFailed(event.data.object);
+            break;
+          case "charge.refunded":
+            await handleChargeRefunded(event.data.object);
+            break;
+          default:
+            break;
         }
       } catch (err) {
-        // 5xx tells Stripe to retry. markOrderPaid is idempotent, so a retry
-        // after a partial failure is safe.
+        // 5xx tells Stripe to retry. Every handler below is idempotent, so a
+        // retry after a partial failure is safe.
         console.error(`Stripe webhook handler failed for ${event.type}:`, err);
         res.status(500).send("Handler error");
         return;
@@ -53,12 +85,60 @@ export function registerStripeWebhook(app: Express) {
   );
 }
 
+// ─── Pure decision helpers ───────────────────────────────────────────────────
+
+export type OrderPaymentState = Pick<Order, "status" | "paymentStatus" | "paymentReference">;
+
+/** Reads the order id we attached to a session or payment intent. */
+export function readOrderIdFromMetadata(metadata: Stripe.Metadata | null): number | null {
+  const orderId = Number(metadata?.orderId);
+  return Number.isInteger(orderId) && orderId > 0 ? orderId : null;
+}
+
+/**
+ * Whether an expired checkout session should cancel its order.
+ *
+ * Three things must hold, and each rules out a real way this goes wrong:
+ *  - the order is still unpaid, so a settled order is never cancelled;
+ *  - its fulfillment status is untouched, so an admin who already moved it on
+ *    does not get overruled by a 24-hour-old session timing out;
+ *  - the expiring session is the one the order is actually waiting on. A
+ *    superseded session expiring must not cancel an order that has since been
+ *    paid through a newer one — markOrderPaid replaces paymentReference with
+ *    the payment intent, so a paid order can never match a session id here.
+ */
+export function canExpiredSessionCancelOrder(
+  order: OrderPaymentState,
+  sessionId: string
+): boolean {
+  return (
+    order.paymentStatus === "pending" &&
+    order.status === "pending" &&
+    order.paymentReference === sessionId
+  );
+}
+
+/**
+ * Whether a refunded charge covers the whole amount.
+ *
+ * orders.paymentStatus has no partial state, so a partial refund is reported
+ * rather than recorded — claiming "refunded" for a $10 refund on a $250 order
+ * would be worse than leaving it to a human.
+ */
+export function isFullyRefunded(
+  charge: Pick<Stripe.Charge, "amount" | "amount_refunded">
+): boolean {
+  return charge.amount > 0 && charge.amount_refunded >= charge.amount;
+}
+
+// ─── Handlers ────────────────────────────────────────────────────────────────
+
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   // Some payment methods complete the session but settle later.
   if (session.payment_status !== "paid") return;
 
-  const orderId = Number(session.metadata?.orderId);
-  if (!Number.isInteger(orderId) || orderId <= 0) {
+  const orderId = readOrderIdFromMetadata(session.metadata);
+  if (orderId === null) {
     console.warn(`Stripe session ${session.id} has no usable orderId metadata`);
     return;
   }
@@ -102,4 +182,103 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   } catch (e) {
     console.warn("Failed to send payment notification", e);
   }
+}
+
+async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
+  const orderId = readOrderIdFromMetadata(session.metadata);
+  if (orderId === null) {
+    console.warn(`Expired Stripe session ${session.id} has no usable orderId metadata`);
+    return;
+  }
+
+  const order = await getOrderById(orderId);
+  if (!order) {
+    console.warn(`Expired Stripe session ${session.id} references unknown order ${orderId}`);
+    return;
+  }
+
+  if (!canExpiredSessionCancelOrder(order, session.id)) {
+    console.log(
+      `Stripe webhook: session ${session.id} expired but order ${orderId} left alone (status=${order.status}, paymentStatus=${order.paymentStatus})`
+    );
+    return;
+  }
+
+  const result = await cancelExpiredOrder(orderId);
+  console.log(
+    result.updated
+      ? `Stripe webhook: order ${orderId} cancelled — checkout session expired unpaid`
+      : `Stripe webhook: order ${orderId} not cancelled (${result.reason})`
+  );
+}
+
+async function handlePaymentIntentFailed(intent: Stripe.PaymentIntent) {
+  const orderId = readOrderIdFromMetadata(intent.metadata);
+  if (orderId === null) {
+    console.warn(`Failed payment intent ${intent.id} has no usable orderId metadata`);
+    return;
+  }
+
+  // A decline does not end the Checkout session — the shopper can retry with
+  // another card. markOrderPaymentFailed only writes over a pending order, so a
+  // later success still settles it.
+  const result = await markOrderPaymentFailed(orderId);
+  const reason = intent.last_payment_error?.message ?? "unknown reason";
+  console.log(
+    result.updated
+      ? `Stripe webhook: order ${orderId} payment failed (${reason})`
+      : `Stripe webhook: order ${orderId} not marked failed (${result.reason})`
+  );
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  if (!isFullyRefunded(charge)) {
+    console.warn(
+      `Stripe charge ${charge.id} partially refunded (${charge.amount_refunded} of ${charge.amount}) — orders.paymentStatus has no partial state, leaving it for a human`
+    );
+    return;
+  }
+
+  const order = await findOrderForCharge(charge);
+  if (!order) {
+    console.warn(`Refunded Stripe charge ${charge.id} could not be matched to an order`);
+    return;
+  }
+
+  const result = await markOrderRefunded(order.id);
+  if (!result.updated) {
+    console.log(`Stripe webhook: order ${order.id} not marked refunded (${result.reason})`);
+    return;
+  }
+
+  console.log(`Stripe webhook: order ${order.id} marked refunded (charge ${charge.id})`);
+
+  try {
+    await notifyOwner({
+      title: `Refund issued — Order #${order.id}`,
+      content: `Stripe refund confirmed for order #${order.id}.\n\nAmount refunded: $${(charge.amount_refunded / 100).toFixed(2)}\nCharge: ${charge.id}`,
+    });
+  } catch (e) {
+    console.warn("Failed to send refund notification", e);
+  }
+}
+
+/**
+ * A refund arrives as a charge, not an order. The payment intent is what
+ * markOrderPaid stored on the order, so that is the primary key back; the
+ * metadata copy is a fallback for charges created outside our checkout flow.
+ */
+async function findOrderForCharge(charge: Stripe.Charge) {
+  const intentId =
+    typeof charge.payment_intent === "string"
+      ? charge.payment_intent
+      : (charge.payment_intent?.id ?? null);
+
+  if (intentId) {
+    const byReference = await getOrderByPaymentReference(intentId);
+    if (byReference) return byReference;
+  }
+
+  const orderId = readOrderIdFromMetadata(charge.metadata);
+  return orderId === null ? undefined : await getOrderById(orderId);
 }
