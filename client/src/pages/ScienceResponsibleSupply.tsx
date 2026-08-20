@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import Reveal from "@/components/Reveal";
 import { useInView } from "@/hooks/useInView";
 import {
@@ -84,8 +83,7 @@ export default function ScienceResponsibleSupply() {
   const { data: heroImage } = trpc.siteImages.getBySlot.useQuery({ slotKey: "responsible_supply_hero_image" });
 
   return (
-    <div className="min-h-screen bg-white dark:bg-background">
-      <Navbar />
+    <div className="flex-1 bg-white dark:bg-background">
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Reveal>

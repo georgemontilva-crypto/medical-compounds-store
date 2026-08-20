@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import Reveal from "@/components/Reveal";
 import { useInView } from "@/hooks/useInView";
 import { ArrowRight, Check, FileCheck, Beaker } from "lucide-react";
@@ -100,8 +99,7 @@ export default function ScienceResearchStandards() {
   }, [products, categories]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-background">
-      <Navbar />
+    <div className="flex-1 bg-white dark:bg-background">
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Reveal>

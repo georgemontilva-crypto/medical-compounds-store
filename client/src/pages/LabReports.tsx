@@ -1,6 +1,5 @@
 import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import {
   FileText,
   Download,
@@ -35,8 +34,7 @@ export default function LabReports() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen hex-cream">
-        <Navbar />
+      <div className="flex-1 hex-cream">
         <div className="max-w-4xl mx-auto px-6 py-20">
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -50,8 +48,7 @@ export default function LabReports() {
 
   if (!product) {
     return (
-      <div className="min-h-screen hex-cream">
-        <Navbar />
+      <div className="flex-1 hex-cream">
         <div className="max-w-4xl mx-auto px-6 py-20 text-center">
           <p className="text-gray-500">Product not found.</p>
           <Link href="/compounds">
@@ -67,8 +64,7 @@ export default function LabReports() {
   const activeReports = reports.filter((r) => r.active);
 
   return (
-    <div className="min-h-screen hex-cream">
-      <Navbar />
+    <div className="flex-1 hex-cream">
 
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Back link */}

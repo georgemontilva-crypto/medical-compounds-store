@@ -280,6 +280,16 @@
   background-repeat: repeat;
 }
 
+/* The chat assistant is injected by an external script (widget.js), so it can
+   only be positioned from here. It is pinned bottom-right at the maximum
+   z-index, which is exactly where the checkout's mobile pay bar sits — lift it
+   clear of the bar on the one route that renders one. */
+@media (max-width: 1023px) {
+  body[data-checkout-paybar="1"] #lynx-loader-btn {
+    bottom: 6.5rem !important;
+  }
+}
+
 /* ── Lab aesthetic utilities ─────────────────────────────────────────────── */
 @layer utilities {
   .lab-card {

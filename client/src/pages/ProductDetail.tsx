@@ -194,7 +194,7 @@ export default function ProductDetail({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 bg-background">
       <Helmet>
         <title>{ogTitle}</title>
         <meta name="description" content={metaDescription} />

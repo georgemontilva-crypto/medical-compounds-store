@@ -3,7 +3,6 @@ import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { Link, useSearch } from "wouter";
 import { Search, FlaskConical, Plus, Check, ChevronDown, X } from "lucide-react";
-import Navbar from "@/components/Navbar";
 import ProductCard, { VialPlaceholder } from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
 
@@ -200,8 +199,7 @@ export default function Compounds() {
     : STATIC_CATS.map((c, i) => ({ id: i + 1, name: c.name, color: CAT_COLORS[c.name] ?? "#6b7280", count: c.count }));
 
   return (
-    <div className="min-h-screen bg-white dark:bg-background">
-      <Navbar />
+    <div className="flex-1 bg-white dark:bg-background">
       <div className="container py-10">
         {/* Page header */}
         <div className="mb-8">

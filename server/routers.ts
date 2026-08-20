@@ -4,6 +4,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
+import { isSupportedCountry } from "@shared/countries";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -677,9 +678,16 @@ export const appRouter = router({
             phone: z.string().optional(),
             address: z.string(),
             city: z.string(),
-            state: z.string().optional(),
-            zip: z.string().optional(),
-            country: z.string(),
+            // Required rather than optional: a parcel needs a region and a
+            // postal code to actually arrive, and accepting the order without
+            // them only defers the failure to the carrier.
+            state: z.string().min(1, "State / province is required"),
+            zip: z.string().min(1, "ZIP / postal code is required"),
+            // Checked against the list the picker offers, so a client that
+            // skips the select cannot store a country we do not recognise.
+            country: z
+              .string()
+              .refine(isSupportedCountry, "Unrecognised shipping country"),
           }),
           notes: z.string().optional(),
         })

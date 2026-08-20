@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import Reveal from "@/components/Reveal";
 import { VialPlaceholder } from "@/components/ProductCard";
 import { useInView } from "@/hooks/useInView";
@@ -139,8 +138,7 @@ export default function ScienceApproach() {
   const totalCompounds = products.length;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-background">
-      <Navbar />
+    <div className="flex-1 bg-white dark:bg-background">
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Reveal>

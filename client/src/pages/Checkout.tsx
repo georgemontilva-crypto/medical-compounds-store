@@ -5,20 +5,23 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import {
   FlaskConical,
-  ChevronRight,
+  ChevronDown,
   Tag,
   Mail,
-  CreditCard,
   CheckCircle,
   Users,
   AlertCircle,
+  HelpCircle,
   Loader2,
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getStoredReferralCode } from "@/lib/referral";
+import { AFFILIATE_UI_ENABLED } from "@shared/affiliate";
+import { COUNTRIES, DEFAULT_COUNTRY } from "@shared/countries";
 
-type Step = "shipping" | "payment" | "confirmation";
+type Step = "form" | "confirmation";
 
 type ResearcherType =
   | ""
@@ -63,7 +66,7 @@ export default function Checkout() {
   const [, navigate] = useLocation();
 
   const [paymentReturn] = useState(readPaymentReturn);
-  const [step, setStep] = useState<Step>(paymentReturn ? "confirmation" : "shipping");
+  const [step, setStep] = useState<Step>(paymentReturn ? "confirmation" : "form");
   const [shipping, setShipping] = useState<ShippingForm>({
     firstName: "",
     lastName: "",
@@ -73,7 +76,7 @@ export default function Checkout() {
     city: "",
     state: "",
     zip: "",
-    country: "United States",
+    country: DEFAULT_COUNTRY,
     researcherType: "",
     dateOfBirth: "",
   });
@@ -152,7 +155,9 @@ export default function Checkout() {
 
   // ─── Referral ──────────────────────────────────────────────────────────────
   // Prefilled from a ?ref= click captured up to 30 days ago, and editable.
-  const [referralCode, setReferralCode] = useState(() => getStoredReferralCode() ?? "");
+  const [referralCode, setReferralCode] = useState(() =>
+    AFFILIATE_UI_ENABLED ? (getStoredReferralCode() ?? "") : ""
+  );
   const [referralState, setReferralState] = useState<
     | { kind: "idle" }
     | { kind: "valid"; code: string; discountPercent: number }
@@ -187,12 +192,13 @@ export default function Checkout() {
   };
 
   // Validate a code carried in from a ?ref= click as soon as the shopper
-  // reaches this step, so a self-referral is surfaced before they pay rather
+  // reaches the form, so a self-referral is surfaced before they pay rather
   // than only if they happen to touch the field.
   const prefilledReferralChecked = useRef(false);
   useEffect(() => {
     if (prefilledReferralChecked.current) return;
-    if (step !== "payment" || !referralCode.trim()) return;
+    if (!AFFILIATE_UI_ENABLED) return;
+    if (step !== "form" || !referralCode.trim()) return;
     prefilledReferralChecked.current = true;
     checkReferral(referralCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -239,9 +245,53 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total]);
 
+  // The pay bar is fixed to the bottom of the viewport on small screens, which
+  // is where the injected chat widget also lives. index.css lifts the widget
+  // while this flag is set; clearing it on unmount puts it back everywhere else.
+  const showPayBar = step === "form" && items.length > 0;
+  useEffect(() => {
+    if (!showPayBar) return;
+    document.body.setAttribute("data-checkout-paybar", "1");
+    return () => document.body.removeAttribute("data-checkout-paybar");
+  }, [showPayBar]);
+
+  const placeOrder = () => {
+    createOrder.mutate({
+      // Prices and names are re-derived server side; sending them
+      // from here would let the browser set what Stripe charges.
+      items: items.map((i) => ({
+        productId: i.productId,
+        variationId: i.variationId,
+        quantity: i.quantity,
+      })),
+      couponCode: appliedCoupon?.code,
+      referralCode: referralState.kind === "valid" ? referralState.code : undefined,
+      researcherType: shipping.researcherType as
+        | "private_researcher"
+        | "lab_company_researcher"
+        | "government_entity_researcher",
+      dateOfBirth: shipping.dateOfBirth,
+      shipping: {
+        firstName: shipping.firstName,
+        lastName: shipping.lastName,
+        email: shipping.email,
+        phone: shipping.phone,
+        address: shipping.address,
+        city: shipping.city,
+        state: shipping.state,
+        zip: shipping.zip,
+        country: shipping.country,
+      },
+      notes,
+    });
+  };
+
+  const isPlacingOrder = createOrder.isPending || createCheckoutSession.isPending;
+  const canPlaceOrder = !quote.isLoading && quoteError === null;
+
   if (items.length === 0 && step !== "confirmation") {
     return (
-      <div className="min-h-screen hex-cream flex items-center justify-center p-4">
+      <div className="flex-1 hex-cream flex items-center justify-center p-4">
         <div className="lab-card p-8 max-w-md w-full text-center">
           <FlaskConical size={32} className="text-muted-foreground/30 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Your cart is empty</h2>
@@ -255,7 +305,7 @@ export default function Checkout() {
 
   if (step === "confirmation") {
     return (
-      <div className="min-h-screen hex-cream flex items-center justify-center p-4">
+      <div className="flex-1 hex-cream flex items-center justify-center p-4">
         <div className="lab-card p-10 max-w-md w-full text-center">
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
@@ -293,145 +343,112 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen hex-cream">
-      <div className="container py-8">
-        {/* Header */}
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-          <Link href="/"><span className="hover:text-foreground cursor-pointer">Home</span></Link>
-          <ChevronRight size={14} />
-          <Link href="/compounds"><span className="hover:text-foreground cursor-pointer">Compounds</span></Link>
-          <ChevronRight size={14} />
-          <span className="text-foreground font-medium">Checkout</span>
-        </nav>
+    <div className="flex-1 bg-background">
+      {/* pb-28 clears the fixed mobile pay bar; the desktop layout has none. */}
+      <div className="container py-8 pb-28 lg:pb-8">
+        <h1 className="text-3xl font-bold mb-6">Checkout</h1>
 
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-
-        {/* Steps indicator */}
-        <div className="flex items-center gap-2 mb-8">
-          {(["shipping", "payment"] as Step[]).map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              {i > 0 && <ChevronRight size={14} className="text-muted-foreground" />}
-              <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
-                  step === s
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full border flex items-center justify-center text-xs">
-                  {i + 1}
-                </span>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main form */}
-          <div className="lg:col-span-2 space-y-6">
-            {step === "shipping" && (
-              <ShippingStep
-                shipping={shipping}
-                setShipping={setShipping}
-                notes={notes}
-                setNotes={setNotes}
-                onNext={() => setStep("payment")}
-                isAuthenticated={isAuthenticated}
-              />
-            )}
-            {step === "payment" && (
-              <PaymentStep
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!canPlaceOrder || isPlacingOrder) return;
+            placeOrder();
+          }}
+        >
+          {/* The summary leads on mobile — it is what the shopper is deciding
+              about — and moves to the sticky right rail from lg up. */}
+          <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="lg:col-span-1 lg:order-last">
+              <OrderSummary
+                items={items}
+                subtotal={subtotal}
+                discount={discount}
+                finalTotal={finalTotal}
+                appliedCoupon={appliedCoupon}
+                quotedLines={quoted?.items}
+                isPricing={quote.isLoading}
+                priceError={quoteError}
                 couponCode={couponCode}
                 setCouponCode={setCouponCode}
-                appliedCoupon={appliedCoupon}
                 onApplyCoupon={() =>
                   validateCoupon.mutate({ code: couponCode, orderAmount: total })
                 }
-                isValidating={validateCoupon.isPending}
+                isValidatingCoupon={validateCoupon.isPending}
+                onRemoveCoupon={() => setAppliedCoupon(null)}
                 referralCode={referralCode}
                 setReferralCode={setReferralCode}
                 referralState={referralState}
                 onCheckReferral={checkReferral}
                 isCheckingReferral={validateReferral.isPending}
-                onRemoveCoupon={() => setAppliedCoupon(null)}
-                onBack={() => setStep("shipping")}
-                onPlaceOrder={() => {
-                  createOrder.mutate({
-                    // Prices and names are re-derived server side; sending them
-                    // from here would let the browser set what Stripe charges.
-                    items: items.map((i) => ({
-                      productId: i.productId,
-                      variationId: i.variationId,
-                      quantity: i.quantity,
-                    })),
-                    couponCode: appliedCoupon?.code,
-                    referralCode:
-                      referralState.kind === "valid" ? referralState.code : undefined,
-                    researcherType: shipping.researcherType as
-                      | "private_researcher"
-                      | "lab_company_researcher"
-                      | "government_entity_researcher",
-                    dateOfBirth: shipping.dateOfBirth,
-                    shipping: {
-                      firstName: shipping.firstName,
-                      lastName: shipping.lastName,
-                      email: shipping.email,
-                      phone: shipping.phone,
-                      address: shipping.address,
-                      city: shipping.city,
-                      state: shipping.state,
-                      zip: shipping.zip,
-                      country: shipping.country,
-                    },
-                    notes,
-                  });
-                }}
-                isPlacingOrder={createOrder.isPending || createCheckoutSession.isPending}
-                finalTotal={finalTotal}
-                canPlaceOrder={!quote.isLoading && quoteError === null}
+                isPlacingOrder={isPlacingOrder}
+                canPlaceOrder={canPlaceOrder}
               />
-            )}
+            </div>
+
+            <div className="lg:col-span-2 space-y-6">
+              <DetailsForm
+                shipping={shipping}
+                setShipping={setShipping}
+                notes={notes}
+                setNotes={setNotes}
+                isAuthenticated={isAuthenticated}
+              />
+            </div>
           </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <OrderSummary
-              items={items}
-              subtotal={subtotal}
-              discount={discount}
-              finalTotal={finalTotal}
-              appliedCoupon={appliedCoupon}
-              quotedLines={quoted?.items}
-              isPricing={quote.isLoading}
-              priceError={quoteError}
-            />
-          </div>
-        </div>
+          <MobilePayBar
+            finalTotal={finalTotal}
+            isPricing={quote.isLoading}
+            isPlacingOrder={isPlacingOrder}
+            canPlaceOrder={canPlaceOrder}
+          />
+        </form>
       </div>
     </div>
   );
 }
 
-function ShippingStep({
+/** A short "why are you asking?" note attached to a field label. */
+function WhyTooltip({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={text}
+          className="text-muted-foreground/70 hover:text-foreground transition-colors align-middle"
+        >
+          <HelpCircle size={13} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[15rem]">{text}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h2 className="lab-section-title mb-3">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function DetailsForm({
   shipping,
   setShipping,
   notes,
   setNotes,
-  onNext,
   isAuthenticated,
 }: {
   shipping: ShippingForm;
   setShipping: (s: ShippingForm) => void;
   notes: string;
   setNotes: (n: string) => void;
-  onNext: () => void;
   isAuthenticated: boolean;
 }) {
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext();
-  };
+  const [notesOpen, setNotesOpen] = useState(notes.length > 0);
 
   const field = (
     label: string,
@@ -463,48 +480,63 @@ function ShippingStep({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="lab-card p-5 sm:p-6 space-y-7">
       {!isAuthenticated && (
-        <div className="lab-card p-4 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm text-muted-foreground">
-            Checking out as a guest. Have an account?
-          </p>
+        <p className="text-sm text-muted-foreground">
+          Checking out as a guest.{" "}
           <Link href="/login">
-            <button type="button" className="text-sm font-medium text-primary hover:underline">
-              Sign in for faster checkout & order tracking
-            </button>
+            <span className="font-medium text-primary hover:underline cursor-pointer">
+              Sign in
+            </span>
           </Link>
-        </div>
+        </p>
       )}
-      <div className="lab-card p-6">
-        <h2 className="font-semibold text-lg mb-5">Shipping Information</h2>
+
+      <FieldGroup title="Contact">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field("Email", "email", "email", "john@example.com")}
+          {field("Phone", "phone", "tel", "+1 (555) 000-0000", false)}
+        </div>
+      </FieldGroup>
+
+      <FieldGroup title="Shipping address">
         <div className="grid grid-cols-2 gap-4">
           {field("First Name", "firstName", "text", "John")}
           {field("Last Name", "lastName", "text", "Doe")}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          {field("Email", "email", "email", "john@example.com")}
-          {field("Phone", "phone", "tel", "+1 (555) 000-0000", false)}
-        </div>
-        <div className="mt-4">
-          {field("Address", "address", "text", "123 Research Blvd")}
-        </div>
+        <div className="mt-4">{field("Address", "address", "text", "123 Research Blvd")}</div>
         <div className="grid grid-cols-2 gap-4 mt-4">
           {field("City", "city", "text", "New York")}
-          {field("State / Province", "state", "text", "NY", false)}
+          {field("State / Province", "state", "text", "NY")}
         </div>
         <div className="grid grid-cols-2 gap-4 mt-4">
-          {field("ZIP / Postal Code", "zip", "text", "10001", false)}
-          {field("Country", "country", "text", "United States")}
+          {field("ZIP / Postal Code", "zip", "text", "10001")}
+          <div className="min-w-0">
+            <label className="block text-sm font-medium mb-1.5">
+              Country <span className="text-destructive">*</span>
+            </label>
+            <select
+              value={shipping.country}
+              onChange={(e) => setShipping({ ...shipping, country: e.target.value })}
+              className="lab-input"
+              required
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      </FieldGroup>
 
-      <div className="lab-card p-6">
-        <h2 className="font-semibold text-lg mb-5">Additional Required Information</h2>
+      <FieldGroup title="Research use">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">
-              What type of researcher are you? <span className="text-destructive">*</span>
+              Researcher type <span className="text-destructive">*</span>{" "}
+              <WhyTooltip text="Required to confirm these compounds are going to a research setting." />
             </label>
             <select
               value={shipping.researcherType}
@@ -519,31 +551,52 @@ function ShippingStep({
               </option>
               <option value="private_researcher">Private Researcher</option>
               <option value="lab_company_researcher">Lab/Company Researcher</option>
-              <option value="government_entity_researcher">
-                Government Entity Researcher
-              </option>
+              <option value="government_entity_researcher">Government Entity Researcher</option>
             </select>
           </div>
-          {field("Date of Birth", "dateOfBirth", "date", "", true)}
+          <div className="min-w-0">
+            <label className="block text-sm font-medium mb-1.5">
+              Date of Birth <span className="text-destructive">*</span>{" "}
+              <WhyTooltip text="Required to verify you meet the 21+ age requirement." />
+            </label>
+            <div className="overflow-hidden rounded-xl">
+              <input
+                type="date"
+                value={shipping.dateOfBirth}
+                onChange={(e) => setShipping({ ...shipping, dateOfBirth: e.target.value })}
+                className="lab-input min-w-0 max-w-full box-border"
+                style={{ fontSize: 16 }}
+                required
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </FieldGroup>
 
-      <div className="lab-card p-6">
-        <h2 className="font-semibold text-lg mb-4">Order Notes (Optional)</h2>
-        <textarea
-          placeholder="Special instructions or notes for your order..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="lab-input min-h-[80px] resize-none"
-          rows={3}
-        />
+      <div className="border-t border-border pt-5">
+        {notesOpen ? (
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Order notes</label>
+            <textarea
+              placeholder="Special instructions or notes for your order..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="lab-input min-h-[80px] resize-none"
+              rows={3}
+              autoFocus
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setNotesOpen(true)}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            + Add order notes
+          </button>
+        )}
       </div>
-
-      <button type="submit" className="lab-btn-primary w-full py-3">
-        Continue to Payment
-        <ChevronRight size={16} />
-      </button>
-    </form>
+    </div>
   );
 }
 
@@ -552,175 +605,44 @@ type ReferralState =
   | { kind: "valid"; code: string; discountPercent: number }
   | { kind: "invalid"; message: string };
 
-function PaymentStep({
-  couponCode,
-  setCouponCode,
-  appliedCoupon,
-  onApplyCoupon,
-  isValidating,
-  onRemoveCoupon,
-  referralCode,
-  setReferralCode,
-  referralState,
-  onCheckReferral,
-  isCheckingReferral,
-  onBack,
-  onPlaceOrder,
-  isPlacingOrder,
+function MobilePayBar({
   finalTotal,
+  isPricing,
+  isPlacingOrder,
   canPlaceOrder,
 }: {
-  couponCode: string;
-  setCouponCode: (c: string) => void;
-  appliedCoupon: { code: string; discount: number } | null;
-  onApplyCoupon: () => void;
-  isValidating: boolean;
-  onRemoveCoupon: () => void;
-  referralCode: string;
-  setReferralCode: (c: string) => void;
-  referralState: ReferralState;
-  onCheckReferral: (code: string) => void;
-  isCheckingReferral: boolean;
-  onBack: () => void;
-  onPlaceOrder: () => void;
-  isPlacingOrder: boolean;
   finalTotal: number;
+  isPricing: boolean;
+  isPlacingOrder: boolean;
   canPlaceOrder: boolean;
 }) {
   return (
-    <div className="space-y-6">
-      {/* Coupon */}
-      <div className="lab-card p-6">
-        <h2 className="font-semibold text-lg mb-4">Discount Coupon</h2>
-        {appliedCoupon ? (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 border border-green-200">
-            <div className="flex items-center gap-2">
-              <Tag size={16} className="text-green-600" />
-              <span className="text-sm font-medium text-green-700">{appliedCoupon.code}</span>
-              <span className="text-sm text-green-600">
-                — Save ${appliedCoupon.discount.toFixed(2)}
-              </span>
-            </div>
-            <button
-              onClick={onRemoveCoupon}
-              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-            >
-              Remove
-            </button>
-          </div>
+    <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur px-4 py-3 flex items-center gap-3">
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Total</p>
+        {isPricing ? (
+          <Loader2 size={15} className="animate-spin text-muted-foreground" />
         ) : (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Enter coupon code"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              className="lab-input flex-1"
-            />
-            <button
-              onClick={onApplyCoupon}
-              disabled={!couponCode || isValidating}
-              className="lab-btn-secondary px-4 whitespace-nowrap"
-            >
-              {isValidating ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
-            </button>
-          </div>
+          <p className="font-bold text-lg leading-tight">${finalTotal.toFixed(2)}</p>
         )}
       </div>
-
-      {/* Referral code */}
-      <div className="lab-card p-6">
-        <h2 className="font-semibold text-lg mb-1">Referral Code</h2>
-        <p className="text-xs text-muted-foreground mb-4">
-          Optional. Using a friend's code takes 10% off your order.
-        </p>
-
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Enter referral code"
-            value={referralCode}
-            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-            onBlur={(e) => onCheckReferral(e.target.value)}
-            className="lab-input flex-1"
-          />
-          <button
-            onClick={() => onCheckReferral(referralCode)}
-            disabled={!referralCode || isCheckingReferral}
-            className="lab-btn-secondary px-4 whitespace-nowrap"
-          >
-            {isCheckingReferral ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
-          </button>
-        </div>
-
-        {referralState.kind === "valid" && (
-          <div className="flex items-center gap-2 mt-3 p-3 rounded-xl bg-green-50 border border-green-200">
-            <Users size={15} className="text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-700">
-              Referral code <span className="font-medium">{referralState.code}</span> applied —{" "}
-              {referralState.discountPercent}% off.
-            </p>
-          </div>
+      <button
+        type="submit"
+        disabled={isPlacingOrder || !canPlaceOrder}
+        className="lab-btn-primary flex-1 py-3"
+      >
+        {isPlacingOrder ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            Redirecting…
+          </>
+        ) : (
+          <>
+            <Lock size={15} />
+            Pay with Stripe
+          </>
         )}
-
-        {referralState.kind === "invalid" && (
-          // Shown before payment, not after: the shopper can clear the field and
-          // continue without a discount rather than being stuck.
-          <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
-            <AlertCircle size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800">{referralState.message}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Payment section */}
-      <div className="lab-card p-6">
-        <h2 className="font-semibold text-lg mb-2">Payment</h2>
-        <p className="text-sm text-muted-foreground mb-5">
-          You'll pay by card on Stripe's secure checkout page, right after this step.
-        </p>
-
-        <div className="border border-border rounded-xl p-6 text-center">
-          <CreditCard size={32} className="text-muted-foreground/40 mx-auto mb-3" />
-          <p className="font-medium text-sm">Secure card payment</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Continuing takes you to Stripe to complete payment. Your order is
-            confirmed as soon as the payment goes through, and we start
-            processing it right away.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 mt-4 p-3 rounded-xl bg-secondary/50">
-          <Lock size={14} className="text-muted-foreground flex-shrink-0" />
-          <p className="text-xs text-muted-foreground">
-            Card details are entered on Stripe and never touch our servers. For
-            research purposes only.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        <button onClick={onBack} className="lab-btn-secondary flex-1 py-3">
-          Back to Shipping
-        </button>
-        <button
-          onClick={onPlaceOrder}
-          disabled={isPlacingOrder || !canPlaceOrder}
-          className="lab-btn-primary flex-1 py-3"
-        >
-          {isPlacingOrder ? (
-            <>
-              <Loader2 size={16} className="animate-spin" />
-              Redirecting to payment...
-            </>
-          ) : (
-            <>
-              <Lock size={16} />
-              Continue to Payment — ${finalTotal.toFixed(2)}
-            </>
-          )}
-        </button>
-      </div>
+      </button>
     </div>
   );
 }
@@ -734,85 +656,263 @@ function OrderSummary({
   quotedLines,
   isPricing,
   priceError,
+  couponCode,
+  setCouponCode,
+  onApplyCoupon,
+  isValidatingCoupon,
+  onRemoveCoupon,
+  referralCode,
+  setReferralCode,
+  referralState,
+  onCheckReferral,
+  isCheckingReferral,
+  isPlacingOrder,
+  canPlaceOrder,
 }: {
   items: Array<{ id: string; productId: number; variationId?: number; productName: string; variationLabel?: string; quantity: number; unitPrice: number; image?: string }>;
   subtotal: number;
   discount: number;
   finalTotal: number;
-  appliedCoupon: { code: string } | null;
+  appliedCoupon: { code: string; discount: number } | null;
   quotedLines:
     | Array<{ productId: number; variationId?: number; unitPrice: number; subtotal: number }>
     | undefined;
   isPricing: boolean;
   priceError: string | null;
+  couponCode: string;
+  setCouponCode: (c: string) => void;
+  onApplyCoupon: () => void;
+  isValidatingCoupon: boolean;
+  onRemoveCoupon: () => void;
+  referralCode: string;
+  setReferralCode: (c: string) => void;
+  referralState: ReferralState;
+  onCheckReferral: (code: string) => void;
+  isCheckingReferral: boolean;
+  isPlacingOrder: boolean;
+  canPlaceOrder: boolean;
 }) {
+  // Collapsed on mobile so the form starts near the top of the screen; always
+  // open from lg up, where it has its own column and nothing to compete with.
+  const [open, setOpen] = useState(false);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const itemCount = items.reduce((n, i) => n + i.quantity, 0);
+
   return (
-    <div className="lab-card p-5 sticky top-24">
-      <h3 className="font-semibold mb-4">Order Summary</h3>
-      <div className="space-y-3 mb-4">
-        {items.map((item) => (
-          <div key={item.id} className="flex gap-3">
-            <div className="w-12 h-12 rounded-lg bg-secondary flex-shrink-0 overflow-hidden">
-              {item.image ? (
-                <img src={item.image} alt={item.productName} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <FlaskConical size={14} className="text-muted-foreground/30" />
+    <div className="lab-card p-5 lg:sticky lg:top-24">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="lg:hidden w-full flex items-center justify-between gap-3 text-left"
+      >
+        <span className="font-semibold">
+          Order summary
+          <span className="text-muted-foreground font-normal">
+            {" "}
+            · {itemCount} {itemCount === 1 ? "item" : "items"}
+          </span>
+        </span>
+        <span className="flex items-center gap-2 flex-shrink-0">
+          <span className="font-semibold">${finalTotal.toFixed(2)}</span>
+          <ChevronDown
+            size={16}
+            className={`text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </span>
+      </button>
+
+      <h2 className="hidden lg:block font-semibold mb-4">Order summary</h2>
+
+      <div className={`${open ? "block mt-4" : "hidden"} lg:block`}>
+        <div className="space-y-3 mb-4">
+          {items.map((item) => (
+            <div key={item.id} className="flex gap-3">
+              <div className="w-12 h-12 rounded-lg bg-secondary flex-shrink-0 overflow-hidden">
+                {item.image ? (
+                  <img src={item.image} alt={item.productName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FlaskConical size={14} className="text-muted-foreground/30" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{item.productName}</p>
+                {item.variationLabel && (
+                  <p className="text-xs text-muted-foreground">{item.variationLabel}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+              </div>
+              <p className="text-sm font-medium flex-shrink-0">
+                ${(
+                  quotedLines?.find(
+                    (l) => l.productId === item.productId && l.variationId === item.variationId
+                  )?.subtotal ?? item.unitPrice * item.quantity
+                ).toFixed(2)}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Discounts sit with the money, which is where shoppers look for them. */}
+        <div className="border-t border-border pt-4">
+          {appliedCoupon ? (
+            <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-green-50 border border-green-200">
+              <div className="flex items-center gap-2 min-w-0">
+                <Tag size={15} className="text-green-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-green-700 truncate">
+                  {appliedCoupon.code}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onRemoveCoupon}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+              >
+                Remove
+              </button>
+            </div>
+          ) : couponOpen ? (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Coupon code"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                className="lab-input flex-1"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={onApplyCoupon}
+                disabled={!couponCode || isValidatingCoupon}
+                className="lab-btn-secondary px-4 whitespace-nowrap"
+              >
+                {isValidatingCoupon ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCouponOpen(true)}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Have a coupon?
+            </button>
+          )}
+
+          {AFFILIATE_UI_ENABLED && (
+            <div className="mt-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Referral code"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  onBlur={(e) => onCheckReferral(e.target.value)}
+                  className="lab-input flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => onCheckReferral(referralCode)}
+                  disabled={!referralCode || isCheckingReferral}
+                  className="lab-btn-secondary px-4 whitespace-nowrap"
+                >
+                  {isCheckingReferral ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+                </button>
+              </div>
+              {referralState.kind === "valid" && (
+                <div className="flex items-center gap-2 mt-3 p-3 rounded-xl bg-green-50 border border-green-200">
+                  <Users size={15} className="text-green-600 flex-shrink-0" />
+                  <p className="text-sm text-green-700">
+                    Referral code <span className="font-medium">{referralState.code}</span> applied —{" "}
+                    {referralState.discountPercent}% off.
+                  </p>
+                </div>
+              )}
+              {referralState.kind === "invalid" && (
+                // Shown before payment, not after: the shopper can clear the field and
+                // continue without a discount rather than being stuck.
+                <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                  <AlertCircle size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800">{referralState.message}</p>
                 </div>
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{item.productName}</p>
-              {item.variationLabel && (
-                <p className="text-xs text-muted-foreground">{item.variationLabel}</p>
-              )}
-              <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-            </div>
-            <p className="text-sm font-medium flex-shrink-0">
-              ${(
-                quotedLines?.find(
-                  (l) => l.productId === item.productId && l.variationId === item.variationId
-                )?.subtotal ?? item.unitPrice * item.quantity
-              ).toFixed(2)}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-border pt-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
-        </div>
-        {discount > 0 && (
-          <div className="flex justify-between text-sm text-green-600">
-            <span className="flex items-center gap-1">
-              <Tag size={12} />
-              Discount
-            </span>
-            <span>-${discount.toFixed(2)}</span>
-          </div>
-        )}
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Shipping</span>
-          <span className="text-muted-foreground">Calculated at confirmation</span>
-        </div>
-        <div className="flex justify-between font-semibold text-base border-t border-border pt-2 mt-2">
-          <span>Total</span>
-          {isPricing ? (
-            <Loader2 size={15} className="animate-spin text-muted-foreground" />
-          ) : (
-            <span className="text-primary">${finalTotal.toFixed(2)}</span>
           )}
         </div>
 
-        {priceError && (
-          <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-red-50 border border-red-200">
-            <AlertCircle size={14} className="text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-red-700">{priceError}</p>
+        <div className="border-t border-border mt-4 pt-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span>${subtotal.toFixed(2)}</span>
           </div>
-        )}
+          {discount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span className="flex items-center gap-1">
+                <Tag size={12} />
+                Discount
+              </span>
+              <span>-${discount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground flex items-center gap-1">
+              Shipping
+              <WhyTooltip text="Shipping is quoted once we confirm your order — we'll email the final amount before it ships." />
+            </span>
+            <span className="text-muted-foreground">Calculated at confirmation</span>
+          </div>
+          <div className="flex justify-between font-semibold text-base border-t border-border pt-2 mt-2">
+            <span>Total</span>
+            {isPricing ? (
+              <Loader2 size={15} className="animate-spin text-muted-foreground" />
+            ) : (
+              <span className="text-primary">${finalTotal.toFixed(2)}</span>
+            )}
+          </div>
+
+          {priceError && (
+            <div className="flex items-start gap-2 mt-3 p-3 rounded-xl bg-red-50 border border-red-200">
+              <AlertCircle size={14} className="text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700">{priceError}</p>
+            </div>
+          )}
+        </div>
       </div>
+
+      <div className="hidden lg:block mt-5">
+        <button
+          type="submit"
+          disabled={isPlacingOrder || !canPlaceOrder}
+          className="lab-btn-primary w-full py-3"
+        >
+          {isPlacingOrder ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Redirecting to payment…
+            </>
+          ) : (
+            <>
+              <Lock size={15} />
+              Pay ${finalTotal.toFixed(2)} with Stripe
+            </>
+          )}
+        </button>
+      </div>
+
+      <p className="text-xs text-muted-foreground mt-3">
+        Pay securely on Stripe — your card details never touch our servers.
+      </p>
+
+      {/* The one notice on this page with legal weight, kept outside the
+          collapsible body so it is on screen even when the summary is folded,
+          and set apart so it reads as a notice rather than as the tail of the
+          reassurance copy. */}
+      <p className="mt-4 pt-3 border-t border-border text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+        For research purposes only.
+      </p>
     </div>
   );
 }

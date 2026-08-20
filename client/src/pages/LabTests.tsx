@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import Navbar from "@/components/Navbar";
 import { FileText, Download, ExternalLink, ShieldCheck, Hash, Calendar } from "lucide-react";
 import ReadyToStartBanner from "@/components/ReadyToStartBanner";
 
@@ -8,8 +7,7 @@ export default function LabTests() {
   const { data: reports = [], isLoading } = trpc.labReports.recent.useQuery({ limit: 100 });
 
   return (
-    <div className="min-h-screen bg-[#f8f8fa] dark:bg-background">
-      <Navbar />
+    <div className="flex-1 bg-[#f8f8fa] dark:bg-background">
 
       <main className="max-w-5xl mx-auto px-4 py-12">
         {/* Header */}

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CreditCard, Percent, Package, UserCheck, Send, Check } from "lucide-react";
@@ -101,7 +100,7 @@ export default function WholesaleApplication() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8fa] dark:bg-background relative overflow-hidden">
+    <div className="flex-1 bg-[#f8f8fa] dark:bg-background relative overflow-hidden">
       <ParticleBackground
         color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
         particleRadius={3.5}
@@ -110,7 +109,6 @@ export default function WholesaleApplication() {
         linkDistance={150}
         className="absolute inset-0 w-full h-full"
       />
-      <Navbar />
 
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-16">
         {/* Header */}

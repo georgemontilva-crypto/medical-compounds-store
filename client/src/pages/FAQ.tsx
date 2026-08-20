@@ -1,5 +1,4 @@
 import { Link } from "wouter";
-import Navbar from "@/components/Navbar";
 import ReadyToStartBanner from "@/components/ReadyToStartBanner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ChevronRight } from "lucide-react";
@@ -62,7 +61,7 @@ const FAQS: { question: string; answer: string }[] = [
 export default function FAQ() {
   const { theme } = useTheme();
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="flex-1 bg-background relative overflow-hidden">
       <ParticleBackground
         color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
         particleRadius={3.5}
@@ -73,7 +72,6 @@ export default function FAQ() {
       />
 
       <div className="relative z-10">
-        <Navbar />
 
         <main className="max-w-3xl mx-auto px-4 py-16">
           <nav className="flex items-center gap-2 text-sm text-gray-400 mb-8">

@@ -18,6 +18,7 @@ import AgeVerificationModal from "./components/AgeVerificationModal";
 import ComplianceModal from "./components/ComplianceModal";
 import GuestOrRegisterModal from "./components/GuestOrRegisterModal";
 import Footer from "./components/Footer";
+import Navbar from "@/components/Navbar";
 import { initLenis, getLenis } from "@/lib/lenis";
 import "lenis/dist/lenis.css";
 
@@ -91,6 +92,37 @@ function PublicRoutes() {
   );
 }
 
+/**
+ * Shell for every public store route.
+ *
+ * Navbar and Footer live here rather than in each page. The navbar used to be
+ * opt-in per page, which left 13 of the 24 public pages without one at all.
+ *
+ * min-h-screen on a flex column with a flex-1 main is what pins the footer to
+ * the bottom of the viewport when a page is short, while still scrolling
+ * normally when it is long. Pages fill that main area with flex-1 of their own
+ * instead of each setting min-h-screen, which made every page a full viewport
+ * tall on its own and pushed the footer permanently below the fold.
+ *
+ * Checkout is the one public route that opts out of the footer: it is a funnel,
+ * and the full marketing footer is ~1,500px of exit links sitting between the
+ * shopper and the pay button.
+ */
+function PublicShell() {
+  const [location] = useLocation();
+  const isCheckout = location === "/checkout";
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-1 flex flex-col">
+        <PublicRoutes />
+      </main>
+      {!isCheckout && <Footer />}
+    </div>
+  );
+}
+
 function Router() {
   return (
     <Switch>
@@ -108,10 +140,9 @@ function Router() {
       <Route path="/admin/wholesale-applications" component={AdminWholesaleApplications} />
       <Route path="/admin/affiliates" component={AdminAffiliates} />
 
-      {/* Everything else is a public store route, always rendered with the shared Footer */}
+      {/* Everything else is a public store route, inside the shared shell */}
       <Route>
-        <PublicRoutes />
-        <Footer />
+        <PublicShell />
       </Route>
     </Switch>
   );

@@ -5,7 +5,6 @@ import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Link } from "wouter";
 import { ArrowRight, FlaskConical, Plus, Check, Search, ChevronDown, X, Sparkles } from "lucide-react";
-import Navbar from "@/components/Navbar";
 import HeroSlider from "@/components/HeroSlider";
 import Reveal from "@/components/Reveal";
 import ProductCard from "@/components/ProductCard";
@@ -1112,7 +1111,7 @@ export default function Home() {
   const { data: allCategories = [] } = trpc.categories.list.useQuery();
 
   return (
-    <div className="min-h-screen bg-[#f8f8fa] dark:bg-background">
+    <div className="flex-1 bg-[#f8f8fa] dark:bg-background">
       {/* These used to live in index.html, which handed the same pair to every
           route. Declared here they apply to the home page and only the home
           page — the one URL that should actually claim them. */}
@@ -1120,7 +1119,6 @@ export default function Home() {
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://www.brighterdayslabs.com/" />
       </Helmet>
-      <Navbar />
 
       {/* ── HERO SLIDER ──────────────────────────────────────────────────── */}
       <Reveal>

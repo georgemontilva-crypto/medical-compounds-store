@@ -46,7 +46,7 @@ export default function MyOrders() {
   }
 
   return (
-    <div className="min-h-screen hex-cream">
+    <div className="flex-1 hex-cream">
       <div className="container py-8">
         <div className="mb-8">
           <p className="lab-section-title mb-1">Account</p>

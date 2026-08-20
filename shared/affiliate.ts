@@ -16,3 +16,16 @@ export const MIN_PAYOUT_AMOUNT = 25;
 
 /** How long a captured ?ref= code stays attributed to a visitor. */
 export const REFERRAL_ATTRIBUTION_DAYS = 30;
+
+/**
+ * Whether the affiliate program is visible to shoppers.
+ *
+ * Off while Stripe is not live: without the payment webhook a commission can
+ * never move from "pending" to "eligible", so the program would promise a
+ * payout that cannot arrive. The backend stays fully wired and the admin views
+ * stay reachable — this only hides the customer-facing surfaces.
+ *
+ * ?ref= capture keeps running while this is off, so attribution from links
+ * already shared is not lost when it is switched back on.
+ */
+export const AFFILIATE_UI_ENABLED = false;

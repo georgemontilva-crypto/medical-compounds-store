@@ -7,6 +7,7 @@ import {
   MIN_PAYOUT_AMOUNT,
   REFERRAL_COMMISSION_PERCENT,
   REFERRAL_DISCOUNT_PERCENT,
+  AFFILIATE_UI_ENABLED,
 } from "@shared/affiliate";
 import {
   Check,
@@ -68,7 +69,7 @@ export default function MyAccount() {
   }
 
   return (
-    <div className="min-h-screen hex-cream">
+    <div className="flex-1 hex-cream">
       <div className="container py-8 space-y-8">
         <ProfileHeader name={user.name} email={user.email} />
 
@@ -79,7 +80,7 @@ export default function MyAccount() {
           referralCount={stats?.referralCount ?? 0}
         />
 
-        <AffiliateSection />
+        {AFFILIATE_UI_ENABLED && <AffiliateSection />}
 
         <OrderHistorySection orders={orders} />
       </div>
@@ -130,11 +131,15 @@ function StatsGrid({
     { label: "Orders", value: String(orderCount), icon: ShoppingBag },
     { label: "Spent", value: `$${totalSpent.toFixed(2)}`, icon: DollarSign },
     { label: "Points", value: String(points), icon: Star },
-    { label: "Referrals", value: String(referralCount), icon: Users },
+    // Hidden with the rest of the program: a permanent zero would read as a
+    // broken counter rather than a feature that is switched off.
+    ...(AFFILIATE_UI_ENABLED
+      ? [{ label: "Referrals", value: String(referralCount), icon: Users }]
+      : []),
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className={`grid grid-cols-2 gap-4 ${AFFILIATE_UI_ENABLED ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
       {tiles.map(({ label, value, icon: Icon }) => (
         <div key={label} className="lab-card p-5">
           <div className="flex items-center gap-2 mb-2">

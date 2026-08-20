@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import Navbar from "@/components/Navbar";
 import { Mail, MapPin, ChevronRight, Send } from "lucide-react";
 import { toast } from "sonner";
 import ParticleBackground from "@/components/ParticleBackground";
@@ -50,7 +49,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="flex-1 bg-background relative overflow-hidden">
       <ParticleBackground
         color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
         particleRadius={3.5}
@@ -61,7 +60,6 @@ export default function Contact() {
       />
 
       <div className="relative z-10">
-      <Navbar />
 
       <main className="max-w-6xl mx-auto px-4 py-16">
         {/* Header */}
