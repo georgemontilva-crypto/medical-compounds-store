@@ -565,6 +565,10 @@ export async function markOrderPaid(
       paymentStatus: "paid",
       paymentMethod: "stripe",
       paymentReference,
+      // Stamped here rather than in the webhook handler so every path that
+      // marks an order paid records when, and the early return above keeps a
+      // replayed webhook from moving the timestamp on an already-paid order.
+      paidAt: new Date(),
       ...(existing.status === "pending" ? { status: "confirmed" as const } : {}),
     })
     .where(eq(orders.id, id));

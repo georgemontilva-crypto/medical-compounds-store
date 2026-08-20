@@ -169,6 +169,12 @@ export const orders = mysqlTable("orders", {
     .notNull(),
   paymentMethod: varchar("paymentMethod", { length: 50 }),
   paymentReference: varchar("paymentReference", { length: 200 }),
+  // When the money actually arrived, as opposed to when the order was placed.
+  // Nullable because it is only known once payment settles, and because orders
+  // that predate this column never recorded it — revenue reporting falls back
+  // to createdAt for those. Not derivable from updatedAt, which moves on every
+  // subsequent status change.
+  paidAt: timestamp("paidAt"),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

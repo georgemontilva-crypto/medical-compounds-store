@@ -127,6 +127,13 @@
       "when": 1787165794080,
       "tag": "0017_glossy_human_fly",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1787267688325,
+      "tag": "0018_real_starhawk",
+      "breakpoints": true
     }
   ]
 }

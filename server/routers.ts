@@ -6,6 +6,26 @@ import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { isSupportedCountry } from "@shared/countries";
 import { AGE_REQUIREMENT_MESSAGE, isOfLegalAge } from "@shared/age";
+import {
+  ABANDONED_GRACE_HOURS,
+  ANALYTICS_RANGES,
+  ANALYTICS_RANGE_KEYS,
+  DEFAULT_RANGE,
+  conversionRate,
+  fillSalesGaps,
+  fillStatusCounts,
+  rangeStart,
+} from "@shared/analytics";
+import {
+  getAbandonedCheckouts,
+  getCustomerMix,
+  getOrdersByStatus,
+  getRecentAbandonedCheckouts,
+  getRevenueSummary,
+  getSalesOverTime,
+  getSlowestProducts,
+  getTopProducts,
+} from "./analytics";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -1247,6 +1267,73 @@ export const appRouter = router({
         })
       )
       .mutation(({ input: { slotKey, ...data } }) => upsertHeroSlideConfig(slotKey, data)),
+  }),
+
+  // ─── Analytics (admin dashboard) ──────────────────────────────────────────
+  // Split into three procedures rather than one payload so the granularity
+  // toggle refetches only the sales series, and a slow product query cannot
+  // hold up the headline figures.
+  analytics: router({
+    summary: adminProcedure
+      .input(z.object({ range: z.enum(ANALYTICS_RANGE_KEYS).default(DEFAULT_RANGE) }))
+      .query(async ({ input }) => {
+        const since = rangeStart(input.range);
+
+        const [revenue, statuses, customers, abandoned, recentAbandoned] = await Promise.all([
+          getRevenueSummary(since),
+          getOrdersByStatus(since),
+          getCustomerMix(),
+          getAbandonedCheckouts(since, ABANDONED_GRACE_HOURS),
+          getRecentAbandonedCheckouts(ABANDONED_GRACE_HOURS, 5),
+        ]);
+
+        return {
+          since,
+          revenue,
+          statuses: fillStatusCounts(statuses),
+          customers,
+          abandoned,
+          recentAbandoned,
+          conversionRate: conversionRate(revenue.orders, abandoned.count),
+          graceHours: ABANDONED_GRACE_HOURS,
+        };
+      }),
+
+    salesOverTime: adminProcedure
+      .input(
+        z.object({
+          range: z.enum(ANALYTICS_RANGE_KEYS).default(DEFAULT_RANGE),
+          granularity: z.enum(["day", "week", "month"]).optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        const granularity = input.granularity ?? ANALYTICS_RANGES[input.range].granularity;
+        const since = rangeStart(input.range);
+        const points = await getSalesOverTime(since, granularity);
+
+        return {
+          granularity,
+          // Zero-filled here rather than in the browser so every consumer of
+          // this procedure sees the same complete series.
+          points: fillSalesGaps(points, since, new Date(), granularity),
+        };
+      }),
+
+    products: adminProcedure
+      .input(
+        z.object({
+          range: z.enum(ANALYTICS_RANGE_KEYS).default(DEFAULT_RANGE),
+          limit: z.number().int().min(1).max(50).default(8),
+        })
+      )
+      .query(async ({ input }) => {
+        const since = rangeStart(input.range);
+        const [top, slowest] = await Promise.all([
+          getTopProducts(since, input.limit),
+          getSlowestProducts(since, input.limit),
+        ]);
+        return { top, slowest };
+      }),
   }),
 
   // ─── Site Settings (admin-editable text values) ───────────────────────────

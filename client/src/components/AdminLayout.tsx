@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Building2,
   Share2,
+  BarChart3,
 } from "lucide-react";
 import { useState, ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/lab-reports", label: "Lab Reports", icon: FileText },
