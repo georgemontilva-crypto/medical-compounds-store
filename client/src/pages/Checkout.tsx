@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getStoredReferralCode } from "@/lib/referral";
 import { AFFILIATE_UI_ENABLED } from "@shared/affiliate";
 import { COUNTRIES, DEFAULT_COUNTRY } from "@shared/countries";
+import { AGE_REQUIREMENT_MESSAGE, MINIMUM_AGE, isOfLegalAge } from "@shared/age";
 
 type Step = "form" | "confirmation";
 
@@ -289,6 +290,13 @@ export default function Checkout() {
   const isPlacingOrder = createOrder.isPending || createCheckoutSession.isPending;
   const canPlaceOrder = !quote.isLoading && quoteError === null;
 
+  // Shown only once a date has been entered: an empty field is the browser's
+  // `required` to complain about, not an age failure to accuse someone of.
+  const ageError =
+    shipping.dateOfBirth && !isOfLegalAge(shipping.dateOfBirth)
+      ? AGE_REQUIREMENT_MESSAGE
+      : null;
+
   if (items.length === 0 && step !== "confirmation") {
     return (
       <div className="flex-1 hex-cream flex items-center justify-center p-4">
@@ -352,6 +360,14 @@ export default function Checkout() {
           onSubmit={(e) => {
             e.preventDefault();
             if (!canPlaceOrder || isPlacingOrder) return;
+            // The server rejects an underage order anyway; stopping here turns
+            // that into an explanation next to the field instead of a failed
+            // request after the shopper has committed to paying.
+            if (!isOfLegalAge(shipping.dateOfBirth)) {
+              toast.error(AGE_REQUIREMENT_MESSAGE);
+              document.getElementById("dob-error")?.scrollIntoView({ block: "center" });
+              return;
+            }
             placeOrder();
           }}
         >
@@ -392,6 +408,7 @@ export default function Checkout() {
                 notes={notes}
                 setNotes={setNotes}
                 isAuthenticated={isAuthenticated}
+                ageError={ageError}
               />
             </div>
           </div>
@@ -441,12 +458,14 @@ function DetailsForm({
   notes,
   setNotes,
   isAuthenticated,
+  ageError,
 }: {
   shipping: ShippingForm;
   setShipping: (s: ShippingForm) => void;
   notes: string;
   setNotes: (n: string) => void;
   isAuthenticated: boolean;
+  ageError: string | null;
 }) {
   const [notesOpen, setNotesOpen] = useState(notes.length > 0);
 
@@ -557,18 +576,27 @@ function DetailsForm({
           <div className="min-w-0">
             <label className="block text-sm font-medium mb-1.5">
               Date of Birth <span className="text-destructive">*</span>{" "}
-              <WhyTooltip text="Required to verify you meet the 21+ age requirement." />
+              <WhyTooltip text={`Required to verify you meet the ${MINIMUM_AGE}+ age requirement.`} />
             </label>
             <div className="overflow-hidden rounded-xl">
               <input
                 type="date"
                 value={shipping.dateOfBirth}
                 onChange={(e) => setShipping({ ...shipping, dateOfBirth: e.target.value })}
-                className="lab-input min-w-0 max-w-full box-border"
+                className={`lab-input min-w-0 max-w-full box-border${
+                  ageError ? " border-destructive focus:border-destructive" : ""
+                }`}
                 style={{ fontSize: 16 }}
+                aria-invalid={ageError ? true : undefined}
+                aria-describedby={ageError ? "dob-error" : undefined}
                 required
               />
             </div>
+            {ageError && (
+              <p id="dob-error" role="alert" className="text-xs text-destructive mt-1.5">
+                {ageError}
+              </p>
+            )}
           </div>
         </div>
       </FieldGroup>

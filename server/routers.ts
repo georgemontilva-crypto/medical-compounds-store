@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { isSupportedCountry } from "@shared/countries";
+import { AGE_REQUIREMENT_MESSAGE, isOfLegalAge } from "@shared/age";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -670,7 +671,14 @@ export const appRouter = router({
             "lab_company_researcher",
             "government_entity_researcher",
           ]),
-          dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date of birth"),
+          // Shape first, then the actual requirement. The browser runs this same
+          // check, but that one is a convenience — this is the one that decides,
+          // because nothing stops a client from posting straight here. Evaluated
+          // per request, so eligibility is judged at the time of the order.
+          dateOfBirth: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date of birth")
+            .refine((value) => isOfLegalAge(value), AGE_REQUIREMENT_MESSAGE),
           shipping: z.object({
             firstName: z.string(),
             lastName: z.string(),

@@ -105,7 +105,7 @@ describe("isSelfReferral", () => {
   });
 
   it("allows a genuine referral", () => {
-    expect(isSelfReferral(["friend@example.com", null], owner)).toBe(false);
+    expect(isSelfReferral(["colleague@example.com", null], owner)).toBe(false);
   });
 
   it("does not match when the affiliate has no email on record", () => {

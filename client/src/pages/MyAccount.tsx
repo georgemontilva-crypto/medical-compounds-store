@@ -210,7 +210,7 @@ function AffiliateSection() {
           <h2 className="font-semibold text-lg">Affiliate Program</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-5">
-          Share your code. Your referral gets {REFERRAL_DISCOUNT_PERCENT}% off their order, and
+          Share your code. Your colleague gets {REFERRAL_DISCOUNT_PERCENT}% off their order, and
           you earn {REFERRAL_COMMISSION_PERCENT}% commission on it.
         </p>
 
@@ -355,7 +355,7 @@ function AffiliateFaq({ minPayout }: { minPayout: number }) {
   const faqs = [
     {
       q: "How do I earn commission?",
-      a: `Share your code or link. When someone orders with it, they get ${REFERRAL_DISCOUNT_PERCENT}% off and you earn ${REFERRAL_COMMISSION_PERCENT}% of that order's subtotal.`,
+      a: `Share your code or link. When a colleague orders with it, they get ${REFERRAL_DISCOUNT_PERCENT}% off and you earn ${REFERRAL_COMMISSION_PERCENT}% of that order's subtotal.`,
     },
     {
       q: "When does a commission become payable?",
@@ -367,7 +367,7 @@ function AffiliateFaq({ minPayout }: { minPayout: number }) {
     },
     {
       q: "How long does my link stay attributed?",
-      a: "30 days from the click. If someone visits through your link and orders three weeks later, it still counts as your referral.",
+      a: "30 days from the click. If a colleague visits through your link and orders three weeks later, it still counts as your referral.",
     },
     {
       q: "Can I use my own code?",
