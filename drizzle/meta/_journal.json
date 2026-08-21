@@ -141,6 +141,13 @@
       "when": 1787271598097,
       "tag": "0019_bright_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1787281929340,
+      "tag": "0020_first_the_hand",
+      "breakpoints": true
     }
   ]
 }

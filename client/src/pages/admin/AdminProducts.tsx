@@ -30,9 +30,6 @@ type ProductForm = {
   casNumber: string;
   excludeFromBulkDiscount: boolean;
   weightOz: string;
-  lengthIn: string;
-  widthIn: string;
-  heightIn: string;
 };
 
 const emptyForm: ProductForm = {
@@ -48,9 +45,6 @@ const emptyForm: ProductForm = {
   casNumber: "",
   excludeFromBulkDiscount: false,
   weightOz: "",
-  lengthIn: "",
-  widthIn: "",
-  heightIn: "",
 };
 
 type VariationForm = {
@@ -157,7 +151,7 @@ export default function AdminProducts() {
     }
   };
 
-  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null; lengthIn?: string | null; widthIn?: string | null; heightIn?: string | null }) => {
+  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null }) => {
     setEditingId(p.id);
     setForm({
       name: p.name,
@@ -172,9 +166,6 @@ export default function AdminProducts() {
       casNumber: p.casNumber ?? "",
       excludeFromBulkDiscount: p.excludeFromBulkDiscount ?? false,
       weightOz: p.weightOz ?? "",
-      lengthIn: p.lengthIn ?? "",
-      widthIn: p.widthIn ?? "",
-      heightIn: p.heightIn ?? "",
     });
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -310,61 +301,31 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              {/* Shipping — what the carrier is quoted on. Left blank until
-                  someone weighs the product; a guessed weight is a real charge
-                  that is wrong. */}
+              {/* Shipping. Only the weight lives here, and only as an
+                  exception: box dimensions belong to the box an order ships in,
+                  which depends on how many units it holds. */}
               <div className="border-t border-border pt-5">
                 <p className="lab-section-title mb-1">Shipping</p>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Used to quote carrier rates. A product with no weight cannot be shipped —
-                  leave blank rather than guessing.
-                </p>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Weight</label>
-                    <div className="relative">
-                      <input
-                        className="lab-input pr-10"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={form.weightOz}
-                        onChange={(e) => setForm({ ...form, weightOz: e.target.value })}
-                        placeholder="2.5"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        oz
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Shipped weight in ounces, including vial and packaging.
-                    </p>
+                <div className="max-w-sm">
+                  <label className="block text-sm font-medium mb-1.5">Weight override</label>
+                  <div className="relative">
+                    <input
+                      className="lab-input pr-10"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.weightOz}
+                      onChange={(e) => setForm({ ...form, weightOz: e.target.value })}
+                      placeholder="Standard vial weight"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      oz
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">
-                      Dimensions <span className="text-muted-foreground font-normal">(L × W × H)</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      {(["lengthIn", "widthIn", "heightIn"] as const).map((key, i) => (
-                        <div key={key} className="flex items-center gap-2 min-w-0">
-                          {i > 0 && <span className="text-muted-foreground text-sm">×</span>}
-                          <input
-                            className="lab-input min-w-0"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={form[key]}
-                            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                            placeholder={["6", "4", "2"][i]}
-                            aria-label={["Length", "Width", "Height"][i] + " in inches"}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Outer package dimensions in inches.
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Leave empty for standard vials. Only set this for items that genuinely
+                    differ — BAC Water, kits, multi-vial packs, accessories.
+                  </p>
                 </div>
               </div>
               <div>

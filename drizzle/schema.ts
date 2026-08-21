@@ -65,20 +65,20 @@ export const products = mysqlTable("products", {
   mechanism: text("mechanism"),
   casNumber: varchar("casNumber", { length: 50 }),
   excludeFromBulkDiscount: boolean("excludeFromBulkDiscount").default(false).notNull(),
-  // ─── Shipping dimensions ───────────────────────────────────────────────────
-  // Nullable because no product carried these before carrier rating existed.
-  // A product with no weight cannot be quoted, and the checkout says so rather
-  // than guessing — a guessed weight is a real charge that is wrong.
+  // ─── Shipping weight ───────────────────────────────────────────────────────
+  // An override, not a requirement. Almost every product here is a standard
+  // vial, and the shop-wide default in shipping settings covers those; this is
+  // for the ones that genuinely differ — bacteriostatic water, kits, multi-vial
+  // packs, accessories.
   //
   // Ounces rather than pounds: a peptide vial weighs a fraction of a pound, and
   // storing 0.05 lb loses the precision that decides a rate band. Converted to
   // the pounds UPS wants at the edge of the API call.
+  //
+  // No dimensions here. UPS rates the box an order ships in, not the product,
+  // and which box that is depends on how many units the order holds — so the
+  // dimensions live with the boxes in shipping settings.
   weightOz: decimal("weightOz", { precision: 8, scale: 2 }),
-  // Outer packaging, in inches. Product-level only: the box a 10 mL and a 30 mL
-  // bottle ship in is the same box.
-  lengthIn: decimal("lengthIn", { precision: 8, scale: 2 }),
-  widthIn: decimal("widthIn", { precision: 8, scale: 2 }),
-  heightIn: decimal("heightIn", { precision: 8, scale: 2 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -18,12 +18,12 @@ import {
 } from "@shared/analytics";
 import {
   SHIPPING_SETTINGS_KEY,
-  isOriginComplete,
+  isReadyToQuote,
   parseShippingSettings,
+  shippingReadiness,
   shippingSettingsSchema,
 } from "@shared/shipping";
 import {
-  countProductsMissingWeight,
   getAbandonedCheckouts,
   getCustomerMix,
   getOrdersByStatus,
@@ -408,9 +408,6 @@ export const appRouter = router({
           casNumber: z.string().optional(),
           excludeFromBulkDiscount: z.boolean().optional(),
           weightOz: optionalDecimal,
-          lengthIn: optionalDecimal,
-          widthIn: optionalDecimal,
-          heightIn: optionalDecimal,
         })
       )
       .mutation(({ input }) => createProduct(input)),
@@ -431,9 +428,6 @@ export const appRouter = router({
           casNumber: z.string().optional(),
           excludeFromBulkDiscount: z.boolean().optional(),
           weightOz: optionalDecimal,
-          lengthIn: optionalDecimal,
-          widthIn: optionalDecimal,
-          heightIn: optionalDecimal,
         })
       )
       .mutation(({ input }) => {
@@ -1379,10 +1373,10 @@ export const appRouter = router({
       const settings = parseShippingSettings(row?.value);
       return {
         settings,
-        originComplete: isOriginComplete(settings.origin),
         // Surfaced so the settings page can say what is still missing rather
         // than leaving the admin to discover it at the first failed quote.
-        productsMissingWeight: await countProductsMissingWeight(),
+        readiness: shippingReadiness(settings),
+        readyToQuote: isReadyToQuote(settings),
       };
     }),
 
@@ -1390,7 +1384,11 @@ export const appRouter = router({
       .input(shippingSettingsSchema)
       .mutation(async ({ input }) => {
         await setSiteSetting(SHIPPING_SETTINGS_KEY, JSON.stringify(input));
-        return { settings: input, originComplete: isOriginComplete(input.origin) };
+        return {
+          settings: input,
+          readiness: shippingReadiness(input),
+          readyToQuote: isReadyToQuote(input),
+        };
       }),
   }),
 

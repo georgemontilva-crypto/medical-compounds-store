@@ -315,32 +315,3 @@ export async function getRecentAbandonedCheckouts(graceHours: number, limit: num
     createdAt: r.createdAt,
   }));
 }
-
-/**
- * How many active products cannot be weighed, and so cannot be shipped.
- *
- * A product counts as weighable when it has its own weight, or when every one
- * of its active variations carries an override. Reported as a count so the
- * shipping settings page can warn before the first quote fails rather than
- * after.
- */
-export async function countProductsMissingWeight(): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const result = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(products)
-    .where(
-      and(
-        eq(products.active, true),
-        sql`${products.weightOz} is null`,
-        sql`not exists (
-          select 1 from product_variations pv
-          where pv.productId = ${products.id} and pv.active = 1 and pv.weightOz is not null
-        )`
-      )
-    );
-
-  return Number(result[0]?.count ?? 0);
-}
