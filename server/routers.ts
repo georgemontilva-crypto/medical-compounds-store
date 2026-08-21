@@ -18,11 +18,15 @@ import {
 } from "@shared/analytics";
 import {
   SHIPPING_SETTINGS_KEY,
+  computePackage,
+  enabledServices,
   isReadyToQuote,
   parseShippingSettings,
   shippingReadiness,
   shippingSettingsSchema,
 } from "@shared/shipping";
+import { createShippingLabel, getShippingRates, isUpsSandbox } from "./ups";
+import { cartFingerprint, resolveQuotedRate, storeQuote } from "./shippingQuotes";
 import {
   getAbandonedCheckouts,
   getCustomerMix,
@@ -127,6 +131,10 @@ import {
   getUserById,
   getUserOrderStats,
   settlePayoutRequest,
+  saveShippingLabel,
+  getShippingLabelSummary,
+  getShippingLabelImage,
+  markOrderShipped,
 } from "./db";
 import { storagePut } from "./storage";
 import { compressImage } from "./imageProcessing";
@@ -194,6 +202,34 @@ const optionalDecimal = z
     const n = Number(s);
     return Number.isFinite(n) && n > 0 ? s : null;
   });
+
+/**
+ * The shipping option a shopper chose, priced from what this server quoted.
+ *
+ * The browser sends an opaque quote id and a service code and never a price.
+ * Anything that fails to line up — an expired quote, a cart edited after
+ * quoting, a service that was not among the offers — resolves to no shipping
+ * rather than to a guess, so the worst case is a checkout that asks the shopper
+ * to pick again, never an order that charges the wrong amount.
+ */
+function resolveChosenShipping(input: {
+  items: Array<{ productId: number; variationId?: number; quantity: number }>;
+  shippingQuoteId?: string;
+  shippingService?: string;
+  shippingZip?: string;
+}): { serviceCode: string; serviceName: string; amount: number } | null {
+  if (!input.shippingQuoteId || !input.shippingService || !input.shippingZip) return null;
+
+  const hash = cartFingerprint(input.items, input.shippingZip);
+  const found = resolveQuotedRate(input.shippingQuoteId, input.shippingService, hash);
+  if (!found.ok) return null;
+
+  return {
+    serviceCode: found.rate.serviceCode,
+    serviceName: found.rate.serviceName,
+    amount: found.rate.amount,
+  };
+}
 
 const WHOLESALE_VOLUME_LABELS: Record<string, string> = {
   "25k_50k": "$25,000 - $50,000",
@@ -675,20 +711,33 @@ export const appRouter = router({
           couponCode: z.string().optional(),
           referralCode: z.string().optional(),
           email: z.string().optional(),
+          shippingQuoteId: z.string().optional(),
+          shippingService: z.string().max(10).optional(),
+          // Part of what a quote was for: rates depend on the destination, so a
+          // quote taken for one postcode must not price another.
+          shippingZip: z.string().max(20).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
+        // Looked up, not received: the browser names a service, the price comes
+        // from what this server quoted for this exact cart.
+        const chosen = resolveChosenShipping(input);
+
         const priced = await priceOrder(input.items, {
           couponCode: input.couponCode,
           referralCode: input.referralCode,
           userId: ctx.user?.id,
           buyerEmails: [input.email, ctx.user?.email],
+          shipping: chosen?.amount ?? 0,
         });
 
         return {
           items: priced.items,
           subtotal: priced.subtotal,
           discount: priced.discount,
+          shipping: priced.shipping,
+          shippingService: chosen?.serviceCode ?? null,
+          shippingServiceName: chosen?.serviceName ?? null,
           total: priced.total,
           appliedDiscount: priced.appliedDiscount,
           couponCode: priced.coupon?.code,
@@ -712,6 +761,8 @@ export const appRouter = router({
           ),
           couponCode: z.string().optional(),
           referralCode: z.string().optional(),
+          shippingQuoteId: z.string().optional(),
+          shippingService: z.string().max(10).optional(),
           researcherType: z.enum([
             "private_researcher",
             "lab_company_researcher",
@@ -747,6 +798,15 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        // Re-resolved here against the address actually being shipped to, so a
+        // quote taken for one destination cannot pay for another.
+        const chosenShipping = resolveChosenShipping({
+          items: input.items,
+          shippingQuoteId: input.shippingQuoteId,
+          shippingService: input.shippingService,
+          shippingZip: input.shipping.zip,
+        });
+
         const priced = await priceOrder(input.items, {
           couponCode: input.couponCode,
           referralCode: input.referralCode,
@@ -754,6 +814,7 @@ export const appRouter = router({
           // Both addresses that identify the buyer, so a self-referral cannot
           // hide behind a different shipping email.
           buyerEmails: [input.shipping.email, ctx.user?.email],
+          shipping: chosenShipping?.amount ?? 0,
         });
         const { subtotal, discount, total } = priced;
 
@@ -762,6 +823,12 @@ export const appRouter = router({
           subtotal: subtotal.toFixed(2),
           discountAmount: discount.toFixed(2),
           total: total.toFixed(2),
+          // The name is stored as well as the code: it is what the shopper was
+          // shown and agreed to, and re-deriving it later would rewrite that if
+          // the shop ever changes which services it offers.
+          shippingService: chosenShipping?.serviceCode,
+          shippingServiceName: chosenShipping?.serviceName,
+          shippingCost: priced.shipping.toFixed(2),
           couponId: priced.appliedDiscount === "coupon" ? priced.coupon?.id : undefined,
           couponCode: priced.appliedDiscount === "coupon" ? priced.coupon?.code : undefined,
           researcherType: input.researcherType,
@@ -1368,6 +1435,214 @@ export const appRouter = router({
   // the way in and on the way out, so a hand-edited or older-shaped row cannot
   // reach the carrier code.
   shipping: router({
+    /**
+     * Live carrier rates for a cart going to one address.
+     *
+     * Public, because the shopper quoting it has not signed in. It reads the
+     * catalogue and the shop's own settings and returns prices — it writes
+     * nothing and exposes nothing about an order.
+     *
+     * Never throws on a carrier problem. A failed quote comes back as a reason
+     * the checkout can explain and carry on from; letting UPS decide whether
+     * this page renders would put the shop's revenue behind their uptime.
+     */
+    getRates: publicProcedure
+      .input(
+        z.object({
+          items: z.array(
+            z.object({
+              productId: z.number(),
+              variationId: z.number().optional(),
+              quantity: z.number().int().min(1).max(999),
+            })
+          ),
+          destination: z.object({
+            name: z.string().max(100).default(""),
+            street: z.string().min(1).max(200),
+            city: z.string().min(1).max(100),
+            state: z.string().min(1).max(100),
+            zip: z.string().min(1).max(20),
+          }),
+        })
+      )
+      .query(async ({ input }) => {
+        if (input.items.length === 0) {
+          return { ok: false as const, kind: "no_rates" as const, message: "Your cart is empty." };
+        }
+
+        const settings = parseShippingSettings(
+          (await getSiteSetting(SHIPPING_SETTINGS_KEY))?.value
+        );
+        if (!isReadyToQuote(settings)) {
+          // Our own configuration is incomplete. Logged as a shop problem, and
+          // reported to the shopper as an outage rather than an explanation.
+          console.error("[shipping] not ready to quote:", shippingReadiness(settings));
+          return {
+            ok: false as const,
+            kind: "not_ready" as const,
+            message: "Shipping rates are unavailable right now. Please contact us to order.",
+          };
+        }
+
+        // Weights come from the catalogue, never from the browser: a client that
+        // could set its own weight could set its own shipping price.
+        const lines = [];
+        for (const item of input.items) {
+          const product = await getProductById(item.productId);
+          if (!product) continue;
+          const variation = item.variationId
+            ? await getVariationById(item.variationId)
+            : undefined;
+          lines.push({
+            productName: product.name,
+            quantity: item.quantity,
+            product: { weightOz: product.weightOz },
+            variation: variation ? { weightOz: variation.weightOz } : null,
+          });
+        }
+
+        const shipment = computePackage(lines, settings);
+        const result = await getShippingRates(settings, shipment, input.destination);
+
+        if (!result.ok) {
+          if (result.detail) console.error(`[shipping] ${result.kind}: ${result.detail}`);
+          return { ok: false as const, kind: result.kind, message: result.message };
+        }
+
+        return {
+          ok: true as const,
+          // Opaque handle. The client returns this with a service code, and the
+          // price is read from the server's own memory of what it quoted.
+          quoteId: storeQuote(result.rates, cartFingerprint(input.items, input.destination.zip)),
+          rates: result.rates,
+          // Shown in the admin, and useful when a quote looks wrong.
+          package: {
+            units: shipment.units,
+            totalOz: shipment.totalOz,
+            boxName: shipment.box?.name ?? null,
+            oversize: shipment.oversize,
+          },
+        };
+      }),
+
+    /**
+     * Buys a label for an order and files it.
+     *
+     * Admin only, and deliberately not idempotent-by-accident: it refuses when a
+     * label already exists rather than quietly buying a second one, because the
+     * second one is a second parcel UPS will invoice for.
+     *
+     * The order's status is left alone. A printed label is not a dispatched
+     * parcel — that is what markShipped is for.
+     */
+    createLabel: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .mutation(async ({ input }) => {
+        const order = await getOrderById(input.orderId);
+        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+        if (order.trackingNumber) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `This order already has label ${order.trackingNumber}.`,
+          });
+        }
+
+        const settings = parseShippingSettings(
+          (await getSiteSetting(SHIPPING_SETTINGS_KEY))?.value
+        );
+        if (!isReadyToQuote(settings)) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Shipping settings are incomplete. Check the shipping configuration.",
+          });
+        }
+
+        // Re-weighed from the order's own lines rather than trusting anything
+        // stored at checkout: this is what actually goes in the box today.
+        const orderLines = await getOrderItems(input.orderId);
+        const lines = [];
+        for (const line of orderLines) {
+          const product = await getProductById(line.productId);
+          const variation = line.variationId ? await getVariationById(line.variationId) : undefined;
+          lines.push({
+            productName: line.productName,
+            quantity: line.quantity,
+            product: { weightOz: product?.weightOz ?? null },
+            variation: variation ? { weightOz: variation.weightOz } : null,
+          });
+        }
+        const shipment = computePackage(lines, settings);
+        if (!shipment.box) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "No shipping box is configured.",
+          });
+        }
+
+        // The service the shopper paid for. Falls back to the cheapest offered
+        // service for orders placed before shipping was collected.
+        const serviceCode = order.shippingService ?? enabledServices(settings)[0];
+        if (!serviceCode) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No service is enabled." });
+        }
+
+        const result = await createShippingLabel(settings.origin, {
+          serviceCode,
+          weightOz: shipment.totalOz,
+          box: shipment.box,
+          recipient: {
+            name: `${order.shippingFirstName ?? ""} ${order.shippingLastName ?? ""}`.trim(),
+            street: order.shippingAddress ?? "",
+            city: order.shippingCity ?? "",
+            state: order.shippingState ?? "",
+            zip: order.shippingZip ?? "",
+            phone: order.shippingPhone,
+          },
+        });
+
+        if (!result.ok) {
+          if (result.detail) console.error(`[label] ${result.kind}: ${result.detail}`);
+          throw new TRPCError({ code: "BAD_GATEWAY", message: result.message });
+        }
+
+        await saveShippingLabel({
+          orderId: input.orderId,
+          trackingNumber: result.label.trackingNumber,
+          serviceCode,
+          format: result.label.format,
+          data: result.label.data,
+        });
+
+        return {
+          trackingNumber: result.label.trackingNumber,
+          sandbox: isUpsSandbox(),
+          oversize: shipment.oversize,
+        };
+      }),
+
+    /** Label metadata, without the image. */
+    getLabel: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(({ input }) => getShippingLabelSummary(input.orderId)),
+
+    /**
+     * The label image, base64.
+     *
+     * Behind adminProcedure rather than at a public URL: a label carries the
+     * buyer's full name and home address, and object storage here serves
+     * permanently cached public links.
+     */
+    getLabelImage: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(({ input }) => getShippingLabelImage(input.orderId)),
+
+    markShipped: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .mutation(async ({ input }) => {
+        await markOrderShipped(input.orderId);
+        return { success: true };
+      }),
+
     getSettings: adminProcedure.query(async () => {
       const row = await getSiteSetting(SHIPPING_SETTINGS_KEY);
       const settings = parseShippingSettings(row?.value);

@@ -268,6 +268,8 @@ export interface PricedOrder {
   items: PricedLine[];
   subtotal: number;
   discount: number;
+  /** Carrier charge plus handling, as quoted server side. */
+  shipping: number;
   total: number;
   coupon?: ResolvedCoupon;
   referral?: ResolvedReferral;
@@ -281,6 +283,11 @@ export interface PriceOrderOptions {
   userId?: number;
   /** Every address that identifies the buyer, for self-referral detection. */
   buyerEmails?: Array<string | null | undefined>;
+  /**
+   * Shipping to add, resolved from a server-held quote — never a figure the
+   * browser sent. Zero while the shopper has not chosen a service yet.
+   */
+  shipping?: number;
 }
 
 /**
@@ -325,11 +332,18 @@ export async function priceOrder(
     }
   }
 
+  // Shipping is added after the discount, not before it: a percentage coupon
+  // is a discount on the goods, and letting it eat into the carrier's charge
+  // would have the shop subsidising UPS out of its own margin.
+  const shipping = toCents(Math.max(0, options.shipping ?? 0));
+  const goods = toCents(Math.max(0, subtotal - discount));
+
   return {
     items,
     subtotal,
     discount,
-    total: toCents(Math.max(0, subtotal - discount)),
+    shipping,
+    total: toCents(goods + shipping),
     coupon,
     referral,
     appliedDiscount,

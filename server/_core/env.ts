@@ -15,4 +15,14 @@ export const ENV = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   /** Absolute origin Stripe sends the shopper back to. */
   publicSiteUrl: process.env.PUBLIC_SITE_URL ?? "https://www.brighterdayslabs.com",
+  // UPS. Business decisions — origin, services, handling — are configured in
+  // the admin; these are the credentials, which belong to the environment.
+  upsClientId: process.env.UPS_CLIENT_ID ?? "",
+  upsClientSecret: process.env.UPS_CLIENT_SECRET ?? "",
+  /** Required to buy a label; rating works without it. */
+  upsAccountNumber: process.env.UPS_ACCOUNT_NUMBER ?? "",
+  // Anything other than an explicit "production" means the sandbox. Reaching
+  // the live carrier has to be a decision somebody made, not a variable
+  // somebody forgot: a wrong guess here buys real labels and bills real money.
+  upsProduction: process.env.UPS_ENVIRONMENT === "production",
 };

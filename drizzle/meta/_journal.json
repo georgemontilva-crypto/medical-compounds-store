@@ -148,6 +148,13 @@
       "when": 1787281929340,
       "tag": "0020_first_the_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1787334849602,
+      "tag": "0021_harsh_red_hulk",
+      "breakpoints": true
     }
   ]
 }

@@ -10,6 +10,7 @@ import {
   InsertLabReport,
   InsertOrder,
   InsertOrderItem,
+  InsertShippingLabel,
   InsertProduct,
   InsertProductImage,
   InsertProductVariation,
@@ -33,6 +34,7 @@ import {
   heroSlidesConfig,
   labReports,
   orderItems,
+  shippingLabels,
   orders,
   productImages,
   productVariations,
@@ -1263,4 +1265,74 @@ export async function getUserOrderStats(userId: number) {
     orderCount: Number(result[0]?.orderCount ?? 0),
     totalSpent: Number(result[0]?.totalSpent ?? 0),
   };
+}
+
+// ─── Shipping labels ──────────────────────────────────────────────────────────
+
+/**
+ * Stores a bought label and stamps the tracking number onto the order.
+ *
+ * The order keeps only the tracking number — a short string the admin list and
+ * the customer both want — while the image itself stays in its own table, where
+ * a select-everything read of an order will never drag it along.
+ */
+export async function saveShippingLabel(data: InsertShippingLabel) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.insert(shippingLabels).values(data);
+  await db
+    .update(orders)
+    .set({ trackingNumber: data.trackingNumber })
+    .where(eq(orders.id, data.orderId));
+}
+
+/** Label metadata for an order, without the image. */
+export async function getShippingLabelSummary(orderId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select({
+      id: shippingLabels.id,
+      trackingNumber: shippingLabels.trackingNumber,
+      serviceCode: shippingLabels.serviceCode,
+      format: shippingLabels.format,
+      createdAt: shippingLabels.createdAt,
+    })
+    .from(shippingLabels)
+    .where(eq(shippingLabels.orderId, orderId))
+    .orderBy(desc(shippingLabels.id))
+    .limit(1);
+
+  return result[0];
+}
+
+/** The image itself, fetched only when somebody asks to print it. */
+export async function getShippingLabelImage(orderId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select({ data: shippingLabels.data, format: shippingLabels.format })
+    .from(shippingLabels)
+    .where(eq(shippingLabels.orderId, orderId))
+    .orderBy(desc(shippingLabels.id))
+    .limit(1);
+
+  return result[0];
+}
+
+/**
+ * Records that a parcel actually left, which a printed label does not prove.
+ *
+ * Separate from label creation on purpose: labels get bought, voided, and left
+ * on desks for two days. Telling a customer their order shipped should mean it
+ * did.
+ */
+export async function markOrderShipped(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.update(orders).set({ status: "shipped", shippedAt: new Date() }).where(eq(orders.id, id));
 }

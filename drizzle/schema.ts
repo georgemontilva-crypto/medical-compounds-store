@@ -3,6 +3,7 @@ import {
   date,
   decimal,
   int,
+  longtext,
   mysqlEnum,
   mysqlTable,
   index,
@@ -194,10 +195,59 @@ export const orders = mysqlTable("orders", {
   // to createdAt for those. Not derivable from updatedAt, which moves on every
   // subsequent status change.
   paidAt: timestamp("paidAt"),
+  // ─── Shipping ──────────────────────────────────────────────────────────────
+  // The service the shopper chose and what it cost, frozen at purchase. The
+  // name is stored alongside the code because it is what they were shown and
+  // agreed to — re-deriving it later would rewrite history if the shop ever
+  // changes which services it offers.
+  shippingService: varchar("shippingService", { length: 10 }),
+  shippingServiceName: varchar("shippingServiceName", { length: 60 }),
+  shippingCost: decimal("shippingCost", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  trackingNumber: varchar("trackingNumber", { length: 50 }),
+  // Set when a human says the parcel left, not when a label is printed.
+  shippedAt: timestamp("shippedAt"),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+
+// ─── Shipping Labels ──────────────────────────────────────────────────────────
+/**
+ * Carrier labels, kept out of `orders` on purpose.
+ *
+ * A label is tens of kilobytes of base64 and `getOrderById` selects every
+ * column, so holding it on the order would drag it across the wire on every
+ * read — the admin list, the checkout, the webhook. Here it is fetched only
+ * when somebody asks to print it.
+ *
+ * In the database rather than object storage because a label carries the
+ * buyer's full name and home address. The bucket serves public, permanently
+ * cached URLs; a hard-to-guess URL is obscurity, not access control, and a
+ * voided label would stay readable at that address forever.
+ */
+export const shippingLabels = mysqlTable(
+  "shipping_labels",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    orderId: int("orderId")
+      .notNull()
+      .references(() => orders.id),
+    trackingNumber: varchar("trackingNumber", { length: 50 }).notNull(),
+    serviceCode: varchar("serviceCode", { length: 10 }).notNull(),
+    /** GIF, PDF or ZPL, as asked of the carrier. */
+    format: varchar("format", { length: 10 }).notNull(),
+    // LONGTEXT, not TEXT: a label is around 50 KB of binary, which base64
+    // inflates past the 64 KB a TEXT column holds — it would truncate silently
+    // and produce an unprintable label.
+    /** Base64 exactly as UPS returned it. */
+    data: longtext("data").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [index("shipping_labels_order_idx").on(table.orderId)]
+);
+
+export type ShippingLabel = typeof shippingLabels.$inferSelect;
+export type InsertShippingLabel = typeof shippingLabels.$inferInsert;
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;

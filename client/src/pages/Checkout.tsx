@@ -14,6 +14,7 @@ import {
   HelpCircle,
   Loader2,
   Lock,
+  Truck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -220,16 +221,66 @@ export default function Checkout() {
   // whenever a line crosses a volume tier or an admin edits a price — the same
   // numbers the server re-derives and Stripe is charged. Quoting from the
   // server makes the summary and the charge the same figure by construction.
+  // ─── Shipping ──────────────────────────────────────────────────────────────
+  // Rates need a real destination, so nothing is asked for until the address is
+  // filled in. Quoting a half-typed postcode would only earn an error.
+  const destinationReady = Boolean(
+    shipping.address.trim() && shipping.city.trim() && shipping.state.trim() && shipping.zip.trim()
+  );
+
+  const [shippingService, setShippingService] = useState<string | null>(null);
+
+  const cartLines = items.map((i) => ({
+    productId: i.productId,
+    variationId: i.variationId,
+    quantity: i.quantity,
+  }));
+
+  const rates = trpc.shipping.getRates.useQuery(
+    {
+      items: cartLines,
+      destination: {
+        name: `${shipping.firstName} ${shipping.lastName}`.trim(),
+        street: shipping.address,
+        city: shipping.city,
+        state: shipping.state,
+        zip: shipping.zip,
+      },
+    },
+    {
+      enabled: items.length > 0 && destinationReady && step !== "confirmation",
+      // The carrier's answer is stable for the life of a checkout; refetching
+      // on every window focus would burn calls and can change the price under
+      // a shopper mid-form.
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    }
+  );
+
+  const rateOptions = rates.data?.ok ? rates.data.rates : [];
+  const rateError = rates.data && !rates.data.ok ? rates.data.message : null;
+
+  // A service stays chosen only while it is still on offer. Changing the
+  // address re-quotes, and the old choice may no longer exist at any price.
+  useEffect(() => {
+    if (!shippingService) return;
+    if (rateOptions.length === 0) return;
+    if (!rateOptions.some((r) => r.serviceCode === shippingService)) {
+      setShippingService(null);
+    }
+  }, [rateOptions, shippingService]);
+
   const quote = trpc.orders.quote.useQuery(
     {
-      items: items.map((i) => ({
-        productId: i.productId,
-        variationId: i.variationId,
-        quantity: i.quantity,
-      })),
+      items: cartLines,
       couponCode: appliedCoupon?.code,
       referralCode: referralState.kind === "valid" ? referralState.code : undefined,
       email: shipping.email || undefined,
+      // Only ever an id and a code — the price is the server's to decide.
+      shippingQuoteId: rates.data?.ok ? rates.data.quoteId : undefined,
+      shippingService: shippingService ?? undefined,
+      shippingZip: shipping.zip || undefined,
     },
     { enabled: items.length > 0 && step !== "confirmation" }
   );
@@ -237,6 +288,7 @@ export default function Checkout() {
   const quoted = quote.data;
   const subtotal = quoted?.subtotal ?? total;
   const discount = quoted?.discount ?? 0;
+  const shippingCost = quoted?.shipping ?? 0;
   const finalTotal = quoted?.total ?? Math.max(0, total - discount);
   // Blocked rather than merely unpriced: orders.create would reject the same
   // cart, so sending the shopper to Stripe could only fail later.
@@ -276,6 +328,8 @@ export default function Checkout() {
       })),
       couponCode: appliedCoupon?.code,
       referralCode: referralState.kind === "valid" ? referralState.code : undefined,
+      shippingQuoteId: rates.data?.ok ? rates.data.quoteId : undefined,
+      shippingService: shippingService ?? undefined,
       researcherType: shipping.researcherType as
         | "private_researcher"
         | "lab_company_researcher"
@@ -297,7 +351,11 @@ export default function Checkout() {
   };
 
   const isPlacingOrder = createOrder.isPending || createCheckoutSession.isPending;
-  const canPlaceOrder = !quote.isLoading && quoteError === null;
+  // A shipping choice is part of the price, so the order is not payable until
+  // one is made — otherwise the shopper would be charged for goods alone and
+  // the parcel would go out unpaid for.
+  const shippingChosen = Boolean(shippingService) && shippingCost >= 0 && rateOptions.length > 0;
+  const canPlaceOrder = !quote.isLoading && quoteError === null && shippingChosen;
 
   // Shown only once a date has been entered: an empty field is the browser's
   // `required` to complain about, not an age failure to accuse someone of.
@@ -388,6 +446,8 @@ export default function Checkout() {
                 items={items}
                 subtotal={subtotal}
                 discount={discount}
+                shippingCost={shippingCost}
+                shippingServiceName={quoted?.shippingServiceName ?? null}
                 finalTotal={finalTotal}
                 appliedCoupon={appliedCoupon}
                 quotedLines={quoted?.items}
@@ -419,6 +479,14 @@ export default function Checkout() {
                 isAuthenticated={isAuthenticated}
                 ageError={ageError}
               />
+              <ShippingOptions
+                ready={destinationReady}
+                loading={rates.isFetching}
+                error={rateError}
+                options={rateOptions}
+                selected={shippingService}
+                onSelect={setShippingService}
+              />
             </div>
           </div>
 
@@ -430,6 +498,115 @@ export default function Checkout() {
           />
         </form>
       </div>
+    </div>
+  );
+}
+
+interface RateOption {
+  serviceCode: string;
+  serviceName: string;
+  amount: number;
+  transitDays: number | null;
+}
+
+/**
+ * The carrier's offers, as radio cards.
+ *
+ * Every state this can be in says something specific, because "shipping
+ * unavailable" with no reason leaves a shopper with nothing to do. Waiting on
+ * an address, waiting on the carrier, a carrier that had nothing to offer, and
+ * a carrier that could not be reached are four different situations and read as
+ * four different things.
+ */
+function ShippingOptions({
+  ready,
+  loading,
+  error,
+  options,
+  selected,
+  onSelect,
+}: {
+  ready: boolean;
+  loading: boolean;
+  error: string | null;
+  options: RateOption[];
+  selected: string | null;
+  onSelect: (code: string) => void;
+}) {
+  return (
+    <div className="lab-card p-5 sm:p-6">
+      <div className="flex items-start gap-2 mb-4">
+        <Truck size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+        <div>
+          <h2 className="font-semibold">Shipping method</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Live rates from UPS for your address.
+          </p>
+        </div>
+      </div>
+
+      {!ready ? (
+        <p className="text-sm text-muted-foreground py-2">
+          Fill in your shipping address and we'll fetch delivery options.
+        </p>
+      ) : loading ? (
+        <div className="space-y-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-16 rounded-xl bg-secondary/60 animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+          <AlertCircle size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800">{error}</p>
+        </div>
+      ) : options.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-2">
+          No delivery options are available for this address.
+        </p>
+      ) : (
+        <div role="radiogroup" aria-label="Shipping method" className="space-y-2">
+          {options.map((option) => {
+            const isSelected = selected === option.serviceCode;
+            return (
+              <button
+                key={option.serviceCode}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => onSelect(option.serviceCode)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-secondary/60"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                    isSelected ? "border-primary" : "border-muted-foreground/40"
+                  }`}
+                >
+                  {isSelected && <span className="w-2 h-2 rounded-full bg-primary" />}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium">{option.serviceName}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {option.transitDays
+                      ? `Arrives in ${option.transitDays} business day${
+                          option.transitDays === 1 ? "" : "s"
+                        }`
+                      : "Delivery estimate unavailable"}
+                  </span>
+                </span>
+                <span className="text-sm font-medium flex-shrink-0 tabular-nums">
+                  ${option.amount.toFixed(2)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -781,6 +958,8 @@ function OrderSummary({
   items,
   subtotal,
   discount,
+  shippingCost,
+  shippingServiceName,
   finalTotal,
   appliedCoupon,
   quotedLines,
@@ -802,6 +981,8 @@ function OrderSummary({
   items: Array<{ id: string; productId: number; variationId?: number; productName: string; variationLabel?: string; quantity: number; unitPrice: number; image?: string }>;
   subtotal: number;
   discount: number;
+  shippingCost: number;
+  shippingServiceName: string | null;
   finalTotal: number;
   appliedCoupon: { code: string; discount: number } | null;
   quotedLines:
@@ -990,9 +1171,15 @@ function OrderSummary({
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground flex items-center gap-1">
               Shipping
-              <WhyTooltip text="Shipping is quoted once we confirm your order — we'll email the final amount before it ships." />
+              {shippingServiceName && (
+                <span className="text-xs">· {shippingServiceName}</span>
+              )}
             </span>
-            <span className="text-muted-foreground">Calculated at confirmation</span>
+            {shippingServiceName ? (
+              <span>${shippingCost.toFixed(2)}</span>
+            ) : (
+              <span className="text-muted-foreground">Choose a method</span>
+            )}
           </div>
           <div className="flex justify-between font-semibold text-base border-t border-border pt-2 mt-2">
             <span>Total</span>

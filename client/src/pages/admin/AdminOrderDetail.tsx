@@ -1,7 +1,15 @@
 import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
-import { ChevronLeft, FlaskConical, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  Download,
+  FlaskConical,
+  Loader2,
+  Package,
+  TriangleAlert,
+  Truck,
+} from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -137,6 +145,13 @@ export default function AdminOrderDetail({ params }: Props) {
 
           {/* Status management */}
           <div className="space-y-4">
+            <ShippingLabelCard
+              orderId={order.id}
+              status={order.status}
+              trackingNumber={order.trackingNumber ?? null}
+              serviceName={order.shippingServiceName ?? null}
+            />
+
             <div className="lab-card p-5">
               <h2 className="font-semibold mb-4">Order Status</h2>
               <div className="space-y-2">
@@ -195,5 +210,150 @@ export default function AdminOrderDetail({ params }: Props) {
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+/**
+ * Buying and printing the carrier label for one order.
+ *
+ * Deliberately two separate actions. Printing a label does not put a parcel on
+ * a van — labels get bought, voided, and left on desks — so telling the
+ * customer their order shipped stays a thing a person decides, one click away
+ * from the label rather than bundled into it.
+ */
+function ShippingLabelCard({
+  orderId,
+  status,
+  trackingNumber,
+  serviceName,
+}: {
+  orderId: number;
+  status: string;
+  trackingNumber: string | null;
+  serviceName: string | null;
+}) {
+  const utils = trpc.useUtils();
+  const [downloading, setDownloading] = useState(false);
+
+  const createLabel = trpc.shipping.createLabel.useMutation({
+    onSuccess: (result) => {
+      utils.orders.adminDetail.invalidate({ id: orderId });
+      toast.success(
+        result.sandbox
+          ? `Test label created — ${result.trackingNumber}. Not valid for shipping.`
+          : `Label created — ${result.trackingNumber}`
+      );
+      if (result.oversize) {
+        toast.warning(
+          "This order is larger than the biggest configured box. It was rated as one parcel — check before shipping."
+        );
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const markShipped = trpc.shipping.markShipped.useMutation({
+    onSuccess: () => {
+      utils.orders.adminDetail.invalidate({ id: orderId });
+      toast.success("Order marked as shipped");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Fetched on demand rather than with the page: the image is tens of kilobytes
+  // and most visits to an order never print anything.
+  const downloadLabel = async () => {
+    setDownloading(true);
+    try {
+      const label = await utils.shipping.getLabelImage.fetch({ orderId });
+      if (!label?.data) {
+        toast.error("No label image is stored for this order.");
+        return;
+      }
+      const mime = label.format === "PDF" ? "application/pdf" : "image/gif";
+      const win = window.open("", "_blank");
+      if (!win) {
+        toast.error("Allow pop-ups to open the label.");
+        return;
+      }
+      win.document.write(
+        `<title>Label ${trackingNumber ?? orderId}</title><img src="data:${mime};base64,${label.data}" style="max-width:100%">`
+      );
+      win.document.close();
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="lab-card p-5">
+      <div className="flex items-start gap-2 mb-4">
+        <Truck size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+        <div>
+          <h2 className="font-semibold">Shipping label</h2>
+          {serviceName && <p className="text-xs text-muted-foreground mt-0.5">{serviceName}</p>}
+        </div>
+      </div>
+
+      {trackingNumber ? (
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-secondary/60">
+            <p className="text-xs text-muted-foreground mb-0.5">Tracking number</p>
+            <p className="font-mono text-sm break-all">{trackingNumber}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={downloadLabel}
+            disabled={downloading}
+            className="lab-btn-secondary w-full py-2.5 text-sm"
+          >
+            {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            Open label
+          </button>
+
+          {status !== "shipped" && status !== "delivered" && (
+            <button
+              type="button"
+              onClick={() => markShipped.mutate({ orderId })}
+              disabled={markShipped.isPending}
+              className="lab-btn-primary w-full py-2.5 text-sm"
+            >
+              {markShipped.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Package size={14} />
+              )}
+              Mark as shipped
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Buys a label from UPS and records the tracking number. The order status is not
+            changed — mark it shipped when the parcel actually goes out.
+          </p>
+          <button
+            type="button"
+            onClick={() => createLabel.mutate({ orderId })}
+            disabled={createLabel.isPending}
+            className="lab-btn-primary w-full py-2.5 text-sm"
+          >
+            {createLabel.isPending ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Creating…
+              </>
+            ) : (
+              <>
+                <TriangleAlert size={14} />
+                Generate shipping label
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
