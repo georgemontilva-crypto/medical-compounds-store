@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -21,6 +21,15 @@ import { getStoredReferralCode } from "@/lib/referral";
 import { AFFILIATE_UI_ENABLED } from "@shared/affiliate";
 import { COUNTRIES, DEFAULT_COUNTRY } from "@shared/countries";
 import { AGE_REQUIREMENT_MESSAGE, MINIMUM_AGE, isOfLegalAge } from "@shared/age";
+import {
+  MONTH_NAMES,
+  birthYearOptions,
+  daysInMonth,
+  fromIsoDate,
+  toIsoDate,
+  updateBirthDate,
+  type BirthDateParts,
+} from "@shared/birthDate";
 
 type Step = "form" | "confirmation";
 
@@ -425,6 +434,108 @@ export default function Checkout() {
   );
 }
 
+/**
+ * Month, day and year as three selects.
+ *
+ * The parts are held here rather than derived from the ISO string on every
+ * render, because an incomplete date serialises to "" — reading the parts back
+ * out of that would erase each choice as soon as it was made. What leaves is
+ * still only ever the ISO string or "", so the form's `required` handling and
+ * the age check upstream carry on unchanged.
+ */
+function BirthDateSelect({
+  value,
+  onChange,
+  invalid,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  invalid: boolean;
+}) {
+  const [parts, setParts] = useState<BirthDateParts>(() => fromIsoDate(value));
+  // Stable across the session: the offered years only shift at midnight on a
+  // new year, and recomputing per render would rebuild a hundred options.
+  const years = useMemo(() => birthYearOptions(), []);
+  const dayCount = daysInMonth(parts.month, parts.year);
+
+  const update = (patch: Partial<BirthDateParts>) => {
+    const next = updateBirthDate(parts, patch);
+    setParts(next);
+    onChange(toIsoDate(next));
+  };
+
+  // Required on all three: with it on only one, a half-filled date would clear
+  // the browser's own check and arrive as an empty string.
+  //
+  // Font size stays at 16px throughout — anything smaller makes iOS zoom the
+  // page on focus.
+  const selectClass = `lab-input min-w-0${
+    invalid ? " border-destructive focus:border-destructive" : ""
+  }`;
+  const shared = {
+    className: selectClass,
+    style: { fontSize: 16 },
+    required: true,
+    "aria-invalid": invalid ? true : undefined,
+    "aria-describedby": invalid ? "dob-error" : undefined,
+  } as const;
+
+  return (
+    <div
+      role="group"
+      aria-labelledby="dob-label"
+      className="grid grid-cols-2 sm:grid-cols-[1.4fr_0.95fr_1.15fr] gap-2"
+    >
+      {/* Month takes the whole row on a narrow screen. Three selects, three
+          dropdown arrows and "September" do not fit across 390px, and squeezing
+          them truncates the month to "Septemb". A second row costs one line and
+          gives every control a comfortable tap target. */}
+      <select
+        {...shared}
+        className={`${selectClass} col-span-2 sm:col-span-1`}
+        aria-label="Birth month"
+        value={parts.month ?? ""}
+        onChange={(e) => update({ month: e.target.value ? Number(e.target.value) : null })}
+      >
+        <option value="">Month</option>
+        {MONTH_NAMES.map((name, i) => (
+          <option key={name} value={i + 1}>
+            {name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        {...shared}
+        aria-label="Birth day"
+        value={parts.day ?? ""}
+        onChange={(e) => update({ day: e.target.value ? Number(e.target.value) : null })}
+      >
+        <option value="">Day</option>
+        {Array.from({ length: dayCount }, (_, i) => i + 1).map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+
+      <select
+        {...shared}
+        aria-label="Birth year"
+        value={parts.year ?? ""}
+        onChange={(e) => update({ year: e.target.value ? Number(e.target.value) : null })}
+      >
+        <option value="">Year</option>
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 /** A short "why are you asking?" note attached to a field label. */
 function WhyTooltip({ text }: { text: string }) {
   return (
@@ -574,24 +685,15 @@ function DetailsForm({
             </select>
           </div>
           <div className="min-w-0">
-            <label className="block text-sm font-medium mb-1.5">
+            <label id="dob-label" className="block text-sm font-medium mb-1.5">
               Date of Birth <span className="text-destructive">*</span>{" "}
               <WhyTooltip text={`Required to verify you meet the ${MINIMUM_AGE}+ age requirement.`} />
             </label>
-            <div className="overflow-hidden rounded-xl">
-              <input
-                type="date"
-                value={shipping.dateOfBirth}
-                onChange={(e) => setShipping({ ...shipping, dateOfBirth: e.target.value })}
-                className={`lab-input min-w-0 max-w-full box-border${
-                  ageError ? " border-destructive focus:border-destructive" : ""
-                }`}
-                style={{ fontSize: 16 }}
-                aria-invalid={ageError ? true : undefined}
-                aria-describedby={ageError ? "dob-error" : undefined}
-                required
-              />
-            </div>
+            <BirthDateSelect
+              value={shipping.dateOfBirth}
+              onChange={(next) => setShipping({ ...shipping, dateOfBirth: next })}
+              invalid={Boolean(ageError)}
+            />
             {ageError && (
               <p id="dob-error" role="alert" className="text-xs text-destructive mt-1.5">
                 {ageError}
