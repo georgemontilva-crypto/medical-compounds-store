@@ -14,7 +14,6 @@ import {
   HelpCircle,
   Loader2,
   Lock,
-  Truck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -307,15 +306,17 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total]);
 
-  // The pay bar is fixed to the bottom of the viewport on small screens, which
-  // is where the injected chat widget also lives. index.css lifts the widget
-  // while this flag is set; clearing it on unmount puts it back everywhere else.
   const showPayBar = step === "form" && items.length > 0;
+
+  // The chat widget floats over whatever is beneath it, and on this page that
+  // is the total and the pay bar. Hidden for the whole of checkout rather than
+  // nudged aside — a conversion page should not have a button covering the
+  // price. index.css does the hiding; removing the flag on unmount gives the
+  // widget back to every other route.
   useEffect(() => {
-    if (!showPayBar) return;
-    document.body.setAttribute("data-checkout-paybar", "1");
-    return () => document.body.removeAttribute("data-checkout-paybar");
-  }, [showPayBar]);
+    document.body.setAttribute("data-hide-chat", "1");
+    return () => document.body.removeAttribute("data-hide-chat");
+  }, []);
 
   const placeOrder = () => {
     createOrder.mutate({
@@ -478,14 +479,16 @@ export default function Checkout() {
                 setNotes={setNotes}
                 isAuthenticated={isAuthenticated}
                 ageError={ageError}
-              />
-              <ShippingOptions
-                ready={destinationReady}
-                loading={rates.isFetching}
-                error={rateError}
-                options={rateOptions}
-                selected={shippingService}
-                onSelect={setShippingService}
+                shippingOptions={
+                  <ShippingOptions
+                    ready={destinationReady}
+                    loading={rates.isFetching}
+                    error={rateError}
+                    options={rateOptions}
+                    selected={shippingService}
+                    onSelect={setShippingService}
+                  />
+                }
               />
             </div>
           </div>
@@ -534,16 +537,12 @@ function ShippingOptions({
   onSelect: (code: string) => void;
 }) {
   return (
-    <div className="lab-card p-5 sm:p-6">
-      <div className="flex items-start gap-2 mb-4">
-        <Truck size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
-        <div>
-          <h2 className="font-semibold">Shipping method</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Live rates from UPS for your address.
-          </p>
-        </div>
-      </div>
+    // Headed exactly like the field groups around it, because it is one of
+    // them. Where a parcel goes and how it travels are one decision, and an
+    // icon here would make this read as a different kind of block sitting in
+    // the same card.
+    <section>
+      <h2 className="lab-section-title mb-3">Shipping method</h2>
 
       {!ready ? (
         <p className="text-sm text-muted-foreground py-2">
@@ -607,7 +606,7 @@ function ShippingOptions({
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -747,6 +746,7 @@ function DetailsForm({
   setNotes,
   isAuthenticated,
   ageError,
+  shippingOptions,
 }: {
   shipping: ShippingForm;
   setShipping: (s: ShippingForm) => void;
@@ -754,6 +754,12 @@ function DetailsForm({
   setNotes: (n: string) => void;
   isAuthenticated: boolean;
   ageError: string | null;
+  /**
+   * Rendered immediately below the address, because that is the moment the
+   * rates exist. Passed in rather than fetched here so this component stays a
+   * form and nothing else.
+   */
+  shippingOptions: React.ReactNode;
 }) {
   const [notesOpen, setNotesOpen] = useState(notes.length > 0);
 
@@ -837,6 +843,8 @@ function DetailsForm({
           </div>
         </div>
       </FieldGroup>
+
+      {shippingOptions}
 
       <FieldGroup title="Research use">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

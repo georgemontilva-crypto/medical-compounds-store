@@ -280,14 +280,14 @@
   background-repeat: repeat;
 }
 
-/* The chat assistant is injected by an external script (widget.js), so it can
-   only be positioned from here. It is pinned bottom-right at the maximum
-   z-index, which is exactly where the checkout's mobile pay bar sits — lift it
-   clear of the bar on the one route that renders one. */
-@media (max-width: 1023px) {
-  body[data-checkout-paybar="1"] #lynx-loader-btn {
-    bottom: 6.5rem !important;
-  }
+/* The chat assistant is injected by an external script (widget.js) and pinned
+   bottom-right at the maximum z-index, so it can only be reached from here.
+   Hidden entirely on checkout: it is a floating button over a page whose whole
+   job is showing a price and taking a payment, and it sits on top of both the
+   total and the mobile pay bar. Every other page keeps it. */
+body[data-hide-chat="1"] #lynx-loader-btn,
+body[data-hide-chat="1"] #lynx-chat-container {
+  display: none !important;
 }
 
 /* ── Lab aesthetic utilities ─────────────────────────────────────────────── */
