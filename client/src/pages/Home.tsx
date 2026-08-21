@@ -935,170 +935,134 @@ const SUNNY_POINTS = [
 const SUNNY_CTA_LABEL = "Ask Sunny";
 const SUNNY_CHAT_URL = "https://www.asksunny.io/chat";
 
-// Two-tone wordmark shared by both variants — only size and the color of
-// "Meet" change between them, so those arrive via className.
-function SunnyWordmark({ className }: { className?: string }) {
+/**
+ * Section label, in place of the display-size wordmark this used to be.
+ *
+ * Outline only, no fill: it reads as a tag on the section rather than another
+ * button competing with the gold Ask Sunny call to action a few lines below.
+ * The border is the brand beige exactly; the text is a step darker in light
+ * mode, because #d3c4ab on #F5F2EC is two near-identical creams and the words
+ * would disappear.
+ */
+function SunnyPill() {
   return (
-    <h2 className={className}>
-      Meet <span className="text-[#d3c4ab]">Sunny</span>
-    </h2>
+    <span className="inline-flex items-center rounded-full border border-[#d3c4ab] px-4 py-1.5 text-sm font-semibold tracking-wide text-[#a08d6d] dark:text-[#d3c4ab]">
+      Meet Sunny
+    </span>
   );
 }
 
-// `mobileImage` is optional: the card falls back to the desktop photo, same
-// convention the hero slides use for their own mobile crops.
-function MeetSunnyBanner({ image, mobileImage }: { image?: string; mobileImage?: string }) {
+/**
+ * The photo, as a contained card rather than a bleed.
+ *
+ * It used to be pinned to the section's right edge at half width, with a
+ * gradient feathering the seam where it met the text. Held inside the container
+ * with a radius instead, there is no seam to hide and no gradient to keep in
+ * sync with the crop.
+ *
+ * `mobileImage` is optional and the card falls back to the desktop photo, the
+ * same convention the hero slides use. That fallback crops a landscape frame to
+ * portrait, and its subject sits right of centre — 50% decapitates her, so the
+ * fallback anchors at 70%. Re-check that if the desktop image is ever replaced.
+ */
+function SunnyPhoto({
+  image,
+  mobileImage,
+  className = "",
+}: {
+  image?: string;
+  mobileImage?: string;
+  className?: string;
+}) {
   const { theme } = useTheme();
-  const cardImage = mobileImage ?? image;
+  const src = mobileImage ?? image;
 
   return (
-    <>
-      {/* ── Mobile: stacked card ───────────────────────────────────────────
-          Black-and-gold card regardless of theme — it reads as an object
-          sitting on the page rather than a full-bleed band, which is what
-          makes the stacked format work at phone widths. */}
-      <section className="md:hidden bg-[#F5F2EC] px-4 py-12 dark:bg-background">
-        <div className="mx-auto max-w-sm overflow-hidden rounded-3xl border border-[#d3c4ab]/25 bg-[#0d0d0d] shadow-2xl shadow-[#d3c4ab]/20">
-          {/* Photo runs edge to edge; the card's overflow-hidden clips it to
-              exactly the same top rounding, so no double radius to keep in
-              sync.
+    <div className={`overflow-hidden rounded-2xl ${className}`}>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          className={`h-full w-full object-cover ${
+            mobileImage ? "object-top" : "object-[70%_center]"
+          }`}
+        />
+      ) : (
+        /* No upload yet — the site's particle field so an empty slot still
+           looks deliberate rather than like a missing image. */
+        <ParticleBackground
+          color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
+          particleRadius={3.5}
+          particleOpacity={0.22}
+          lineOpacity={0.14}
+          linkDistance={150}
+          className="h-full w-full"
+        />
+      )}
+    </div>
+  );
+}
 
-              Crop anchor: a dedicated mobile upload is already composed for
-              3/4, so it just anchors top. Falling back to the desktop photo
-              means cropping a landscape frame down to portrait, and its
-              subject sits right of centre — 50% decapitates her. 70% was
-              picked by comparing renders at 50/60/70/80 and is the only one
-              holding both the face and the vial. Re-check it if the desktop
-              image is ever replaced. */}
-          <div className="relative aspect-[3/4]">
-            {cardImage ? (
-              <img
-                src={cardImage}
-                alt=""
-                aria-hidden="true"
-                className={`absolute inset-0 h-full w-full object-cover ${
-                  mobileImage ? "object-top" : "object-[70%_top]"
-                }`}
-              />
-            ) : (
-              <ParticleBackground
-                color="211, 196, 171"
-                particleRadius={3.5}
-                particleOpacity={0.22}
-                lineOpacity={0.14}
-                linkDistance={150}
-                className="absolute inset-0 h-full w-full"
-              />
-            )}
-            {/* Bottom third dissolves into the card so the title floats over
-                the photo instead of sitting on a hard crop line. */}
-            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent to-[#0d0d0d]" />
-            <SunnyWordmark className="absolute inset-x-0 bottom-5 text-center text-3xl font-bold tracking-tight text-white" />
-          </div>
-          <div className="px-6 pb-6 pt-4">
-            <p className="text-center text-sm text-gray-300">{SUNNY_SUBTITLE}</p>
-            <div className="my-5 h-px bg-white/10" />
-            <ul className="space-y-3">
+/**
+ * One layout at every width, where there used to be two.
+ *
+ * The phone and desktop variants were separate trees with the copy hoisted into
+ * constants so the two could not drift. Both now want the same thing — a
+ * contained photo with a radius — and differ only in whether it sits above the
+ * text or beside it, which is a grid's job. The constants stay because they
+ * still read better than strings buried in markup.
+ *
+ * Cream rather than dark: the stats bar directly above is bg-gray-950, and a
+ * dark band here would read as one continuous slab instead of a new section.
+ */
+function MeetSunnyBanner({ image, mobileImage }: { image?: string; mobileImage?: string }) {
+  return (
+    <section className="bg-[#F5F2EC] py-12 md:py-20 dark:bg-background">
+      <div className="container">
+        <div className="grid items-center gap-8 md:grid-cols-2 md:gap-12">
+          {/* Photo first in the source, so it leads on a phone. From md up the
+              order flips and it takes the right column. */}
+          <SunnyPhoto
+            image={image}
+            mobileImage={mobileImage}
+            className="aspect-[4/3] w-full md:order-last md:aspect-[5/4]"
+          />
+
+          <div>
+            <SunnyPill />
+            <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-gray-950 md:text-4xl lg:text-5xl dark:text-white">
+              {SUNNY_SUBTITLE}
+            </h2>
+
+            <ul className="mt-7 space-y-3 md:mt-8 md:space-y-4">
               {SUNNY_POINTS.map((point) => (
                 <li key={point} className="flex items-center gap-3">
-                  {/* Explicit 10px, not rounded-lg: this project overrides
-                      --radius-lg to 1rem, which on a 32px box renders a full
-                      circle instead of the intended rounded square. */}
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#d3c4ab]/10">
-                    <Check size={16} strokeWidth={3} className="text-[#d3c4ab]" />
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d3c4ab]/20">
+                    <Check size={14} strokeWidth={3} className="text-[#a08d6d] dark:text-[#d3c4ab]" />
                   </span>
-                  <span className="text-sm text-gray-200">{point}</span>
+                  <span className="text-base text-gray-700 md:text-lg dark:text-gray-200">
+                    {point}
+                  </span>
                 </li>
               ))}
             </ul>
-            {/* Dark label on gold here, rather than the desktop hero's white —
-                the fill sits on black, so white-on-gold would be the weaker
-                pairing of the two. */}
+
+            {/* Same external chat as the navbar's Ask Sunny button, so likewise
+                a plain anchor opening in a new tab. */}
             <a
               href={SUNNY_CHAT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#d3c4ab] py-3.5 text-sm font-semibold text-[#1a1a1a] transition-colors duration-150 hover:bg-[#baac96]"
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#d3c4ab] px-8 py-3.5 text-base font-semibold text-white shadow-sm shadow-[#d3c4ab]/20 transition-all duration-200 hover:scale-105 hover:bg-[#baac96] hover:shadow-lg hover:shadow-[#d3c4ab]/40 md:mt-10 md:py-4 md:text-lg"
             >
+              <Sparkles size={18} />
               {SUNNY_CTA_LABEL}
-              <Sparkles size={16} />
             </a>
           </div>
         </div>
-      </section>
-
-      {/* ── Desktop: horizontal hero ───────────────────────────────────────
-          Cream rather than dark on purpose: the stats bar directly above is
-          bg-gray-950, so a dark band here would read as one continuous slab
-          instead of a separate section. */}
-      <section className="relative hidden min-h-[400px] overflow-hidden bg-[#F5F2EC] md:block dark:bg-background">
-        {image ? (
-          <>
-            <img
-              src={image}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-y-0 right-0 h-full w-1/2 object-cover object-center"
-            />
-            {/* Fades the image's inner edge into the text side instead of
-                leaving a hard seam down the middle. The stops are pinned
-                because this spans the whole section while the photo only
-                occupies the right half: left to itself the fade would run all
-                the way to 100% and lay cream over the entire photo (0.43 alpha
-                still at its centre), which reads as a washed-out image rather
-                than a seam. Clean by 62% keeps the feather just past the
-                seam at 50% and leaves the rest of the photo untouched. */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#F5F2EC] from-45% via-[#F5F2EC]/75 via-50% to-transparent to-62% dark:from-background dark:via-background/75" />
-          </>
-        ) : (
-          /* No upload yet — reuse the site's particle field so an empty slot
-             still looks deliberate rather than like a blank panel. */
-          <ParticleBackground
-            color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
-            particleRadius={3.5}
-            particleOpacity={0.22}
-            lineOpacity={0.14}
-            linkDistance={150}
-            className="absolute inset-0 h-full w-full"
-          />
-        )}
-        {/* min-h rather than h on the row too, so the text block sets the
-            section's height once the display type outgrows 400px. */}
-        <div className="relative z-10 flex min-h-[400px] items-center py-20">
-          <div className="container">
-            {/* w-1/2 keeps the column clear of the image; max-w-xl stops the
-                lines from running too long to scan on wide screens. */}
-            <div className="w-1/2 max-w-xl pr-8 lg:pr-12">
-              {/* "Meet" is near-black on the cream light theme and white in
-                  dark — pure white would vanish against #F5F2EC. */}
-              <SunnyWordmark className="text-6xl lg:text-7xl font-bold tracking-tight leading-tight text-gray-950 dark:text-white" />
-              <p className="mt-4 text-xl lg:text-2xl text-gray-600 dark:text-gray-300">{SUNNY_SUBTITLE}</p>
-              <ul className="mt-8 space-y-4">
-                {SUNNY_POINTS.map((point) => (
-                  <li key={point} className="flex items-center gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d3c4ab]/20">
-                      <Check size={14} strokeWidth={3} className="text-[#a08d6d] dark:text-[#d3c4ab]" />
-                    </span>
-                    <span className="text-lg text-gray-700 dark:text-gray-200">{point}</span>
-                  </li>
-                ))}
-              </ul>
-              {/* Same external chat as the navbar's Ask Sunny button, so
-                  likewise a plain anchor opening in a new tab. */}
-              <a
-                href={SUNNY_CHAT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-10 inline-flex items-center gap-2 bg-[#d3c4ab] hover:bg-[#baac96] text-white text-lg font-semibold px-8 py-4 rounded-full shadow-sm shadow-[#d3c4ab]/20 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-[#d3c4ab]/40"
-              >
-                <Sparkles size={18} />
-                {SUNNY_CTA_LABEL}
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }
 
