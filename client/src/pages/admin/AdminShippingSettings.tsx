@@ -53,7 +53,8 @@ export default function AdminShippingSettings() {
       toast.success("Shipping settings saved");
       utils.shipping.getSettings.invalidate();
     },
-    onError: (err) => toast.error(err.message || "Could not save shipping settings"),
+    onError: err =>
+      toast.error(err.message || "Could not save shipping settings"),
   });
 
   // Computed from the form rather than the server response, so the checklist
@@ -61,120 +62,188 @@ export default function AdminShippingSettings() {
   const readiness = shippingReadiness(form);
 
   const setOrigin = (field: keyof ShippingSettings["origin"], value: string) =>
-    setForm((f) => ({ ...f, origin: { ...f.origin, [field]: value } }));
+    setForm(f => ({ ...f, origin: { ...f.origin, [field]: value } }));
 
   const setBox = (index: number, patch: Partial<ShippingBox>) =>
-    setForm((f) => ({
+    setForm(f => ({
       ...f,
       boxes: f.boxes.map((b, i) => (i === index ? { ...b, ...patch } : b)),
     }));
 
   return (
     <AdminLayout>
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-5xl">
         <div>
           <p className="lab-section-title mb-1">Configuration</p>
           <h1 className="text-2xl font-bold">Shipping</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Where parcels ship from, what they weigh, which boxes they go in, and which UPS
-            services to offer. Carrier credentials are set as environment variables, not here.
+            Where parcels ship from, what they weigh, which boxes they go in,
+            and which UPS services to offer. Carrier credentials are set as
+            environment variables, not here.
           </p>
         </div>
 
         <ReadinessPanel readiness={readiness} loading={isLoading} />
 
         <form
-          onSubmit={(e) => {
+          onSubmit={e => {
             e.preventDefault();
             save.mutate(form);
           }}
           className="space-y-6"
         >
-          {/* Origin */}
-          <section className="lab-card p-5">
-            <SectionHeader
-              icon={MapPin}
-              title="Ship-from address"
-              note="The origin UPS quotes from. Rates cannot be requested until every field is filled."
-            />
-            <div className="space-y-4">
-              <Field
-                label="Business name"
-                value={form.origin.name}
-                onChange={(v) => setOrigin("name", v)}
-                placeholder="Brighter Days Labs"
+          <div className="grid lg:grid-cols-2 gap-6 items-start">
+            {/* Origin */}
+            <section className="lab-card p-5">
+              <SectionHeader
+                icon={MapPin}
+                title="Ship-from address"
+                note="The origin UPS quotes from. Rates cannot be requested until every field is filled."
               />
-              <Field
-                label="Street address"
-                value={form.origin.street}
-                onChange={(v) => setOrigin("street", v)}
-                placeholder="400 Science Park Dr"
-              />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <Field
-                  label="City"
-                  value={form.origin.city}
-                  onChange={(v) => setOrigin("city", v)}
-                  placeholder="Boston"
+                  label="Business name"
+                  value={form.origin.name}
+                  onChange={v => setOrigin("name", v)}
+                  placeholder="Brighter Days Labs"
                 />
                 <Field
-                  label="State / Province"
-                  value={form.origin.state}
-                  onChange={(v) => setOrigin("state", v)}
-                  placeholder="MA"
+                  label="Street address"
+                  value={form.origin.street}
+                  onChange={v => setOrigin("street", v)}
+                  placeholder="400 Science Park Dr"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field
-                  label="ZIP / Postal code"
-                  value={form.origin.zip}
-                  onChange={(v) => setOrigin("zip", v)}
-                  placeholder="02115"
-                />
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Country</label>
-                  <select
-                    className="lab-input"
-                    value={form.origin.country}
-                    onChange={(e) => setOrigin("country", e.target.value)}
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field
+                    label="City"
+                    value={form.origin.city}
+                    onChange={v => setOrigin("city", v)}
+                    placeholder="Boston"
+                  />
+                  <Field
+                    label="State / Province"
+                    value={form.origin.state}
+                    onChange={v => setOrigin("state", v)}
+                    placeholder="MA"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field
+                    label="ZIP / Postal code"
+                    value={form.origin.zip}
+                    onChange={v => setOrigin("zip", v)}
+                    placeholder="02115"
+                  />
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Country
+                    </label>
+                    <select
+                      className="lab-input"
+                      value={form.origin.country}
+                      onChange={e => setOrigin("country", e.target.value)}
+                    >
+                      {COUNTRIES.map(c => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Weights */}
-          <section className="lab-card p-5">
-            <SectionHeader
-              icon={Scale}
-              title="Default weights"
-              note="What a standard vial weighs, and what the packaging adds. Products only record a weight of their own when they genuinely differ."
-            />
-            <div className="grid sm:grid-cols-2 gap-4">
-              <NumberField
-                label="Standard vial weight"
-                suffix="oz"
-                value={form.defaultVialWeightOz}
-                onChange={(v) => setForm((f) => ({ ...f, defaultVialWeightOz: v }))}
-                help="Used for every product without its own weight."
-                min={0.01}
-              />
-              <NumberField
-                label="Packaging weight"
-                suffix="oz"
-                value={form.packagingWeightOz}
-                onChange={(v) => setForm((f) => ({ ...f, packagingWeightOz: v }))}
-                help="Added once per order. A box may override it below."
-                min={0}
-              />
+            <div className="space-y-6">
+              {/* Weights */}
+              <section className="lab-card p-5">
+                <SectionHeader
+                  icon={Scale}
+                  title="Default weights"
+                  note="What a standard vial weighs, and what the packaging adds. Products only record a weight of their own when they genuinely differ."
+                />
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <NumberField
+                    label="Standard vial weight"
+                    suffix="oz"
+                    value={form.defaultVialWeightOz}
+                    onChange={v =>
+                      setForm(f => ({ ...f, defaultVialWeightOz: v }))
+                    }
+                    help="Used for every product without its own weight."
+                    min={0.01}
+                  />
+                  <NumberField
+                    label="Packaging weight"
+                    suffix="oz"
+                    value={form.packagingWeightOz}
+                    onChange={v =>
+                      setForm(f => ({ ...f, packagingWeightOz: v }))
+                    }
+                    help="Added once per order. A box may override it below."
+                    min={0}
+                  />
+                </div>
+              </section>
+
+              {/* Services */}
+              <section className="lab-card p-5">
+                <SectionHeader
+                  icon={Truck}
+                  title="Services offered"
+                  note="Only the services switched on here are quoted at checkout."
+                />
+                <ul className="divide-y divide-border">
+                  {UPS_SERVICES.map(service => (
+                    <li
+                      key={service.code}
+                      className="flex items-center justify-between gap-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{service.label}</p>
+                        <p className="text-xs text-muted-foreground font-mono">
+                          Service code {service.code}
+                        </p>
+                      </div>
+                      <Toggle
+                        checked={Boolean(form.services[service.code])}
+                        onChange={next =>
+                          setForm(f => ({
+                            ...f,
+                            services: { ...f.services, [service.code]: next },
+                          }))
+                        }
+                        label={service.label}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                {!readiness.anyService && (
+                  <p className="text-xs text-amber-700 mt-3">
+                    With no service selected, checkout has nothing to quote.
+                  </p>
+                )}
+              </section>
+
+              {/* Handling */}
+              <section className="lab-card p-5">
+                <SectionHeader
+                  icon={Scale}
+                  title="Handling fee"
+                  note="Added to every carrier rate, for labour. Set to 0 to pass the carrier rate through unchanged."
+                />
+                <NumberField
+                  label="Handling fee"
+                  prefix="$"
+                  value={form.handlingFeeUsd}
+                  onChange={v => setForm(f => ({ ...f, handlingFeeUsd: v }))}
+                  min={0}
+                  max={100}
+                  className="w-40"
+                />
+              </section>
             </div>
-          </section>
+          </div>
 
           {/* Boxes */}
           <section className="lab-card p-5">
@@ -186,7 +255,8 @@ export default function AdminShippingSettings() {
 
             {form.boxes.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4">
-                No boxes defined yet. At least one is needed before rates can be quoted.
+                No boxes defined yet. At least one is needed before rates can be
+                quoted.
               </p>
             ) : (
               <ul className="space-y-4">
@@ -196,9 +266,12 @@ export default function AdminShippingSettings() {
                     box={box}
                     vialWeightOz={form.defaultVialWeightOz}
                     fallbackPackagingOz={form.packagingWeightOz}
-                    onChange={(patch) => setBox(i, patch)}
+                    onChange={patch => setBox(i, patch)}
                     onRemove={() =>
-                      setForm((f) => ({ ...f, boxes: f.boxes.filter((_, j) => j !== i) }))
+                      setForm(f => ({
+                        ...f,
+                        boxes: f.boxes.filter((_, j) => j !== i),
+                      }))
                     }
                   />
                 ))}
@@ -207,66 +280,14 @@ export default function AdminShippingSettings() {
 
             <button
               type="button"
-              onClick={() => setForm((f) => ({ ...f, boxes: [...f.boxes, { ...NEW_BOX }] }))}
+              onClick={() =>
+                setForm(f => ({ ...f, boxes: [...f.boxes, { ...NEW_BOX }] }))
+              }
               className="lab-btn-secondary mt-4 py-2 px-4 text-sm"
             >
               <Plus size={14} />
               Add box
             </button>
-          </section>
-
-          {/* Services */}
-          <section className="lab-card p-5">
-            <SectionHeader
-              icon={Truck}
-              title="Services offered"
-              note="Only the services switched on here are quoted at checkout."
-            />
-            <ul className="divide-y divide-border">
-              {UPS_SERVICES.map((service) => (
-                <li key={service.code} className="flex items-center justify-between gap-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{service.label}</p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      Service code {service.code}
-                    </p>
-                  </div>
-                  <Toggle
-                    checked={Boolean(form.services[service.code])}
-                    onChange={(next) =>
-                      setForm((f) => ({
-                        ...f,
-                        services: { ...f.services, [service.code]: next },
-                      }))
-                    }
-                    label={service.label}
-                  />
-                </li>
-              ))}
-            </ul>
-            {!readiness.anyService && (
-              <p className="text-xs text-amber-700 mt-3">
-                With no service selected, checkout has nothing to quote.
-              </p>
-            )}
-          </section>
-
-          {/* Handling */}
-          <section className="lab-card p-5">
-            <SectionHeader
-              icon={Scale}
-              title="Handling fee"
-              note="Added to every carrier rate, for labour. Set to 0 to pass the carrier rate through unchanged."
-            />
-            <NumberField
-              label="Handling fee"
-              prefix="$"
-              value={form.handlingFeeUsd}
-              onChange={(v) => setForm((f) => ({ ...f, handlingFeeUsd: v }))}
-              min={0}
-              max={100}
-              className="w-40"
-            />
           </section>
 
           <button
@@ -324,7 +345,7 @@ function BoxRow({
         <input
           className="lab-input py-1.5 text-sm max-w-xs"
           value={box.name}
-          onChange={(e) => onChange({ name: e.target.value })}
+          onChange={e => onChange({ name: e.target.value })}
           placeholder="Standard box"
           aria-label="Box name"
         />
@@ -346,14 +367,18 @@ function BoxRow({
           <div className="flex items-center gap-2">
             {(["lengthIn", "widthIn", "heightIn"] as const).map((key, i) => (
               <div key={key} className="flex items-center gap-2 min-w-0">
-                {i > 0 && <span className="text-muted-foreground text-sm">×</span>}
+                {i > 0 && (
+                  <span className="text-muted-foreground text-sm">×</span>
+                )}
                 <input
                   className="lab-input py-1.5 text-sm min-w-0"
                   type="number"
                   step="0.5"
                   min="0.5"
                   value={box[key]}
-                  onChange={(e) => onChange({ [key]: Number(e.target.value) || 0 })}
+                  onChange={e =>
+                    onChange({ [key]: Number(e.target.value) || 0 })
+                  }
                   aria-label={`${["Length", "Width", "Height"][i]} in inches`}
                 />
               </div>
@@ -361,7 +386,9 @@ function BoxRow({
           </div>
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Holds up to</label>
+          <label className="block text-xs text-muted-foreground mb-1">
+            Holds up to
+          </label>
           <div className="relative">
             <input
               className="lab-input py-1.5 text-sm pr-12"
@@ -369,7 +396,9 @@ function BoxRow({
               min="1"
               step="1"
               value={box.maxUnits}
-              onChange={(e) => onChange({ maxUnits: Math.max(1, Number(e.target.value) || 1) })}
+              onChange={e =>
+                onChange({ maxUnits: Math.max(1, Number(e.target.value) || 1) })
+              }
               aria-label="Maximum units this box holds"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -390,9 +419,10 @@ function BoxRow({
             step="0.1"
             min="0"
             value={box.packagingWeightOz ?? ""}
-            onChange={(e) =>
+            onChange={e =>
               onChange({
-                packagingWeightOz: e.target.value === "" ? null : Number(e.target.value),
+                packagingWeightOz:
+                  e.target.value === "" ? null : Number(e.target.value),
               })
             }
             placeholder={String(fallbackPackagingOz)}
@@ -410,13 +440,14 @@ function BoxRow({
         }`}
       >
         <span className="font-mono">
-          DIM {dimLbs.toFixed(2)} lb · full box {(fullOz / 16).toFixed(2)} lb · UPS bills{" "}
-          {billableLbs} lb
+          DIM {dimLbs.toFixed(2)} lb · full box {(fullOz / 16).toFixed(2)} lb ·
+          UPS bills {billableLbs} lb
         </span>
         {dimensionDominates && (
           <p className="mt-1">
-            This box is rated on its size, not its contents — UPS bills {billableLbs} lb however
-            little is inside. A smaller box costs less for the same order.
+            This box is rated on its size, not its contents — UPS bills{" "}
+            {billableLbs} lb however little is inside. A smaller box costs less
+            for the same order.
           </p>
         )}
       </div>
@@ -442,26 +473,33 @@ function ReadinessPanel({
     { ok: readiness.vialWeightSet, label: "Standard vial weight set" },
   ];
 
-  const ready = checks.every((c) => c.ok);
+  const ready = checks.every(c => c.ok);
 
   return (
     <div
       className={`lab-card p-4 border ${
-        ready ? "border-green-200 bg-green-50/50" : "border-amber-200 bg-amber-50/50"
+        ready
+          ? "border-green-200 bg-green-50/50"
+          : "border-amber-200 bg-amber-50/50"
       }`}
     >
       <div className="flex items-start gap-2 mb-3">
         {ready ? (
           <Check size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
         ) : (
-          <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+          <AlertTriangle
+            size={16}
+            className="text-amber-600 mt-0.5 flex-shrink-0"
+          />
         )}
         <p className="text-sm font-medium">
-          {ready ? "Ready to quote shipping rates" : "Not ready to quote shipping rates yet"}
+          {ready
+            ? "Ready to quote shipping rates"
+            : "Not ready to quote shipping rates yet"}
         </p>
       </div>
       <ul className="space-y-1.5 ml-6">
-        {checks.map((check) => (
+        {checks.map(check => (
           <li key={check.label} className="flex items-center gap-2 text-sm">
             <span
               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -490,7 +528,9 @@ function SectionHeader({
       <Icon size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
       <div>
         <h2 className="font-semibold">{title}</h2>
-        <p className="text-xs text-muted-foreground mt-0.5 max-w-prose">{note}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 max-w-prose">
+          {note}
+        </p>
       </div>
     </div>
   );
@@ -513,7 +553,7 @@ function Field({
       <input
         className="lab-input"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
       />
     </div>
@@ -557,7 +597,7 @@ function NumberField({
           min={min}
           max={max}
           value={value}
-          onChange={(e) => onChange(Number(e.target.value) || 0)}
+          onChange={e => onChange(Number(e.target.value) || 0)}
         />
         {suffix && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
