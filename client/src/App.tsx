@@ -39,6 +39,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminShippingSettings from "./pages/admin/AdminShippingSettings";
 import AdminOrderDetail from "./pages/admin/AdminOrderDetail";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCoupons from "./pages/admin/AdminCoupons";
@@ -133,6 +134,7 @@ function Router() {
       <Route path="/admin/categories" component={AdminCategories} />
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/analytics" component={AdminAnalytics} />
+      <Route path="/admin/shipping-settings" component={AdminShippingSettings} />
       <Route path="/admin/orders/:id" component={AdminOrderDetail} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/coupons" component={AdminCoupons} />

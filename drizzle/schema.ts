@@ -65,6 +65,20 @@ export const products = mysqlTable("products", {
   mechanism: text("mechanism"),
   casNumber: varchar("casNumber", { length: 50 }),
   excludeFromBulkDiscount: boolean("excludeFromBulkDiscount").default(false).notNull(),
+  // ─── Shipping dimensions ───────────────────────────────────────────────────
+  // Nullable because no product carried these before carrier rating existed.
+  // A product with no weight cannot be quoted, and the checkout says so rather
+  // than guessing — a guessed weight is a real charge that is wrong.
+  //
+  // Ounces rather than pounds: a peptide vial weighs a fraction of a pound, and
+  // storing 0.05 lb loses the precision that decides a rate band. Converted to
+  // the pounds UPS wants at the edge of the API call.
+  weightOz: decimal("weightOz", { precision: 8, scale: 2 }),
+  // Outer packaging, in inches. Product-level only: the box a 10 mL and a 30 mL
+  // bottle ship in is the same box.
+  lengthIn: decimal("lengthIn", { precision: 8, scale: 2 }),
+  widthIn: decimal("widthIn", { precision: 8, scale: 2 }),
+  heightIn: decimal("heightIn", { precision: 8, scale: 2 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -101,6 +115,11 @@ export const productVariations = mysqlTable("product_variations", {
   stock: int("stock").default(0).notNull(),
   sku: varchar("sku", { length: 100 }),
   active: boolean("active").default(true).notNull(),
+  // Overrides the product's weight when this size actually weighs something
+  // different. Worth having for volumes — 30 mL of water outweighs 10 mL by a
+  // useful margin — and pointless for masses, where 40 mg of peptide is a
+  // rounding error next to the vial. Null means "same as the product".
+  weightOz: decimal("weightOz", { precision: 8, scale: 2 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

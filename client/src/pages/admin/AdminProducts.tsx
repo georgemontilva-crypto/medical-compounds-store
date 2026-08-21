@@ -29,6 +29,10 @@ type ProductForm = {
   mechanism: string;
   casNumber: string;
   excludeFromBulkDiscount: boolean;
+  weightOz: string;
+  lengthIn: string;
+  widthIn: string;
+  heightIn: string;
 };
 
 const emptyForm: ProductForm = {
@@ -43,10 +47,28 @@ const emptyForm: ProductForm = {
   mechanism: "",
   casNumber: "",
   excludeFromBulkDiscount: false,
+  weightOz: "",
+  lengthIn: "",
+  widthIn: "",
+  heightIn: "",
 };
 
-type VariationForm = { unit: "mg" | "ml"; value: string; price: string; stock: string; sku: string };
-const emptyVariation: VariationForm = { unit: "mg", value: "", price: "", stock: "0", sku: "" };
+type VariationForm = {
+  unit: "mg" | "ml";
+  value: string;
+  price: string;
+  stock: string;
+  sku: string;
+  weightOz: string;
+};
+const emptyVariation: VariationForm = {
+  unit: "mg",
+  value: "",
+  price: "",
+  stock: "0",
+  sku: "",
+  weightOz: "",
+};
 
 export default function AdminProducts() {
   const utils = trpc.useUtils();
@@ -135,7 +157,7 @@ export default function AdminProducts() {
     }
   };
 
-  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; excludeFromBulkDiscount?: boolean }) => {
+  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null; lengthIn?: string | null; widthIn?: string | null; heightIn?: string | null }) => {
     setEditingId(p.id);
     setForm({
       name: p.name,
@@ -149,6 +171,10 @@ export default function AdminProducts() {
       mechanism: p.mechanism ?? "",
       casNumber: p.casNumber ?? "",
       excludeFromBulkDiscount: p.excludeFromBulkDiscount ?? false,
+      weightOz: p.weightOz ?? "",
+      lengthIn: p.lengthIn ?? "",
+      widthIn: p.widthIn ?? "",
+      heightIn: p.heightIn ?? "",
     });
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -283,6 +309,64 @@ export default function AdminProducts() {
                   </label>
                 </div>
               </div>
+
+              {/* Shipping — what the carrier is quoted on. Left blank until
+                  someone weighs the product; a guessed weight is a real charge
+                  that is wrong. */}
+              <div className="border-t border-border pt-5">
+                <p className="lab-section-title mb-1">Shipping</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Used to quote carrier rates. A product with no weight cannot be shipped —
+                  leave blank rather than guessing.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Weight</label>
+                    <div className="relative">
+                      <input
+                        className="lab-input pr-10"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={form.weightOz}
+                        onChange={(e) => setForm({ ...form, weightOz: e.target.value })}
+                        placeholder="2.5"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        oz
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Shipped weight in ounces, including vial and packaging.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Dimensions <span className="text-muted-foreground font-normal">(L × W × H)</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {(["lengthIn", "widthIn", "heightIn"] as const).map((key, i) => (
+                        <div key={key} className="flex items-center gap-2 min-w-0">
+                          {i > 0 && <span className="text-muted-foreground text-sm">×</span>}
+                          <input
+                            className="lab-input min-w-0"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={form[key]}
+                            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                            placeholder={["6", "4", "2"][i]}
+                            aria-label={["Length", "Width", "Height"][i] + " in inches"}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Outer package dimensions in inches.
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">Short Description</label>
                 <input
@@ -376,6 +460,7 @@ export default function AdminProducts() {
                     price: variationForm.price,
                     stock: Number(variationForm.stock),
                     sku: variationForm.sku || undefined,
+                    weightOz: variationForm.weightOz || null,
                   })
                 }
                 onDeleteVariation={(id) => deleteVariation.mutate({ id })}
@@ -424,7 +509,16 @@ function ProductRow({
   setVariationForm: (v: VariationForm) => void;
   onAddVariation: () => void;
   onDeleteVariation: (id: number) => void;
-  onUpdateVariation: (id: number, data: { unit: "mg" | "ml"; value: string; price: string; stock: number }) => void;
+  onUpdateVariation: (
+    id: number,
+    data: {
+      unit: "mg" | "ml";
+      value: string;
+      price: string;
+      stock: number;
+      weightOz: string | null;
+    }
+  ) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   uploadingFor: number | null;
   setUploadingFor: (id: number | null) => void;
@@ -443,9 +537,23 @@ function ProductRow({
   const [editingVariationId, setEditingVariationId] = useState<number | null>(null);
   const [editVariationForm, setEditVariationForm] = useState<VariationForm>(emptyVariation);
 
-  const startEditVariation = (v: { id: number; unit: "mg" | "ml"; value: string; price: string; stock: number }) => {
+  const startEditVariation = (v: {
+    id: number;
+    unit: "mg" | "ml";
+    value: string;
+    price: string;
+    stock: number;
+    weightOz?: string | null;
+  }) => {
     setEditingVariationId(v.id);
-    setEditVariationForm({ unit: v.unit, value: v.value, price: v.price, stock: String(v.stock), sku: "" });
+    setEditVariationForm({
+      unit: v.unit,
+      value: v.value,
+      price: v.price,
+      stock: String(v.stock),
+      sku: "",
+      weightOz: v.weightOz ?? "",
+    });
   };
 
   const saveEditVariation = () => {
@@ -455,6 +563,7 @@ function ProductRow({
       value: editVariationForm.value,
       price: editVariationForm.price,
       stock: Number(editVariationForm.stock),
+      weightOz: editVariationForm.weightOz || null,
     });
     setEditingVariationId(null);
   };
@@ -735,6 +844,21 @@ function ProductRow({
                   placeholder="100"
                   value={variationForm.stock}
                   onChange={(e) => setVariationForm({ ...variationForm, stock: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Weight (oz)</label>
+                <input
+                  className="lab-input py-1.5 text-xs w-24"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  // Blank inherits the product's weight, which is right for
+                  // milligram sizes where the vial dominates. Worth setting for
+                  // volumes, where 30 mL really does outweigh 10 mL.
+                  placeholder="Same as product"
+                  value={variationForm.weightOz}
+                  onChange={(e) => setVariationForm({ ...variationForm, weightOz: e.target.value })}
                 />
               </div>
               <button

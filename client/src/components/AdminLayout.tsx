@@ -18,6 +18,7 @@ import {
   Building2,
   Share2,
   BarChart3,
+  Truck,
 } from "lucide-react";
 import { useState, ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/admin/shipping-settings", label: "Shipping", icon: Truck },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/lab-reports", label: "Lab Reports", icon: FileText },

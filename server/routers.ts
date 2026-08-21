@@ -17,6 +17,13 @@ import {
   rangeStart,
 } from "@shared/analytics";
 import {
+  SHIPPING_SETTINGS_KEY,
+  isOriginComplete,
+  parseShippingSettings,
+  shippingSettingsSchema,
+} from "@shared/shipping";
+import {
+  countProductsMissingWeight,
   getAbandonedCheckouts,
   getCustomerMix,
   getOrdersByStatus,
@@ -172,6 +179,20 @@ const optionalTrimmedStringNullable = z
     if (v === undefined) return undefined;
     if (v === null) return null;
     return v.trim() !== "" ? v : null;
+  });
+
+// A decimal column that the admin may leave blank. An empty input must land
+// as null — storing "" would make a weightless product look like it weighs
+// nothing, and nothing is a rate we would actually charge.
+const optionalDecimal = z
+  .union([z.string(), z.number(), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v === null || v === undefined) return null;
+    const s = String(v).trim();
+    if (s === "") return null;
+    const n = Number(s);
+    return Number.isFinite(n) && n > 0 ? s : null;
   });
 
 const WHOLESALE_VOLUME_LABELS: Record<string, string> = {
@@ -386,6 +407,10 @@ export const appRouter = router({
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
           excludeFromBulkDiscount: z.boolean().optional(),
+          weightOz: optionalDecimal,
+          lengthIn: optionalDecimal,
+          widthIn: optionalDecimal,
+          heightIn: optionalDecimal,
         })
       )
       .mutation(({ input }) => createProduct(input)),
@@ -405,6 +430,10 @@ export const appRouter = router({
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
           excludeFromBulkDiscount: z.boolean().optional(),
+          weightOz: optionalDecimal,
+          lengthIn: optionalDecimal,
+          widthIn: optionalDecimal,
+          heightIn: optionalDecimal,
         })
       )
       .mutation(({ input }) => {
@@ -461,6 +490,8 @@ export const appRouter = router({
           stock: z.number().optional(),
           sku: z.string().optional(),
           active: z.boolean().optional(),
+          // Null falls back to the product's weight — see shared/shipping.ts.
+          weightOz: optionalDecimal,
         })
       )
       .mutation(({ input }) => createVariation(input)),
@@ -475,6 +506,7 @@ export const appRouter = router({
           stock: z.number().optional(),
           sku: z.string().optional(),
           active: z.boolean().optional(),
+          weightOz: optionalDecimal,
         })
       )
       .mutation(({ input }) => {
@@ -1333,6 +1365,32 @@ export const appRouter = router({
           getSlowestProducts(since, input.limit),
         ]);
         return { top, slowest };
+      }),
+  }),
+
+  // ─── Shipping settings ────────────────────────────────────────────────────
+  // One JSON row in site_settings rather than a table: ten values that are
+  // always read and written together and never queried by field. Validated on
+  // the way in and on the way out, so a hand-edited or older-shaped row cannot
+  // reach the carrier code.
+  shipping: router({
+    getSettings: adminProcedure.query(async () => {
+      const row = await getSiteSetting(SHIPPING_SETTINGS_KEY);
+      const settings = parseShippingSettings(row?.value);
+      return {
+        settings,
+        originComplete: isOriginComplete(settings.origin),
+        // Surfaced so the settings page can say what is still missing rather
+        // than leaving the admin to discover it at the first failed quote.
+        productsMissingWeight: await countProductsMissingWeight(),
+      };
+    }),
+
+    updateSettings: adminProcedure
+      .input(shippingSettingsSchema)
+      .mutation(async ({ input }) => {
+        await setSiteSetting(SHIPPING_SETTINGS_KEY, JSON.stringify(input));
+        return { settings: input, originComplete: isOriginComplete(input.origin) };
       }),
   }),
 
