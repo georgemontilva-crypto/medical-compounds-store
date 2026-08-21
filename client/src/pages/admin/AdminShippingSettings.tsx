@@ -72,7 +72,7 @@ export default function AdminShippingSettings() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-6 max-w-6xl">
         <div>
           <p className="lab-section-title mb-1">Configuration</p>
           <h1 className="text-2xl font-bold">Shipping</h1>
@@ -205,16 +205,27 @@ export default function AdminShippingSettings() {
                           Service code {service.code}
                         </p>
                       </div>
-                      <Toggle
-                        checked={Boolean(form.services[service.code])}
-                        onChange={next =>
-                          setForm(f => ({
-                            ...f,
-                            services: { ...f.services, [service.code]: next },
-                          }))
-                        }
-                        label={service.label}
-                      />
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span
+                          className={`text-xs font-medium w-10 text-right ${
+                            form.services[service.code]
+                              ? "text-green-700"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {form.services[service.code] ? "Active" : "Off"}
+                        </span>
+                        <Toggle
+                          checked={Boolean(form.services[service.code])}
+                          onChange={next =>
+                            setForm(f => ({
+                              ...f,
+                              services: { ...f.services, [service.code]: next },
+                            }))
+                          }
+                          label={service.label}
+                        />
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -627,12 +638,16 @@ function Toggle({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
-        checked ? "bg-primary" : "bg-secondary border border-border"
+        checked ? "bg-green-600" : "bg-secondary border border-border"
       }`}
     >
+      {/* left-0.5 anchors the thumb. Without an explicit left it falls back to
+          its static position, which a button's inherited text-align:center puts
+          at the middle of the track — so the transform started from halfway and
+          carried the thumb clean outside the pill. */}
       <span
-        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-          checked ? "translate-x-[1.375rem]" : "translate-x-0.5"
+        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
         }`}
       />
     </button>
