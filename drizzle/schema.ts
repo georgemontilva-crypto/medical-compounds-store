@@ -508,3 +508,33 @@ export const affiliatePayoutRequests = mysqlTable(
 
 export type AffiliatePayoutRequest = typeof affiliatePayoutRequests.$inferSelect;
 export type InsertAffiliatePayoutRequest = typeof affiliatePayoutRequests.$inferInsert;
+
+// ─── Password reset ───────────────────────────────────────────────────────────
+/**
+ * One row per reset request.
+ *
+ * `tokenHash` is a SHA-256 hex digest, never the token itself: this table is
+ * the one place an attacker with read access could otherwise collect live
+ * credentials. The plaintext exists only in the email that was sent.
+ *
+ * Rows are kept after use rather than deleted — `usedAt` is what makes a token
+ * single-use, and a deleted row is indistinguishable from one that never
+ * existed when something needs explaining later.
+ */
+export const passwordResetTokens = mysqlTable(
+  "password_reset_tokens",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id),
+    tokenHash: varchar("tokenHash", { length: 64 }).notNull().unique(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    usedAt: timestamp("usedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [index("password_reset_tokens_user_idx").on(table.userId)]
+);
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;

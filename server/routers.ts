@@ -42,6 +42,17 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import { sendEmail, escapeHtml } from "./email";
+import {
+  RESET_TOKEN_TTL_MS,
+  buildResetEmailHtml,
+  buildResetUrl,
+  consumeResetAttempt,
+  generateResetToken,
+  hashResetToken,
+  hashesMatch,
+  isResetTokenUsable,
+  resetAttemptKey,
+} from "./passwordReset";
 import { notifyOwner } from "./_core/notification";
 import type { InsertLabReport } from "../drizzle/schema";
 import {
@@ -68,6 +79,10 @@ import {
   getAllUsers,
   findUserByEmailExcluding,
   updateUserProfile,
+  createPasswordResetToken,
+  getPasswordResetTokenByHash,
+  consumePasswordResetToken,
+  updateUserPassword,
   getCartItems,
   getCategoryById,
   getCouponById,
@@ -327,6 +342,97 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    /**
+     * Starts a password reset.
+     *
+     * Every path through this returns the same object. An unknown address, a
+     * known one, an account with no password, a spent rate limit — all answer
+     * "if that address is registered, a link is on its way". Anything that
+     * distinguished them would turn this endpoint into a way to ask the site
+     * which of a list of addresses hold accounts, which is exactly the question
+     * a reset form must refuse to answer.
+     *
+     * That includes failure: the send is awaited but its result is discarded,
+     * because "we tried and the provider was down" is still not the caller's
+     * business.
+     */
+    requestPasswordReset: publicProcedure
+      .input(z.object({ email: z.string().trim().email().max(320) }))
+      .mutation(async ({ input, ctx }) => {
+        const identicalResponse = {
+          success: true as const,
+          message: "If that address is registered, we've sent a reset link.",
+        };
+
+        const email = input.email.toLowerCase();
+        const allowed = consumeResetAttempt(resetAttemptKey(email, ctx.req.ip));
+        if (!allowed) return identicalResponse;
+
+        const user = await getUserByEmail(email);
+        // No password on the account means it signs in through OAuth, and
+        // there is nothing here to reset.
+        if (!user || !user.passwordHash) return identicalResponse;
+
+        const token = generateResetToken();
+        await createPasswordResetToken(
+          user.id,
+          hashResetToken(token),
+          new Date(Date.now() + RESET_TOKEN_TTL_MS)
+        );
+
+        const resetUrl = buildResetUrl(ENV.publicSiteUrl, token);
+
+        // Development fallback: without RESEND_API_KEY the email is skipped
+        // silently, which would leave the flow untestable locally. The link is
+        // a live credential, so this is gated on not being production.
+        if (!ENV.isProduction) {
+          console.log(`\n[password-reset] Link for ${email}:\n${resetUrl}\n`);
+        }
+
+        await sendEmail({
+          to: user.email ?? email,
+          subject: "Reset your Brighter Days Labs password",
+          html: buildResetEmailHtml(resetUrl),
+        });
+
+        return identicalResponse;
+      }),
+
+    /**
+     * Finishes a reset.
+     *
+     * Unlike the request side, this one does report failure: the holder of a
+     * dead link has already proved nothing about who is registered, and
+     * "expired or already used" is what they need to know to ask for another.
+     */
+    resetPassword: publicProcedure
+      .input(
+        z.object({
+          token: z.string().min(1),
+          password: z.string().min(8, "Password must be at least 8 characters"),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const expired = new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This reset link has expired or already been used. Please request a new one.",
+        });
+
+        const tokenHash = hashResetToken(input.token);
+        const row = await getPasswordResetTokenByHash(tokenHash);
+        if (!row || !hashesMatch(row.tokenHash, tokenHash)) throw expired;
+        if (!isResetTokenUsable(row)) throw expired;
+
+        // Spend it before writing the password: if two requests race, only the
+        // one that wins this update gets to set anything.
+        const spent = await consumePasswordResetToken(row.id);
+        if (!spent) throw expired;
+
+        await updateUserPassword(row.userId, await bcrypt.hash(input.password, 12));
+
+        return { success: true as const };
+      }),
   }),
 
   // ─── Categories ────────────────────────────────────────────────────────────

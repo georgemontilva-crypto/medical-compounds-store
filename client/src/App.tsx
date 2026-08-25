@@ -27,6 +27,8 @@ import Home from "./pages/Home";
 import Compounds from "./pages/Compounds";
 import ProductDetail from "./pages/ProductDetail";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Register from "./pages/Register";
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
@@ -69,6 +71,8 @@ function PublicRoutes() {
       <Route path="/compounds" component={Compounds} />
       <Route path="/compounds/:slug" component={ProductDetail} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/register" component={Register} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/my-account" component={MyAccount} />

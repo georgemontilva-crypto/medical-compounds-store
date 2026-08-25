@@ -34,6 +34,7 @@ import {
   heroSlidesConfig,
   labReports,
   orderItems,
+  passwordResetTokens,
   shippingLabels,
   orders,
   productImages,
@@ -194,6 +195,70 @@ export async function findUserByEmailExcluding(
     .where(and(eq(users.email, email), ne(users.id, excludeUserId)))
     .limit(1);
   return result[0];
+}
+
+// ─── Password reset ──────────────────────────────────────────────────────────
+
+/**
+ * Retires every live token for a user, then stores the new one.
+ *
+ * Superseding rather than accumulating: two valid links in two inboxes is one
+ * more chance for the wrong person to hold a working one, and a shopper who
+ * clicks the form twice expects the newest email to be the one that works.
+ * Marked used rather than deleted, so the trail of what was issued survives.
+ */
+export async function createPasswordResetToken(
+  userId: number,
+  tokenHash: string,
+  expiresAt: Date
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: new Date() })
+    .where(and(eq(passwordResetTokens.userId, userId), isNull(passwordResetTokens.usedAt)));
+
+  await db.insert(passwordResetTokens).values({ userId, tokenHash, expiresAt });
+}
+
+/** Looked up by hash, because the plaintext is never stored to compare against. */
+export async function getPasswordResetTokenByHash(tokenHash: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.tokenHash, tokenHash))
+    .limit(1);
+  return result[0];
+}
+
+/**
+ * Spends a token, and says whether it was this call that spent it.
+ *
+ * The `usedAt IS NULL` in the WHERE is what makes the token single-use under
+ * concurrency: two requests arriving together both pass the earlier validity
+ * check, and only the one whose UPDATE actually matches a row is allowed to
+ * proceed. Deciding this in the database rather than in the process is the
+ * difference between "single use" and "usually single use".
+ */
+export async function consumePasswordResetToken(id: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const [result] = await db
+    .update(passwordResetTokens)
+    .set({ usedAt: new Date() })
+    .where(and(eq(passwordResetTokens.id, id), isNull(passwordResetTokens.usedAt)));
+  return (result as { affectedRows?: number }).affectedRows === 1;
+}
+
+/** Sets a new password hash. Nothing else on the row moves. */
+export async function updateUserPassword(userId: number, passwordHash: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 
 export async function countUsers() {

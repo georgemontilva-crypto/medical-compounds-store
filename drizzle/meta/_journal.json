@@ -162,6 +162,13 @@
       "when": 1787627985155,
       "tag": "0022_nostalgic_maggott",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1787677939732,
+      "tag": "0023_whole_shard",
+      "breakpoints": true
     }
   ]
 }
