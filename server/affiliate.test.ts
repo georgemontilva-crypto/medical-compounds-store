@@ -90,28 +90,81 @@ describe("normalizeReferralCode", () => {
 
 describe("isSelfReferral", () => {
   const owner = "affiliate@example.com";
+  const OWNER_ID = 7;
+
+  /** A guest checkout: no account id on the buyer's side. */
+  const asGuest = (buyerEmails: Array<string | null | undefined>, ownerEmail = owner) =>
+    isSelfReferral({ buyerEmails, ownerUserId: OWNER_ID, ownerEmail });
 
   it("catches the buyer using their own code", () => {
-    expect(isSelfReferral([owner], owner)).toBe(true);
+    expect(asGuest([owner])).toBe(true);
   });
 
   it("catches it through the signed-in account when shipping uses another address", () => {
     // Signed in as the affiliate, typing a different email into the form.
-    expect(isSelfReferral(["someone.else@example.com", owner], owner)).toBe(true);
+    expect(asGuest(["someone.else@example.com", owner])).toBe(true);
   });
 
   it("ignores case and surrounding whitespace", () => {
-    expect(isSelfReferral(["  AFFILIATE@Example.COM "], owner)).toBe(true);
+    expect(asGuest(["  AFFILIATE@Example.COM "])).toBe(true);
   });
 
   it("allows a genuine referral", () => {
-    expect(isSelfReferral(["colleague@example.com", null], owner)).toBe(false);
+    expect(asGuest(["colleague@example.com", null])).toBe(false);
   });
 
   it("does not match when the affiliate has no email on record", () => {
     // Otherwise two accounts with a null email would look like the same person.
-    expect(isSelfReferral([null, undefined], null)).toBe(false);
-    expect(isSelfReferral([""], "")).toBe(false);
+    expect(asGuest([null, undefined], null)).toBe(false);
+    expect(asGuest([""], "")).toBe(false);
+  });
+
+  it("catches the owner by account id even when every email differs", () => {
+    // The bypass this arm exists for: an affiliate whose account email was
+    // changed still cannot refer themselves while signed in.
+    expect(
+      isSelfReferral({
+        buyerUserId: OWNER_ID,
+        buyerEmails: ["brand.new@example.com"],
+        ownerUserId: OWNER_ID,
+        ownerEmail: "changed@example.com",
+      })
+    ).toBe(true);
+  });
+
+  it("catches the owner by account id even with no email on either side", () => {
+    // The email arm returns early on a missing owner email; the id arm must not.
+    expect(
+      isSelfReferral({
+        buyerUserId: OWNER_ID,
+        buyerEmails: [null],
+        ownerUserId: OWNER_ID,
+        ownerEmail: null,
+      })
+    ).toBe(true);
+  });
+
+  it("does not treat a different signed-in account as the owner", () => {
+    expect(
+      isSelfReferral({
+        buyerUserId: OWNER_ID + 1,
+        buyerEmails: ["colleague@example.com"],
+        ownerUserId: OWNER_ID,
+        ownerEmail: owner,
+      })
+    ).toBe(false);
+  });
+
+  it("still catches a signed-in buyer whose account email matches the owner's", () => {
+    // Different account rows, same address — the id arm misses, the email arm does not.
+    expect(
+      isSelfReferral({
+        buyerUserId: OWNER_ID + 1,
+        buyerEmails: [owner],
+        ownerUserId: OWNER_ID,
+        ownerEmail: owner,
+      })
+    ).toBe(true);
   });
 });
 

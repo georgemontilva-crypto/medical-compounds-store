@@ -66,6 +66,8 @@ import {
   getAllCoupons,
   getAllOrders,
   getAllUsers,
+  findUserByEmailExcluding,
+  updateUserProfile,
   getCartItems,
   getCategoryById,
   getCouponById,
@@ -1099,7 +1101,14 @@ export const appRouter = router({
         }
 
         const owner = await getUserById(affiliateCode.userId);
-        if (isSelfReferral([input.email, ctx.user?.email], owner?.email)) {
+        if (
+          isSelfReferral({
+            buyerUserId: ctx.user?.id,
+            buyerEmails: [input.email, ctx.user?.email],
+            ownerUserId: affiliateCode.userId,
+            ownerEmail: owner?.email,
+          })
+        ) {
           return {
             valid: false as const,
             reason: "self_referral" as const,
@@ -1319,6 +1328,54 @@ export const appRouter = router({
     users: adminProcedure
       .input(z.object({ limit: z.number().optional(), offset: z.number().optional() }).optional())
       .query(({ input }) => getAllUsers(input?.limit, input?.offset)),
+
+    /**
+     * Edits a user's contact details. Name, email and phone — nothing else.
+     *
+     * Notably not the password: an admin who can set one can impersonate the
+     * account, and a forgotten password belongs in a reset flow the owner
+     * drives. The role is not here either, for the same reason it has never
+     * had an endpoint.
+     *
+     * The email is the account's login credential (see auth.login, which looks
+     * users up by it), so a collision would leave two rows answering the same
+     * sign-in. The check below rejects that.
+     */
+    updateUser: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+          email: z.string().trim().email("Enter a valid email address").max(320),
+          // Optional, and an empty string means "clear it" rather than "".
+          phone: z.string().trim().max(30).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const target = await getUserById(input.id);
+        if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+
+        // Stored lowercased so that two accounts cannot differ by case alone —
+        // getUserByEmail matches exactly, and "A@x.com" would otherwise sign in
+        // alongside "a@x.com".
+        const email = input.email.toLowerCase();
+
+        const clash = await findUserByEmailExcluding(email, input.id);
+        if (clash) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "That email is already used by another account.",
+          });
+        }
+
+        await updateUserProfile(input.id, {
+          name: input.name,
+          email,
+          phone: input.phone && input.phone.length > 0 ? input.phone : null,
+        });
+
+        return { success: true as const, emailChanged: email !== target.email?.toLowerCase() };
+      }),
   }),
 
   // ─── Site Images (admin-managed static content) ───────────────────────────

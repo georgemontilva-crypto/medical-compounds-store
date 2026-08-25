@@ -18,6 +18,9 @@ export const users = mysqlTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  // Nullable: accounts predate this column and signup never asks for it. Same
+  // width as orders.shippingPhone so the two can hold the same value.
+  phone: varchar("phone", { length: 30 }),
   passwordHash: varchar("passwordHash", { length: 255 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),

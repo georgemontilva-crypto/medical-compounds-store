@@ -229,7 +229,8 @@ export interface ResolvedReferral {
 export async function resolveReferral(
   code: string,
   subtotal: number,
-  buyerEmails: Array<string | null | undefined>
+  buyerEmails: Array<string | null | undefined>,
+  buyerUserId?: number | null
 ): Promise<ResolvedReferral | null> {
   const normalized = normalizeReferralCode(code);
   if (!normalized) return null;
@@ -239,7 +240,14 @@ export async function resolveReferral(
 
   const owner = await getUserById(affiliateCode.userId);
 
-  if (isSelfReferral(buyerEmails, owner?.email)) {
+  if (
+    isSelfReferral({
+      buyerUserId,
+      buyerEmails,
+      ownerUserId: affiliateCode.userId,
+      ownerEmail: owner?.email,
+    })
+  ) {
     return {
       affiliateCodeId: affiliateCode.id,
       ownerUserId: affiliateCode.userId,
@@ -313,8 +321,12 @@ export async function priceOrder(
     : undefined;
 
   const referral = options.referralCode
-    ? ((await resolveReferral(options.referralCode, subtotal, options.buyerEmails ?? [])) ??
-      undefined)
+    ? ((await resolveReferral(
+        options.referralCode,
+        subtotal,
+        options.buyerEmails ?? [],
+        options.userId
+      )) ?? undefined)
     : undefined;
 
   const couponDiscount = coupon?.discount ?? 0;

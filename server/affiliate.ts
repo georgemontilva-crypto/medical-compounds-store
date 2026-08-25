@@ -74,20 +74,46 @@ export function normalizeReferralCode(code: string): string {
 
 // ─── Self-referral ───────────────────────────────────────────────────────────
 
+export interface SelfReferralCheck {
+  /** The signed-in buyer's account, or null/undefined for a guest checkout. */
+  buyerUserId?: number | null;
+  /** Every address that identifies the buyer: the shipping form and the account. */
+  buyerEmails: Array<string | null | undefined>;
+  /** The account that owns the code being used. */
+  ownerUserId: number;
+  /** The owner's email as it stands now, not as it stood when the code was issued. */
+  ownerEmail: string | null | undefined;
+}
+
 /**
  * Whether a buyer is using their own code.
  *
- * Both the shipping email and the signed-in account email are checked. Testing
+ * Two independent arms, because either one alone is escapable.
+ *
+ * The account id is checked first. It is the only identifier here that the
+ * buyer cannot change: emails are retyped freely in the shipping form and can
+ * be edited from the admin panel, and an affiliate whose account email is
+ * changed after the fact would otherwise stop matching their own past address
+ * and could then refer themselves. An id match is decisive on its own.
+ *
+ * The email arm still runs, because it catches the case the id arm cannot: an
+ * affiliate who signs out and buys as a guest has no account id to compare, and
+ * only the address they type gives them away. It is deliberately compared
+ * against the owner's *current* email, read at checkout time, so the rule
+ * always reflects the present state of the account rather than a stale copy.
+ *
+ * Both the shipping email and the signed-in account email are tested. Checking
  * only one leaves the obvious hole: signed in as the affiliate while typing a
  * different address into the shipping form.
  */
-export function isSelfReferral(
-  buyerEmails: Array<string | null | undefined>,
-  affiliateOwnerEmail: string | null | undefined
-): boolean {
-  const owner = normalizeEmail(affiliateOwnerEmail);
+export function isSelfReferral(check: SelfReferralCheck): boolean {
+  if (check.buyerUserId != null && check.buyerUserId === check.ownerUserId) {
+    return true;
+  }
+
+  const owner = normalizeEmail(check.ownerEmail);
   if (!owner) return false;
-  return buyerEmails.some((email) => normalizeEmail(email) === owner);
+  return check.buyerEmails.some((email) => normalizeEmail(email) === owner);
 }
 
 function normalizeEmail(email: string | null | undefined): string | null {

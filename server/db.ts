@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, like, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   CartItem,
@@ -122,7 +122,21 @@ export async function getAllUsers(limit = 100, offset = 0) {
   if (!db) return [];
   const rows = await db
     .select({
-      user: users,
+      // Columns are listed rather than selecting the whole row: `users` carries
+      // passwordHash and openId, and spreading it sent both to the admin's
+      // browser, where they sat in the query cache. Nothing here needs them.
+      user: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        loginMethod: users.loginMethod,
+        role: users.role,
+        points: users.points,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        lastSignedIn: users.lastSignedIn,
+      },
       welcomeCouponCode: coupons.code,
       welcomeCouponRedeemedAt: welcomeCouponRedemptions.redeemedAt,
       welcomeCouponUsedAt: welcomeCouponRedemptions.usedAt,
@@ -140,6 +154,46 @@ export async function getAllUsers(limit = 100, offset = 0) {
     welcomeCouponRedeemedAt: r.welcomeCouponRedeemedAt,
     welcomeCouponUsedAt: r.welcomeCouponUsedAt,
   }));
+}
+
+/**
+ * The profile fields an admin may edit, and only those.
+ *
+ * Deliberately not a partial of the whole row: passwordHash, role, openId and
+ * points each have their own path in or out of this table, and a generic
+ * "update user" would let any future caller reach them through here. A
+ * forgotten password is a reset flow, not something an admin retypes.
+ */
+export async function updateUserProfile(
+  id: number,
+  data: { name: string; email: string; phone: string | null }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(users)
+    .set({ name: data.name, email: data.email, phone: data.phone })
+    .where(eq(users.id, id));
+}
+
+/**
+ * Whether some *other* account already holds this email.
+ *
+ * Scoped to "other" because an edit that leaves the email untouched must not
+ * collide with the row being edited.
+ */
+export async function findUserByEmailExcluding(
+  email: string,
+  excludeUserId: number
+): Promise<{ id: number } | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.email, email), ne(users.id, excludeUserId)))
+    .limit(1);
+  return result[0];
 }
 
 export async function countUsers() {
