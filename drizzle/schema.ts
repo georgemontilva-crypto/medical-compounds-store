@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  datetime,
   decimal,
   int,
   longtext,
@@ -9,6 +10,7 @@ import {
   index,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core";
 
@@ -538,3 +540,72 @@ export const passwordResetTokens = mysqlTable(
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// ─── Site traffic ─────────────────────────────────────────────────────────────
+/**
+ * Web traffic, stored already aggregated.
+ *
+ * There is deliberately no row here for a person, a session or a single visit —
+ * only counts per hour and page. Nothing in this table, or in the one below it,
+ * can be traced back to anyone: the hash used to tell one visitor from another
+ * lives in memory for a day and is never written down (see `server/traffic.ts`).
+ * That is not only a privacy position, it is what keeps the table small enough
+ * to need no retention job. A busy hour costs one row per page, not one per
+ * view.
+ *
+ * `datetime`, not `timestamp`, for the bucket: MySQL runs a TIMESTAMP through
+ * the session time zone on the way in and on the way out, which would shift
+ * every bucket silently if the database's zone were ever not UTC. A DATETIME is
+ * stored exactly as written, and everything that writes here writes UTC.
+ */
+export const pageViewStats = mysqlTable(
+  "page_view_stats",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    /** Start of the hour, UTC. */
+    bucketStart: datetime("bucketStart", { mode: "date" }).notNull(),
+    path: varchar("path", { length: 255 }).notNull(),
+    views: int("views").default(0).notNull(),
+    /**
+     * Visitors whose first page of the day was this one.
+     *
+     * Counted on the entry page only, so summing this column over a day gives
+     * that day's unique visitors with no double counting: a visitor increments
+     * exactly one row, once. Over a longer window it is the sum of daily
+     * uniques — someone who comes back on Tuesday is a visitor on Monday and a
+     * visitor again on Tuesday, which is what a daily-unique figure means.
+     */
+    entries: int("entries").default(0).notNull(),
+  },
+  // The unique key is also the read path: `bucketStart` leads it, so a range
+  // over the window uses this index and no second one is needed.
+  (table) => [uniqueIndex("page_view_stats_bucket_path_idx").on(table.bucketStart, table.path)]
+);
+
+export type PageViewStat = typeof pageViewStats.$inferSelect;
+export type InsertPageViewStat = typeof pageViewStats.$inferInsert;
+
+/**
+ * Where each day's visitors arrived from, aggregated the same way.
+ *
+ * Counted once per visitor per day, on their first page. Every later page of a
+ * visit carries this site as its referrer, and counting those would bury the
+ * real entry points under our own hostname. `visits` therefore adds up to the
+ * same number as `page_view_stats.entries` over any window — the two are the
+ * same event, cut by source instead of by page.
+ */
+export const trafficSourceStats = mysqlTable(
+  "traffic_source_stats",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    /** Start of the hour, UTC. */
+    bucketStart: datetime("bucketStart", { mode: "date" }).notNull(),
+    /** A short label — "google", "direct", a utm_source, or a bare hostname. */
+    source: varchar("source", { length: 128 }).notNull(),
+    visits: int("visits").default(0).notNull(),
+  },
+  (table) => [uniqueIndex("traffic_source_stats_bucket_source_idx").on(table.bucketStart, table.source)]
+);
+
+export type TrafficSourceStat = typeof trafficSourceStats.$inferSelect;
+export type InsertTrafficSourceStat = typeof trafficSourceStats.$inferInsert;

@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import { captureReferralFromUrl } from "@/lib/referral";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -170,6 +170,47 @@ function ReferralCapture() {
   return null;
 }
 
+/**
+ * Counts a page view on every route change.
+ *
+ * Mounted at the app root next to ReferralCapture rather than called from each
+ * page, for the same reason: any page can be the first one a visitor lands on.
+ *
+ * Three things it deliberately does not do.
+ *
+ * It sends only `window.location.pathname`, never the query string — a
+ * `?token=` on the reset-password route would otherwise be written into an
+ * analytics table. It skips `/admin`, which is the shop owner at work rather
+ * than traffic. And it stays quiet outside a production build, because the dev
+ * server talks to the same Railway database as the live site, so a local reload
+ * would show up as a real visit.
+ */
+function PageViewTracker() {
+  const [location] = useLocation();
+  const record = trpc.traffic.record.useMutation();
+  const recordRef = useRef(record.mutate);
+  recordRef.current = record.mutate;
+  const lastCounted = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    if (location.startsWith("/admin")) return;
+    if (lastCounted.current === location) return;
+    lastCounted.current = location;
+
+    const params = new URLSearchParams(window.location.search);
+    recordRef.current({
+      path: window.location.pathname,
+      // Only the first page of a visit carries an outside referrer; on every
+      // later one it is this site, which the server files as "direct".
+      referrer: document.referrer || undefined,
+      utmSource: params.get("utm_source") ?? undefined,
+    });
+  }, [location]);
+
+  return null;
+}
+
 function ScrollToTop() {
   const [location] = useLocation();
 
@@ -241,6 +282,7 @@ function App() {
                   <LoadingScreen />
                   <Toaster position="top-right" />
                   <ReferralCapture />
+                  <PageViewTracker />
                   <ScrollToTop />
                   <BackgroundPatternSync />
                   <FaviconSync />

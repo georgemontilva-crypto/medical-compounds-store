@@ -1,6 +1,13 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { orderItems, orders, products } from "../drizzle/schema";
+import {
+  orderItems,
+  orders,
+  pageViewStats,
+  products,
+  trafficSourceStats,
+} from "../drizzle/schema";
+import type { PagePopularity, SourcePopularity, TrafficPoint } from "@shared/traffic";
 
 /**
  * Aggregate queries behind the admin analytics dashboard.
@@ -313,5 +320,145 @@ export async function getRecentAbandonedCheckouts(graceHours: number, limit: num
     email: r.email,
     total: Number(r.total ?? 0),
     createdAt: r.createdAt,
+  }));
+}
+
+// ─── Site traffic ─────────────────────────────────────────────────────────────
+/**
+ * Reads over the two aggregate tables `server/traffic.ts` writes.
+ *
+ * Everything below groups hourly rows into the same day, week and month buckets
+ * the sales series uses, so the two charts line up and a spike in traffic can
+ * be read against a spike in orders.
+ *
+ * One convention differs from the money queries above. The window bound is
+ * bound as a UTC string rather than as a Date: `bucketStart` is a DATETIME with
+ * no time zone of its own, and handing the driver a Date would have it
+ * formatted in whatever zone the process happens to run in — which is the one
+ * thing that would quietly shift the window by hours between a laptop and
+ * Railway.
+ */
+function utcBound(date: Date): string {
+  return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
+/** Bucketing expression over an hourly traffic row, as a `YYYY-MM-DD` string. */
+function trafficBucket(granularity: SalesGranularity) {
+  const at = pageViewStats.bucketStart;
+  switch (granularity) {
+    case "week":
+      return sql`date_format(date_sub(${at}, interval weekday(${at}) day), '%Y-%m-%d')`;
+    case "month":
+      return sql`date_format(${at}, '%Y-%m-01')`;
+    default:
+      return sql`date_format(${at}, '%Y-%m-%d')`;
+  }
+}
+
+/** Views and visitors per bucket. Quiet buckets are simply absent. */
+export async function getTrafficOverTime(
+  since: Date,
+  granularity: SalesGranularity
+): Promise<TrafficPoint[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      bucket: sql<string>`${trafficBucket(granularity)}`.as("bucket"),
+      views: sql<number>`coalesce(sum(${pageViewStats.views}), 0)`,
+      visitors: sql<number>`coalesce(sum(${pageViewStats.entries}), 0)`,
+    })
+    .from(pageViewStats)
+    .where(sql`${pageViewStats.bucketStart} >= ${utcBound(since)}`)
+    .groupBy(sql`bucket`)
+    .orderBy(sql`bucket`);
+
+  return rows.map((r) => ({
+    bucket: String(r.bucket),
+    views: Number(r.views ?? 0),
+    visitors: Number(r.visitors ?? 0),
+  }));
+}
+
+/**
+ * Headline traffic figures for a window.
+ *
+ * `visitors` sums the entry counts, which makes it the sum of each day's unique
+ * visitors: someone who comes back on Tuesday counts on Monday and again on
+ * Tuesday. That is what a daily-unique figure means everywhere else, and it is
+ * the only honest one available without keeping an identifier around longer
+ * than a day.
+ */
+export async function getTrafficSummary(since: Date) {
+  const db = await getDb();
+  if (!db) return { views: 0, visitors: 0 };
+
+  const result = await db
+    .select({
+      views: sql<number>`coalesce(sum(${pageViewStats.views}), 0)`,
+      visitors: sql<number>`coalesce(sum(${pageViewStats.entries}), 0)`,
+    })
+    .from(pageViewStats)
+    .where(sql`${pageViewStats.bucketStart} >= ${utcBound(since)}`);
+
+  return {
+    views: Number(result[0]?.views ?? 0),
+    visitors: Number(result[0]?.visitors ?? 0),
+  };
+}
+
+/**
+ * The most viewed pages in the window.
+ *
+ * `entries` is how many visits started on that page rather than how many people
+ * saw it, so a page can be viewed constantly and land almost nobody — which is
+ * the difference between a page people pass through and a page people arrive
+ * on.
+ */
+export async function getTopPages(since: Date, limit: number): Promise<PagePopularity[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      path: pageViewStats.path,
+      // Aliased explicitly: drizzle only emits `AS` when asked, and the ORDER BY
+      // below refers to this column by name.
+      views: sql<number>`sum(${pageViewStats.views})`.as("views"),
+      entries: sql<number>`sum(${pageViewStats.entries})`,
+    })
+    .from(pageViewStats)
+    .where(sql`${pageViewStats.bucketStart} >= ${utcBound(since)}`)
+    .groupBy(pageViewStats.path)
+    .orderBy(sql`views desc`)
+    .limit(limit);
+
+  return rows.map((r) => ({
+    path: String(r.path ?? ""),
+    views: Number(r.views ?? 0),
+    entries: Number(r.entries ?? 0),
+  }));
+}
+
+/** Where the window's visits came from, busiest first. */
+export async function getTopSources(since: Date, limit: number): Promise<SourcePopularity[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      source: trafficSourceStats.source,
+      visits: sql<number>`sum(${trafficSourceStats.visits})`.as("visits"),
+    })
+    .from(trafficSourceStats)
+    .where(sql`${trafficSourceStats.bucketStart} >= ${utcBound(since)}`)
+    .groupBy(trafficSourceStats.source)
+    .orderBy(sql`visits desc`)
+    .limit(limit);
+
+  return rows.map((r) => ({
+    source: String(r.source ?? ""),
+    visits: Number(r.visits ?? 0),
   }));
 }

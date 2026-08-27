@@ -25,6 +25,8 @@ import {
 } from "recharts";
 import {
   DollarSign,
+  Eye,
+  Globe,
   Receipt,
   ShoppingCart,
   TrendingDown,
@@ -46,6 +48,10 @@ const STATUS_FILL: Record<string, string> = {
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
+/** Em dash rather than a division by zero when nobody has visited. */
+const viewsPerVisitor = (views: number, visitors: number) =>
+  visitors === 0 ? "—" : (views / visitors).toFixed(1);
+
 export default function AdminAnalytics() {
   const [range, setRange] = useState<AnalyticsRange>(DEFAULT_RANGE);
   const [granularity, setGranularity] = useState<SalesGranularity | undefined>(undefined);
@@ -53,6 +59,7 @@ export default function AdminAnalytics() {
   const summary = trpc.analytics.summary.useQuery({ range });
   const sales = trpc.analytics.salesOverTime.useQuery({ range, granularity });
   const productsQuery = trpc.analytics.products.useQuery({ range, limit: 8 });
+  const traffic = trpc.analytics.traffic.useQuery({ range, limit: 8 });
 
   // Changing the window changes which granularity makes sense, so the manual
   // override is dropped rather than carried into a range it does not suit.
@@ -190,6 +197,125 @@ export default function AdminAnalytics() {
             </ResponsiveContainer>
           )}
         </ChartCard>
+
+        {/* Site traffic */}
+        <ChartCard
+          title="Site traffic"
+          note="Counted by this server, not by an outside service. Nothing about a visitor is stored or sent anywhere."
+        >
+          {traffic.isLoading ? (
+            <ChartSkeleton />
+          ) : (traffic.data?.summary.views ?? 0) === 0 ? (
+            <EmptyState message="No page views recorded in this window yet." />
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-3 gap-4 mb-5">
+                <div>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {(traffic.data?.summary.views ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Page views</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {(traffic.data?.summary.visitors ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Visitors</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {viewsPerVisitor(
+                      traffic.data?.summary.views ?? 0,
+                      traffic.data?.summary.visitors ?? 0
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Pages per visit</p>
+                </div>
+              </div>
+
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart
+                  data={traffic.data?.points}
+                  margin={{ top: 8, right: 12, bottom: 4, left: 4 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="currentColor"
+                    className="text-border"
+                  />
+                  <XAxis
+                    dataKey="bucket"
+                    tick={{ fontSize: 11 }}
+                    stroke="currentColor"
+                    className="text-muted-foreground"
+                    tickFormatter={(v: string) => v.slice(5)}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    stroke="currentColor"
+                    className="text-muted-foreground"
+                    width={44}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    formatter={(value: number, name: string) => [
+                      value,
+                      name === "views" ? "Page views" : "Visitors",
+                    ]}
+                    contentStyle={{ borderRadius: 12, fontSize: 12 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="views"
+                    stroke="#baac96"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="visitors"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+
+              <TrafficCaveat />
+            </>
+          )}
+        </ChartCard>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          <TrafficRankCard
+            title="Most viewed pages"
+            note="Landings are visits that started on that page, rather than reached it from somewhere else on the site."
+            icon={Eye}
+            rows={traffic.data?.pages.map((p) => ({
+              key: p.path,
+              label: p.path,
+              value: p.views,
+              detail: `${p.entries} landing${p.entries === 1 ? "" : "s"}`,
+            }))}
+            loading={traffic.isLoading}
+            emptyMessage="No page views in this window yet."
+          />
+          <TrafficRankCard
+            title="Traffic sources"
+            note='Where each visit started. "Direct" covers typed addresses, bookmarks, apps, and the many links that arrive with no referrer at all.'
+            icon={Globe}
+            rows={traffic.data?.sources.map((s) => ({
+              key: s.source,
+              label: s.source,
+              value: s.visits,
+              detail: `${s.visits} visit${s.visits === 1 ? "" : "s"}`,
+            }))}
+            loading={traffic.isLoading}
+            emptyMessage="No visits attributed in this window yet."
+          />
+        </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Orders by status */}
@@ -533,6 +659,84 @@ function ProductRankCard({
             ))}
           </ul>
         </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * What the traffic numbers are worth, stated where they are read.
+ *
+ * Both limits are real and neither is a bug to be fixed later, so the dashboard
+ * says so rather than letting a confident-looking chart imply otherwise.
+ */
+function TrafficCaveat() {
+  return (
+    <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border max-w-prose">
+      Counted only from browsers that run the site's JavaScript, with known
+      crawlers filtered out by name — some automated traffic will still be in
+      here, and it is worth treating a sudden spike with suspicion. Visitors are
+      counted fresh each day, and a deploy can count a few of that day's
+      returning visitors twice.
+    </p>
+  );
+}
+
+function TrafficRankCard({
+  title,
+  note,
+  icon: Icon,
+  rows,
+  loading,
+  emptyMessage,
+}: {
+  title: string;
+  note: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  rows: Array<{ key: string; label: string; value: number; detail: string }> | undefined;
+  loading: boolean;
+  emptyMessage: string;
+}) {
+  const hasRows = (rows?.length ?? 0) > 0;
+  // Scaled against the busiest row rather than the total: these lists are
+  // truncated to the top few, so a share of the visible sum would be a
+  // percentage of nothing meaningful.
+  const busiest = Math.max(1, ...(rows ?? []).map((r) => r.value));
+
+  return (
+    <div className="lab-card p-5">
+      <div className="flex items-start gap-2 mb-4">
+        <Icon size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+        <div>
+          <h2 className="font-semibold">{title}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5 max-w-prose">{note}</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <ChartSkeleton />
+      ) : !hasRows ? (
+        <EmptyState message={emptyMessage} />
+      ) : (
+        <ul className="space-y-3">
+          {rows?.map((row) => (
+            <li key={row.key}>
+              <div className="flex items-baseline justify-between gap-3 mb-1">
+                <span className="text-sm truncate" title={row.label}>
+                  {row.label}
+                </span>
+                <span className="text-sm font-medium tabular-nums flex-shrink-0">{row.value}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className="h-full bg-[#baac96]"
+                  style={{ width: `${(row.value / busiest) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{row.detail}</p>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

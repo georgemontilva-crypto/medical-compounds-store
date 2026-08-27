@@ -27,6 +27,7 @@ import {
 } from "@shared/shipping";
 import { createShippingLabel, getShippingRates, isUpsSandbox } from "./ups";
 import { cartFingerprint, resolveQuotedRate, storeQuote } from "./shippingQuotes";
+import { fillTrafficGaps } from "@shared/traffic";
 import {
   getAbandonedCheckouts,
   getCustomerMix,
@@ -35,8 +36,13 @@ import {
   getRevenueSummary,
   getSalesOverTime,
   getSlowestProducts,
+  getTopPages,
   getTopProducts,
+  getTopSources,
+  getTrafficOverTime,
+  getTrafficSummary,
 } from "./analytics";
+import { clientIp, recordPageView } from "./traffic";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -1589,6 +1595,79 @@ export const appRouter = router({
           getSlowestProducts(since, input.limit),
         ]);
         return { top, slowest };
+      }),
+
+    /**
+     * Web traffic, read from the aggregate tables the store fills itself.
+     *
+     * No granularity override: the sales toggle exists because a shop owner
+     * genuinely reads revenue by week and by month, whereas traffic is read
+     * against the window it was measured in. The range picker already decides
+     * that.
+     */
+    traffic: adminProcedure
+      .input(
+        z.object({
+          range: z.enum(ANALYTICS_RANGE_KEYS).default(DEFAULT_RANGE),
+          limit: z.number().int().min(1).max(50).default(8),
+        })
+      )
+      .query(async ({ input }) => {
+        const since = rangeStart(input.range);
+        const granularity = ANALYTICS_RANGES[input.range].granularity;
+
+        const [summary, points, pages, sources] = await Promise.all([
+          getTrafficSummary(since),
+          getTrafficOverTime(since, granularity),
+          getTopPages(since, input.limit),
+          getTopSources(since, input.limit),
+        ]);
+
+        return {
+          since,
+          granularity,
+          summary,
+          points: fillTrafficGaps(points, since, new Date(), granularity),
+          pages,
+          sources,
+        };
+      }),
+  }),
+
+  // ─── Traffic collection (public) ──────────────────────────────────────────
+  // Deliberately its own router rather than another procedure under
+  // `analytics`, which is admin-only throughout: this one is called by every
+  // visitor on every page, and a public write sitting among admin reads is an
+  // invitation to assume a guard that is not there.
+  traffic: router({
+    /**
+     * Counts one page view.
+     *
+     * Returns nothing and awaits nothing — the hit goes into an in-memory
+     * buffer that is written out once a minute. A visitor's page must never
+     * wait on the store's own bookkeeping, and a failure here must never
+     * surface to them.
+     *
+     * The address and user agent are read from the request rather than trusted
+     * from the body, and neither is stored: see `server/traffic.ts`.
+     */
+    record: publicProcedure
+      .input(
+        z.object({
+          path: z.string().max(2048),
+          referrer: z.string().max(2048).optional(),
+          utmSource: z.string().max(128).optional(),
+        })
+      )
+      .mutation(({ ctx, input }) => {
+        recordPageView({
+          ip: clientIp(ctx.req),
+          userAgent: String(ctx.req.headers["user-agent"] ?? ""),
+          path: input.path,
+          referrer: input.referrer,
+          utmSource: input.utmSource,
+        });
+        return { ok: true };
       }),
   }),
 

@@ -60,11 +60,17 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"
-    ></script>
+    <!--
+      No analytics tag here. Traffic is counted by the site's own server (see
+      shared/traffic.ts), so nothing about a visitor is sent to a third party.
+
+      What used to sit here was a Umami tag inherited from the Manus scaffold,
+      pointing at `%VITE_ANALYTICS_ENDPOINT%/umami`. Neither placeholder was
+      ever defined, so Vite left the text as-is and every page load fetched a
+      literal `/%VITE_ANALYTICS_ENDPOINT%/umami` — which the catch-all route
+      answered with this HTML document, and the browser refused as a script. It
+      collected nothing for as long as it existed.
+    -->
     <!-- Lynx AI Chat Widget -->
     <script
       src="https://www.lynxaiassistant.com/api/widget.js"
