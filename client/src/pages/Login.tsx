@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { FlaskConical, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -35,16 +34,9 @@ export default function Login() {
 
   return (
     <div className="min-h-dvh relative overflow-hidden bg-background flex items-center justify-center p-4" style={{ minHeight: "100dvh" }}>
-      {/* index.html is the single HTML document behind every route, so without
-          this /login is served with the home page's title and rel=canonical —
-          it literally announces itself as the home. A login form is a
-          functional page, not content: keep it out of the index, but follow
-          its links. */}
-      <Helmet>
-        <title>Sign In — Brighter Days Labs</title>
-        <meta name="robots" content="noindex, follow" />
-        <link rel="canonical" href="https://www.brighterdayslabs.com/login" />
-      </Helmet>
+      {/* No <Helmet> here: title, robots and rel=canonical for this route are
+          written server-side by server/_core/seoMeta.ts, so a crawler that
+          never runs JS sees them too. NOINDEX_ROUTE_TITLES holds the title. */}
       <ParticleBackground
         color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
         particleRadius={3.5}

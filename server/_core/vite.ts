@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
-import { injectSocialMeta, isProductPath } from "./ogMeta";
+import { injectRouteMeta } from "./seoMeta";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -40,7 +40,7 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`
       );
       const page = await vite.transformIndexHtml(url, template);
-      const withMeta = await injectSocialMeta(page, url);
+      const withMeta = await injectRouteMeta(page, url);
       res.status(200).set({ "Content-Type": "text/html" }).end(withMeta);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
@@ -70,24 +70,35 @@ export function serveStatic(app: Express) {
     "/assets",
     express.static(path.join(distPath, "assets"), { maxAge: "1y", immutable: true })
   );
-  app.use(express.static(distPath));
+  // `index: false` matters: express.static otherwise answers "/" with
+  // index.html itself and the catch-all below never runs, which left the home
+  // page — and only the home page — served with no canonical, no robots, no
+  // JSON-LD and an empty #root while every other route got its metadata.
+  app.use(express.static(distPath, { index: false }));
+
+  // The built index.html can't change without a restart, so read it once
+  // rather than on every request — this path now runs for every HTML response,
+  // not just the product pages it used to.
+  let cachedTemplate: string | null = null;
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", async (req, res, next) => {
+  app.use("*", async (req, res) => {
     const indexPath = path.resolve(distPath, "index.html");
 
-    // Product pages get their social meta tags rewritten per product; every
-    // other route is served exactly as it was before, headers included.
-    if (!isProductPath(req.originalUrl)) {
-      return res.sendFile(indexPath);
-    }
-
+    // Every route gets its own title, description, canonical, robots, social
+    // tags and #root placeholder — see seoMeta.ts. This used to apply only to
+    // /compounds/:slug, which left every other URL claiming the home page's.
     try {
-      const template = await fs.promises.readFile(indexPath, "utf-8");
-      const page = await injectSocialMeta(template, req.originalUrl);
+      if (cachedTemplate === null) {
+        cachedTemplate = await fs.promises.readFile(indexPath, "utf-8");
+      }
+      const page = await injectRouteMeta(cachedTemplate, req.originalUrl);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
-      next(e);
+      // Serving the un-rewritten document beats serving a 500: the SPA still
+      // boots and renders, it just carries index.html's generic tags.
+      console.error("Failed to inject route meta, serving index.html as-is:", e);
+      res.sendFile(indexPath);
     }
   });
 }

@@ -206,7 +206,12 @@ export default function Compounds() {
           <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-1">Full Catalog</p>
           <h1 className="text-3xl font-extrabold text-gray-950 dark:text-white">Research Compounds</h1>
           <div className="w-10 h-0.5 bg-gradient-to-r from-[#dbcfba] to-[#C8A84B] mt-2 mb-3 rounded-full" />
+          {/* The opening sentence is static on purpose: it's the paragraph
+              server/_core/seoMeta.ts injects into #root for this route, and a
+              crawler that doesn't run JS can't see the counts that follow it.
+              Keep it identical to `intro` for "/compounds" over there. */}
           <p className="text-gray-400 text-sm dark:text-gray-500">
+            Research-grade peptides and compounds organized by biological mechanism.{" "}
             {totalCount} compound{totalCount !== 1 ? "s" : ""} across {sidebarCats.length} research categories.
             Click any card to view the full research monograph.
           </p>

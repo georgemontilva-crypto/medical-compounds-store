@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { FlaskConical, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -73,14 +72,9 @@ export default function Register() {
 
   return (
     <div className="min-h-dvh relative overflow-hidden bg-background flex items-center justify-center p-4" style={{ minHeight: "100dvh" }}>
-      {/* Same reason as Login: without this the route inherits index.html's
-          head wholesale — the home's title and rel=canonical — on a page that
-          has no business being in search results at all. */}
-      <Helmet>
-        <title>Create Account — Brighter Days Labs</title>
-        <meta name="robots" content="noindex, follow" />
-        <link rel="canonical" href="https://www.brighterdayslabs.com/register" />
-      </Helmet>
+      {/* No <Helmet> here: title, robots and rel=canonical for this route are
+          written server-side by server/_core/seoMeta.ts, so a crawler that
+          never runs JS sees them too. NOINDEX_ROUTE_TITLES holds the title. */}
       <ParticleBackground
         color={theme === "dark" ? "211, 196, 171" : "38, 38, 38"}
         particleRadius={3.5}

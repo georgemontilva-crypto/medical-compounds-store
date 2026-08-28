@@ -1,4 +1,3 @@
-import { Helmet } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import { getLenis } from "@/lib/lenis";
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
@@ -1076,13 +1075,10 @@ export default function Home() {
 
   return (
     <div className="flex-1 bg-[#f8f8fa] dark:bg-background">
-      {/* These used to live in index.html, which handed the same pair to every
-          route. Declared here they apply to the home page and only the home
-          page — the one URL that should actually claim them. */}
-      <Helmet>
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href="https://www.brighterdayslabs.com/" />
-      </Helmet>
+      {/* robots and rel=canonical used to be declared here, after moving off
+          index.html where they applied to all 17 routes at once. They now come
+          from server/_core/seoMeta.ts, which writes them per route into the
+          HTML — so a crawler that never runs JS sees them too. */}
 
       {/* ── HERO SLIDER ──────────────────────────────────────────────────── */}
       <Reveal>

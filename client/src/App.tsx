@@ -4,7 +4,6 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import { captureReferralFromUrl } from "@/lib/referral";
 import { useEffect, useRef } from "react";
-import { HelmetProvider } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
@@ -270,34 +269,35 @@ function App() {
     initLenis();
   }, []);
 
+  // No <HelmetProvider>: no page renders a <Helmet> any more. Every route's
+  // head tags are written server-side by server/_core/seoMeta.ts, which is
+  // the only way a crawler that doesn't run JS ever sees them.
   return (
-    <HelmetProvider>
-      <ErrorBoundary>
-        <ThemeProvider defaultTheme="light" switchable>
-          <TooltipProvider>
-            <AuthProvider>
-              <CartProvider>
-                <ComplianceProvider>
-                  <AgeVerificationModal />
-                  <LoadingScreen />
-                  <Toaster position="top-right" />
-                  <ReferralCapture />
-                  <PageViewTracker />
-                  <ScrollToTop />
-                  <BackgroundPatternSync />
-                  <FaviconSync />
-                  <Router />
-                  <CartDrawer />
-                  <FloatingCartButton />
-                  <ComplianceModal />
-                  <GuestOrRegisterModal />
-                </ComplianceProvider>
-              </CartProvider>
-            </AuthProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </ErrorBoundary>
-    </HelmetProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light" switchable>
+        <TooltipProvider>
+          <AuthProvider>
+            <CartProvider>
+              <ComplianceProvider>
+                <AgeVerificationModal />
+                <LoadingScreen />
+                <Toaster position="top-right" />
+                <ReferralCapture />
+                <PageViewTracker />
+                <ScrollToTop />
+                <BackgroundPatternSync />
+                <FaviconSync />
+                <Router />
+                <CartDrawer />
+                <FloatingCartButton />
+                <ComplianceModal />
+                <GuestOrRegisterModal />
+              </ComplianceProvider>
+            </CartProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

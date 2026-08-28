@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
 import { trpc } from "@/lib/trpc";
 import { formatVariationValue, getBulkDiscountPercent, BULK_DISCOUNT_QUANTITIES } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
@@ -170,46 +169,20 @@ export default function ProductDetail({ params }: Props) {
     );
   }
 
-  const canonicalUrl = `https://www.brighterdayslabs.com/compounds/${product.slug}`;
-  const metaDescription = (
-    product.shortDescription
-      ? product.shortDescription
-      : `${product.name} — research-grade compound with a batch-specific Certificate of Analysis. ≥99% HPLC verified. Research Use Only.`
-  ).slice(0, 160);
-  const ogTitle = `${product.name} | Brighter Days Labs`;
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: metaDescription,
-    ...(displayImages[0]?.url ? { image: [displayImages[0].url] } : {}),
-    sku: String(product.id),
-    offers: {
-      "@type": "Offer",
-      url: canonicalUrl,
-      priceCurrency: "USD",
-      price: price.toFixed(2),
-      availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-    },
-  };
-
+  // No <Helmet> here on purpose — server/_core/seoMeta.ts writes this page's
+  // title, description, canonical, og:/twitter: tags and Product JSON-LD into
+  // the HTML before it's served. They have to come from the server anyway (the
+  // Facebook/WhatsApp crawlers don't run JS), and rendering them here as well
+  // produced a second copy of each: jsxLocPlugin stamps a data-loc attribute
+  // onto these JSX elements, which stops react-helmet-async from recognising
+  // the server's tags as the same ones and makes it append instead of replace.
+  // That's how this page ended up serving two <title>s and two meta
+  // descriptions, with Google reading the generic one that came first.
+  //
+  // The <h1> below must stay in sync with STATIC/product `h1` in seoMeta.ts —
+  // server/seoMeta.test.ts fails if they drift.
   return (
     <div className="flex-1 bg-background">
-      <Helmet>
-        <title>{ogTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={canonicalUrl} />
-
-        {/* No og:/twitter: tags here on purpose — server/_core/ogMeta.ts
-            writes them into the HTML before it's served. They have to come
-            from the server anyway (the Facebook/WhatsApp crawlers don't run
-            JS), and rendering them here as well produced a second copy of
-            each: jsxLocPlugin stamps a data-loc attribute onto these JSX
-            elements, which stops react-helmet-async from recognising the
-            server's tags as the same ones and makes it append instead of
-            replace. */}
-        <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
-      </Helmet>
       <div className="container py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">

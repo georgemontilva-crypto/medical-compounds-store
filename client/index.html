@@ -3,20 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <!--
+      SAFETY NET ONLY — not the tags the site actually serves.
+
+      This file is the single HTML document served for EVERY route, so anything
+      declared here is declared by every URL: this exact title and description
+      used to go out on /compounds, /faq, /contact and every /science and
+      /legal page alike.
+
+      server/_core/seoMeta.ts now strips this pair on every request and writes
+      the route's own title, description, canonical, robots, og:/twitter: tags
+      and JSON-LD in their place. These two survive only if that injection
+      throws and the raw file is served — better a generic title than none.
+
+      Nothing here is declared per-route any more, so don't add `robots`,
+      `rel=canonical`, og:/twitter: or JSON-LD back: seoMeta.ts owns all of
+      them, and a copy here would be a second, conflicting tag on every page.
+    -->
     <title>Brighter Days Labs — Research Grade Peptides & Compounds</title>
     <meta name="description" content="Brighter Days Labs supplies ≥99% HPLC-verified research peptides and compounds with batch-specific Certificates of Analysis. Research Use Only." />
-    <!--
-      No `robots` or `rel=canonical` here on purpose. This file is the single
-      HTML document served for EVERY route, so anything declared here is
-      declared by every URL on the site: a canonical pointing at the home page
-      meant /compounds, /faq, /contact and every /science and /legal page were
-      each telling Google "I am the home page", and /login inherited an
-      `index, follow` it should never have had. Both tags are per-route
-      concerns and now live in each page's <Helmet> (see Home.tsx, Login.tsx,
-      Register.tsx, ProductDetail.tsx). react-helmet-async only replaces tags
-      it owns — it cannot remove a static one from here — so leaving them
-      would produce two conflicting tags per page rather than an override.
-    -->
     <link rel="icon" href="/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,37 +30,13 @@
       rel="stylesheet"
     />
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Research Grade Peptides & Compounds" />
-    <meta property="og:description" content="Made in the USA" />
-    <meta property="og:url" content="https://www.brighterdayslabs.com/" />
-    <meta property="og:image" content="https://pub-f9dc97453f1244a0a96fa1fb85c35d2e.r2.dev/site-images/site_logo/ne8tTXarNj_logo-02_f57c9665.png" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Research Grade Peptides & Compounds" />
-    <meta name="twitter:description" content="Made in the USA" />
-    <meta name="twitter:image" content="https://pub-f9dc97453f1244a0a96fa1fb85c35d2e.r2.dev/site-images/site_logo/ne8tTXarNj_logo-02_f57c9665.png" />
-
-    <!-- JSON-LD: Organization + WebSite -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Brighter Days Labs",
-        "url": "https://www.brighterdayslabs.com/",
-        "logo": "https://pub-f9dc97453f1244a0a96fa1fb85c35d2e.r2.dev/site-images/site_logo/ne8tTXarNj_logo-02_f57c9665.png"
-      }
-    </script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Brighter Days Labs",
-        "url": "https://www.brighterdayslabs.com/"
-      }
-    </script>
+    <!--
+      og:/twitter: and JSON-LD used to sit here. They moved to seoMeta.ts for
+      the reason above: served from this file, the Organization and WebSite
+      blocks went out on all 17 routes, which tells a crawler every URL is the
+      site's front door. They are now written per route — Organization and
+      WebSite on the home page only, Product on /compounds/:slug only.
+    -->
   </head>
   <body>
     <div id="root"></div>

@@ -1,27 +1,14 @@
 import type { Express } from "express";
-import { getAllCategories, getProductSlugsWithLabReports, getProducts } from "../db";
+import { getProductSlugsWithLabReports, getProducts } from "../db";
+import { STATIC_ROUTE_META } from "./seoMeta";
 
 const SITE_URL = "https://www.brighterdayslabs.com";
 
-// Public, indexable static routes — mirrors PublicRoutes in client/src/App.tsx,
-// minus session/account-scoped pages (login, register, checkout, my-orders)
-// that have no SEO value and shouldn't be crawled.
-const STATIC_PATHS = [
-  "/",
-  "/compounds",
-  "/science/approach",
-  "/science/manufacturing",
-  "/science/research-standards",
-  "/science/responsible-supply",
-  "/lab-tests",
-  "/faq",
-  "/contact",
-  "/wholesale",
-  "/legal/research-use-only",
-  "/legal/website-disclaimer",
-  "/legal/terms-of-service",
-  "/legal/shipping-policy",
-];
+// Public, indexable static routes. Derived from seoMeta.ts rather than listed
+// again here: that table already decides which paths are indexable and what
+// they claim, and two hand-maintained lists drift. A route added there appears
+// in the sitemap automatically.
+const STATIC_PATHS = Object.keys(STATIC_ROUTE_META);
 
 function xmlEscape(value: string) {
   return value
@@ -42,15 +29,17 @@ function urlEntry(loc: string, lastmod?: Date | string | null) {
 export function registerSitemapRoute(app: Express) {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
-      const [products, categories, labReported] = await Promise.all([
+      const [products, labReported] = await Promise.all([
         getProducts({ active: true, limit: 10000 }),
-        getAllCategories(),
         getProductSlugsWithLabReports(),
       ]);
 
+      // /compounds?category=<slug> is deliberately absent. Those four URLs
+      // render the same catalog with a client-side filter, and seoMeta.ts
+      // canonicalises them to /compounds — listing them here would tell Google
+      // to index pages that then disclaim themselves.
       const entries = [
         ...STATIC_PATHS.map((p) => urlEntry(`${SITE_URL}${p}`)),
-        ...categories.map((c) => urlEntry(`${SITE_URL}/compounds?category=${c.slug}`, c.updatedAt)),
         ...products.map((p) => urlEntry(`${SITE_URL}/compounds/${p.slug}`, p.updatedAt)),
         ...labReported.map((r) => urlEntry(`${SITE_URL}/lab-reports/${r.slug}`, r.lastmod)),
       ];
