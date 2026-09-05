@@ -260,6 +260,17 @@ export default function Navbar() {
               </div>
             </NavDropdown>
 
+            {/* Blog — direct link, no dropdown */}
+            <Link href="/blog">
+              <button
+                className={`text-sm font-medium px-2 py-1.5 rounded-lg transition-colors duration-150 ${
+                  location.startsWith("/blog") ? "text-[#d3c4ab] font-semibold" : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                }`}
+              >
+                Blog
+              </button>
+            </Link>
+
             {/* Lab Tests — direct link, no dropdown */}
             <Link href="/lab-tests">
               <button
@@ -466,6 +477,14 @@ export default function Navbar() {
               </div>
             </div>
           </div>
+          <Link href="/blog">
+            <div
+              className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"
+              onClick={() => setMobileOpen(false)}
+            >
+              Blog
+            </div>
+          </Link>
           <Link href="/lab-tests">
             <div
               className="px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:text-gray-300 dark:hover:bg-white/5"

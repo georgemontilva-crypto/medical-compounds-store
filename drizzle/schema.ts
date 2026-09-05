@@ -7,6 +7,7 @@ import {
   longtext,
   mysqlEnum,
   mysqlTable,
+  primaryKey,
   index,
   text,
   timestamp,
@@ -609,3 +610,104 @@ export const trafficSourceStats = mysqlTable(
 
 export type TrafficSourceStat = typeof trafficSourceStats.$inferSelect;
 export type InsertTrafficSourceStat = typeof trafficSourceStats.$inferInsert;
+
+// ─── Blog ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Articles. `content` holds a ProseMirror document as JSON — the shape TipTap
+ * hands back from `editor.getJSON()` — not HTML.
+ *
+ * That choice is the whole XSS story for this feature. A JSON node tree can't
+ * carry markup, so nothing on the public side ever parses or injects a string:
+ * client/src/components/BlogContent.tsx walks the tree and renders a fixed
+ * whitelist of node types as React elements. A node type nobody wrote a case
+ * for simply doesn't render. There is no sanitizer to keep current, because
+ * there is no HTML to sanitize.
+ *
+ * `longtext` rather than `text`: an article with a few inline images blows past
+ * the 64 KB a TEXT column holds, and MySQL truncates rather than erroring.
+ */
+export const blogPosts = mysqlTable(
+  "blog_posts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    title: varchar("title", { length: 200 }).notNull(),
+    slug: varchar("slug", { length: 220 }).notNull().unique(),
+    /**
+     * Short summary. Does double duty as the listing teaser and the page's
+     * meta description, which is why it's capped well under the products
+     * table's 500: seoMeta.ts truncates it to 160 for the tag, and an excerpt
+     * long enough to be cut in half there was never a good teaser either.
+     */
+    excerpt: varchar("excerpt", { length: 300 }),
+    content: longtext("content"),
+    coverImageUrl: varchar("coverImageUrl", { length: 500 }),
+    coverImageKey: varchar("coverImageKey", { length: 500 }),
+    status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
+    /**
+     * Set the first time a post goes live and never cleared afterwards —
+     * see resolvePublishedAt() in shared/blog.ts. Nullable because a draft
+     * that has never been published genuinely has no publication date.
+     */
+    publishedAt: timestamp("publishedAt"),
+    authorId: int("authorId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  // The public listing's exact access path: filter on status, order by
+  // publishedAt. Leading with status keeps drafts out of the scan entirely.
+  (table) => [index("blog_posts_status_published_idx").on(table.status, table.publishedAt)]
+);
+
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;
+
+/**
+ * Blog taxonomy. Deliberately its own table rather than reusing `categories`:
+ * that one carries a product catalog's baggage (hero images, badge codes, CTA
+ * text, mechanism-based ordering) and its slugs live under /compounds. An
+ * article about storage practices has no business sharing a row shape with a
+ * peptide category.
+ */
+export const blogCategories = mysqlTable("blog_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BlogCategory = typeof blogCategories.$inferSelect;
+export type InsertBlogCategory = typeof blogCategories.$inferInsert;
+
+/**
+ * Which articles carry which tags. Pure join rows: a category is a label, not
+ * something the article depends on, so deleting either side clears the links
+ * and leaves the surviving side's content untouched. The admin's delete dialog
+ * says how many articles lose the tag before it happens.
+ *
+ * Composite primary key instead of a surrogate id — the pair is the identity,
+ * and it makes assigning the same category twice impossible rather than merely
+ * unlikely.
+ */
+export const blogPostCategories = mysqlTable(
+  "blog_post_categories",
+  {
+    postId: int("postId")
+      .notNull()
+      .references(() => blogPosts.id),
+    categoryId: int("categoryId")
+      .notNull()
+      .references(() => blogCategories.id),
+  },
+  (table) => [
+    primaryKey({ columns: [table.postId, table.categoryId] }),
+    // Reverse lookup: every article carrying category X, which is what the
+    // public listing's category filter asks for.
+    index("blog_post_categories_category_idx").on(table.categoryId),
+  ]
+);
+
+export type BlogPostCategory = typeof blogPostCategories.$inferSelect;
+export type InsertBlogPostCategory = typeof blogPostCategories.$inferInsert;

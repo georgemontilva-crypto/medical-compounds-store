@@ -1,8 +1,10 @@
-import { and, desc, eq, isNull, like, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   CartItem,
   Category,
+  InsertBlogCategory,
+  InsertBlogPost,
   InsertCartItem,
   InsertCategory,
   InsertCoupon,
@@ -27,6 +29,9 @@ import {
   affiliateCodes,
   affiliatePayoutRequests,
   affiliateReferrals,
+  blogCategories,
+  blogPostCategories,
+  blogPosts,
   cartItems,
   categories,
   coupons,
@@ -1454,4 +1459,346 @@ export async function markOrderShipped(id: number) {
   if (!db) throw new Error("DB unavailable");
 
   await db.update(orders).set({ status: "shipped", shippedAt: new Date() }).where(eq(orders.id, id));
+}
+
+// ─── Blog ─────────────────────────────────────────────────────────────────────
+
+/**
+ * The columns a listing needs. `content` is deliberately absent: an article
+ * body is tens of kilobytes of JSON, and the index page shows a card. Only
+ * getPublishedBlogPostBySlug and the admin editor ever read it.
+ */
+const BLOG_LIST_COLUMNS = {
+  id: blogPosts.id,
+  title: blogPosts.title,
+  slug: blogPosts.slug,
+  excerpt: blogPosts.excerpt,
+  coverImageUrl: blogPosts.coverImageUrl,
+  status: blogPosts.status,
+  publishedAt: blogPosts.publishedAt,
+  createdAt: blogPosts.createdAt,
+  updatedAt: blogPosts.updatedAt,
+};
+
+/**
+ * Every category attached to each of the given posts, as one query rather than
+ * one per post. Returned as a Map so callers can stitch without a nested loop.
+ */
+async function getCategoriesForPosts(postIds: number[]) {
+  const byPost = new Map<number, { id: number; name: string; slug: string }[]>();
+  if (postIds.length === 0) return byPost;
+
+  const db = await getDb();
+  if (!db) return byPost;
+
+  const rows = await db
+    .select({
+      postId: blogPostCategories.postId,
+      id: blogCategories.id,
+      name: blogCategories.name,
+      slug: blogCategories.slug,
+    })
+    .from(blogPostCategories)
+    .innerJoin(blogCategories, eq(blogPostCategories.categoryId, blogCategories.id))
+    .where(inArray(blogPostCategories.postId, postIds))
+    .orderBy(blogCategories.name);
+
+  for (const { postId, ...category } of rows) {
+    const existing = byPost.get(postId);
+    if (existing) existing.push(category);
+    else byPost.set(postId, [category]);
+  }
+  return byPost;
+}
+
+/**
+ * The public article list.
+ *
+ * `status = 'published'` is applied here, in SQL, and there is no parameter to
+ * turn it off — the public router calls this one and the admin calls
+ * getBlogPostsForAdmin. A draft is not reachable through this path even with a
+ * crafted request, which is the property worth having.
+ *
+ * Ordered by publishedAt with createdAt as a tiebreaker, so two posts released
+ * in the same second still come out in a stable order.
+ */
+export async function getPublishedBlogPosts(options?: {
+  categorySlug?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const limit = options?.limit ?? 50;
+  const offset = options?.offset ?? 0;
+
+  const posts = options?.categorySlug
+    ? await db
+        .select(BLOG_LIST_COLUMNS)
+        .from(blogPosts)
+        .innerJoin(blogPostCategories, eq(blogPostCategories.postId, blogPosts.id))
+        .innerJoin(blogCategories, eq(blogCategories.id, blogPostCategories.categoryId))
+        .where(and(eq(blogPosts.status, "published"), eq(blogCategories.slug, options.categorySlug)))
+        .orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
+        .limit(limit)
+        .offset(offset)
+    : await db
+        .select(BLOG_LIST_COLUMNS)
+        .from(blogPosts)
+        .where(eq(blogPosts.status, "published"))
+        .orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+  const categories = await getCategoriesForPosts(posts.map((p) => p.id));
+  return posts.map((post) => ({ ...post, categories: categories.get(post.id) ?? [] }));
+}
+
+/**
+ * One published article, with its body, categories and author name.
+ *
+ * Returns undefined for a draft as well as for a slug that doesn't exist —
+ * the caller can't tell the two apart, and shouldn't be able to.
+ */
+export async function getPublishedBlogPostBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select({
+      id: blogPosts.id,
+      title: blogPosts.title,
+      slug: blogPosts.slug,
+      excerpt: blogPosts.excerpt,
+      content: blogPosts.content,
+      coverImageUrl: blogPosts.coverImageUrl,
+      publishedAt: blogPosts.publishedAt,
+      updatedAt: blogPosts.updatedAt,
+      authorName: users.name,
+    })
+    .from(blogPosts)
+    .leftJoin(users, eq(blogPosts.authorId, users.id))
+    .where(and(eq(blogPosts.slug, slug), eq(blogPosts.status, "published")))
+    .limit(1);
+
+  const post = result[0];
+  if (!post) return undefined;
+
+  const categories = await getCategoriesForPosts([post.id]);
+  return { ...post, categories: categories.get(post.id) ?? [] };
+}
+
+/** Published slugs for sitemap.xml, newest first. */
+export async function getPublishedBlogPostSlugs() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select({ slug: blogPosts.slug, lastmod: blogPosts.updatedAt })
+    .from(blogPosts)
+    .where(eq(blogPosts.status, "published"))
+    .orderBy(desc(blogPosts.publishedAt));
+}
+
+/** Everything, drafts included. Admin only. */
+export async function getBlogPostsForAdmin() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const posts = await db
+    .select({ ...BLOG_LIST_COLUMNS, authorName: users.name })
+    .from(blogPosts)
+    .leftJoin(users, eq(blogPosts.authorId, users.id))
+    .orderBy(desc(blogPosts.createdAt));
+
+  const categories = await getCategoriesForPosts(posts.map((p) => p.id));
+  return posts.map((post) => ({ ...post, categories: categories.get(post.id) ?? [] }));
+}
+
+/** One post by id regardless of status, with its body — the editor's read. */
+export async function getBlogPostForAdmin(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+  const post = result[0];
+  if (!post) return undefined;
+
+  const categories = await getCategoriesForPosts([post.id]);
+  return { ...post, categories: categories.get(post.id) ?? [] };
+}
+
+export async function createBlogPost(data: InsertBlogPost) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(blogPosts).values(data);
+  return result[0].insertId as number;
+}
+
+export async function updateBlogPost(id: number, data: Partial<InsertBlogPost>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(blogPosts).set(data).where(eq(blogPosts.id, id));
+}
+
+/**
+ * Replaces a post's category assignments wholesale.
+ *
+ * Delete-then-insert rather than diffing: the join rows carry nothing but the
+ * pair itself, so there is no state to preserve and a diff would be more code
+ * for an identical result.
+ */
+export async function setBlogPostCategories(postId: number, categoryIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.delete(blogPostCategories).where(eq(blogPostCategories.postId, postId));
+
+  // Array.from rather than a spread: the project targets ES5 downlevel, where
+  // spreading a Set is a compile error.
+  const unique = Array.from(new Set(categoryIds));
+  if (unique.length === 0) return;
+  await db
+    .insert(blogPostCategories)
+    .values(unique.map((categoryId) => ({ postId, categoryId })));
+}
+
+/**
+ * Deletes a post and the rows that only exist to point at it.
+ *
+ * The category links go because they describe this post and nothing else.
+ * Contrast with orders, where the child rows are the record of what somebody
+ * bought and deletion is refused instead.
+ */
+export async function deleteBlogPost(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.delete(blogPostCategories).where(eq(blogPostCategories.postId, id));
+  await db.delete(blogPosts).where(eq(blogPosts.id, id));
+}
+
+// ─── Blog categories ──────────────────────────────────────────────────────────
+
+/**
+ * Categories with the number of articles carrying each one.
+ *
+ * The count is what the admin's delete dialog reports before removing a
+ * category, and what lets the public filter hide a tag nobody has used yet.
+ * A left join so a category with no posts still comes back, with zero.
+ */
+export async function getBlogCategories() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select({
+      id: blogCategories.id,
+      name: blogCategories.name,
+      slug: blogCategories.slug,
+      description: blogCategories.description,
+      postCount: sql<number>`count(${blogPostCategories.postId})`,
+    })
+    .from(blogCategories)
+    .leftJoin(blogPostCategories, eq(blogPostCategories.categoryId, blogCategories.id))
+    .groupBy(
+      blogCategories.id,
+      blogCategories.name,
+      blogCategories.slug,
+      blogCategories.description
+    )
+    .orderBy(blogCategories.name);
+}
+
+/**
+ * Categories that have at least one published article behind them.
+ *
+ * The public filter bar reads this rather than the full list: a tag that leads
+ * to an empty page is a dead end for a reader and a thin page for a crawler.
+ */
+export async function getBlogCategoriesWithPublishedPosts() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select({
+      id: blogCategories.id,
+      name: blogCategories.name,
+      slug: blogCategories.slug,
+      postCount: sql<number>`count(${blogPostCategories.postId})`,
+    })
+    .from(blogCategories)
+    .innerJoin(blogPostCategories, eq(blogPostCategories.categoryId, blogCategories.id))
+    .innerJoin(blogPosts, eq(blogPosts.id, blogPostCategories.postId))
+    .where(eq(blogPosts.status, "published"))
+    .groupBy(blogCategories.id, blogCategories.name, blogCategories.slug)
+    .orderBy(blogCategories.name);
+}
+
+export async function createBlogCategory(data: InsertBlogCategory) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(blogCategories).values(data);
+  return result[0].insertId as number;
+}
+
+export async function updateBlogCategory(id: number, data: Partial<InsertBlogCategory>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(blogCategories).set(data).where(eq(blogCategories.id, id));
+}
+
+/**
+ * Deletes a category and unassigns it from every article.
+ *
+ * A category is a label, not something an article depends on, so reorganizing
+ * the taxonomy must never touch the writing: the join rows go, the posts stay
+ * exactly as they were, minus one tag. The admin sees the affected count in
+ * the confirmation dialog before this runs.
+ */
+export async function deleteBlogCategory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.delete(blogPostCategories).where(eq(blogPostCategories.categoryId, id));
+  await db.delete(blogCategories).where(eq(blogCategories.id, id));
+}
+
+/**
+ * Whether a slug is already taken, optionally ignoring one post — the post
+ * being edited, which of course still holds its own slug.
+ *
+ * The unique index is the real guarantee; this exists so the admin gets
+ * "That slug is already in use" instead of a raw MySQL duplicate-key error.
+ */
+export async function blogSlugExists(slug: string, exceptId?: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db
+    .select({ id: blogPosts.id })
+    .from(blogPosts)
+    .where(exceptId ? and(eq(blogPosts.slug, slug), ne(blogPosts.id, exceptId)) : eq(blogPosts.slug, slug))
+    .limit(1);
+
+  return result.length > 0;
+}
+
+/** Same check for taxonomy slugs, which share the /blog?category= namespace. */
+export async function blogCategorySlugExists(slug: string, exceptId?: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db
+    .select({ id: blogCategories.id })
+    .from(blogCategories)
+    .where(
+      exceptId
+        ? and(eq(blogCategories.slug, slug), ne(blogCategories.id, exceptId))
+        : eq(blogCategories.slug, slug)
+    )
+    .limit(1);
+
+  return result.length > 0;
 }

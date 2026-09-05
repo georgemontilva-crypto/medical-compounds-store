@@ -24,6 +24,8 @@ import "lenis/dist/lenis.css";
 // Pages
 import Home from "./pages/Home";
 import Compounds from "./pages/Compounds";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import ProductDetail from "./pages/ProductDetail";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -47,6 +49,8 @@ import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminLabReports from "./pages/admin/AdminLabReports";
 import AdminSiteImages from "./pages/admin/AdminSiteImages";
 import AdminDocIntegrity from "./pages/admin/AdminDocIntegrity";
+import AdminBlog from "./pages/admin/AdminBlog";
+import AdminBlogCategories from "./pages/admin/AdminBlogCategories";
 import LabReports from "./pages/LabReports";
 import LabTests from "./pages/LabTests";
 import Contact from "./pages/Contact";
@@ -78,6 +82,8 @@ function PublicRoutes() {
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/my-orders/:id" component={OrderDetail} />
       <Route path="/lab-reports/:slug" component={LabReports} />
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/lab-tests" component={LabTests} />
       <Route path="/contact" component={Contact} />
       <Route path="/wholesale" component={WholesaleApplication} />
@@ -141,6 +147,8 @@ function Router() {
       <Route path="/admin/orders/:id" component={AdminOrderDetail} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/coupons" component={AdminCoupons} />
+      <Route path="/admin/blog/categories" component={AdminBlogCategories} />
+      <Route path="/admin/blog" component={AdminBlog} />
       <Route path="/admin/lab-reports" component={AdminLabReports} />
       <Route path="/admin/site-images" component={AdminSiteImages} />
       <Route path="/admin/doc-integrity" component={AdminDocIntegrity} />

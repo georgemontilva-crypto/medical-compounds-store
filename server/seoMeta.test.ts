@@ -63,6 +63,7 @@ const PAGE_SOURCES: Record<
     h1Fragments: ["Brighter Days Labs", "Precision Peptides for Advanced Research"],
   },
   "/compounds": { file: "client/src/pages/Compounds.tsx" },
+  "/blog": { file: "client/src/pages/Blog.tsx" },
   "/faq": { file: "client/src/pages/FAQ.tsx" },
   "/contact": { file: "client/src/pages/Contact.tsx" },
   "/wholesale": { file: "client/src/pages/WholesaleApplication.tsx" },
@@ -279,6 +280,73 @@ describe("injectSeoMeta rewrites the served document", () => {
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain("\\u003c/script>");
     expect(html).toContain("&quot;quoted&quot;");
+  });
+});
+
+describe("blog article metadata", () => {
+  // resolveBlogPost() reads the database, so these exercise the pure half:
+  // what a resolved article turns into once it reaches the document. The
+  // draft-invisibility half is covered in server/blog.test.ts, at the query.
+  const article: Parameters<typeof injectSeoMeta>[1] = {
+    title: "How to Read a Certificate of Analysis — Brighter Days Labs",
+    description: "What each section of a COA actually tells you, and which numbers matter.",
+    canonical: "https://www.brighterdayslabs.com/blog/how-to-read-a-coa",
+    robots: "index, follow",
+    ogType: "article",
+    image: "https://pub-abc.r2.dev/blog/covers/x_cover.png",
+    imageAlt: "How to Read a Certificate of Analysis",
+    h1: "How to Read a Certificate of Analysis",
+    intro: "What each section of a COA actually tells you, and which numbers matter.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: "How to Read a Certificate of Analysis",
+        datePublished: "2026-09-01T10:00:00.000Z",
+      },
+    ],
+  };
+
+  it("declares og:type article rather than website", () => {
+    const html = injectSeoMeta(INDEX_HTML, article);
+    expect(html).toContain('<meta property="og:type" content="article" />');
+    expect(html.match(/property="og:type"/g)).toHaveLength(1);
+  });
+
+  it("serves the cover image as the social card", () => {
+    const html = injectSeoMeta(INDEX_HTML, article);
+    expect(html).toContain('content="https://pub-abc.r2.dev/blog/covers/x_cover.png"');
+  });
+
+  it("writes the article's own BlogPosting block", () => {
+    const html = injectSeoMeta(INDEX_HTML, article);
+    expect(html).toContain('"@type":"BlogPosting"');
+    expect(html.match(/application\/ld\+json/g)).toHaveLength(1);
+  });
+
+  it("puts the post title in #root as the one h1", () => {
+    const html = injectSeoMeta(INDEX_HTML, article);
+    expect(html.match(/<h1>/g)).toHaveLength(1);
+    expect(html).toContain("<h1>How to Read a Certificate of Analysis</h1>");
+  });
+
+  it("escapes a title that would otherwise break out of the document", () => {
+    const html = injectSeoMeta(INDEX_HTML, {
+      ...article,
+      title: 'Storage <script>alert("x")</script>',
+      h1: "Storage <b>tips</b>",
+      jsonLd: [{ "@type": "BlogPosting", headline: "</script><script>alert(1)</script>" }],
+    });
+
+    expect(html).not.toContain("<script>alert");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("\\u003c/script>");
+  });
+
+  it("canonicalises a category-filtered index onto /blog", async () => {
+    const filtered = await resolveRouteMeta("/blog?category=handling-and-storage");
+    expect(filtered.canonical).toBe("https://www.brighterdayslabs.com/blog");
+    expect(filtered.title).toBe("Research Blog — Brighter Days Labs");
   });
 });
 

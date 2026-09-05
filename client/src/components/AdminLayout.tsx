@@ -19,6 +19,7 @@ import {
   Share2,
   BarChart3,
   Truck,
+  Newspaper,
 } from "lucide-react";
 import { useState, ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/lab-reports", label: "Lab Reports", icon: FileText },
+  { href: "/admin/blog", label: "Blog", icon: Newspaper },
   { href: "/admin/site-images", label: "Site Images", icon: ImageIcon },
   { href: "/admin/doc-integrity", label: "Doc Integrity", icon: ShieldCheck },
   { href: "/admin/wholesale-applications", label: "Wholesale Apps", icon: Building2 },

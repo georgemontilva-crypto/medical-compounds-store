@@ -1,4 +1,5 @@
-import { getProductBySlug, getProductImages } from "../db";
+import { getProductBySlug, getProductImages, getPublishedBlogPostBySlug } from "../db";
+import { blogDescription, truncateAtWord } from "@shared/blog";
 
 const SITE_URL = "https://www.brighterdayslabs.com";
 const BRAND = "Brighter Days Labs";
@@ -65,6 +66,17 @@ export const STATIC_ROUTE_META: Record<string, RouteMeta> = {
       "Browse all research compounds Brighter Days Labs offers, organized by biological mechanism. ≥99% HPLC purity with a batch-specific COA on every order.",
     h1: "Research Compounds",
     intro: "Research-grade peptides and compounds organized by biological mechanism.",
+  },
+
+  // client/src/pages/Blog.tsx
+  "/blog": {
+    keyword: "research blog",
+    title: "Research Blog",
+    description:
+      "The Brighter Days Labs research blog: peptide handling, reconstitution, storage, and how to read a Certificate of Analysis.",
+    h1: "Research Blog",
+    intro:
+      "Notes from the bench on peptide handling, documentation, and what a Certificate of Analysis actually tells you.",
   },
 
   // client/src/pages/FAQ.tsx
@@ -221,13 +233,14 @@ const NOINDEX_PREFIXES = ["/admin", "/my-orders/"];
 
 const PRODUCT_PATH = /^\/compounds\/([^/]+)$/;
 const LAB_REPORT_PATH = /^\/lab-reports\/([^/]+)$/;
+const BLOG_POST_PATH = /^\/blog\/([^/]+)$/;
 
 export type ResolvedMeta = {
   title: string;
   description: string;
   canonical: string;
   robots: Robots;
-  ogType: "website" | "product";
+  ogType: "website" | "product" | "article";
   image: string;
   imageAlt: string;
   /** Omitted for noindex routes — nothing is injected into #root for those. */
@@ -300,6 +313,9 @@ export async function resolveRouteMeta(originalUrl: string): Promise<ResolvedMet
 
   const labReportMatch = LAB_REPORT_PATH.exec(path);
   if (labReportMatch) return resolveLabReport(decodeURIComponent(labReportMatch[1]), base);
+
+  const blogMatch = BLOG_POST_PATH.exec(path);
+  if (blogMatch) return resolveBlogPost(decodeURIComponent(blogMatch[1]), base);
 
   if (isNoindexPath(path)) {
     const title = NOINDEX_ROUTE_TITLES[path] ?? BRAND;
@@ -421,6 +437,72 @@ async function resolveLabReport(slug: string, base: MetaBase): Promise<ResolvedM
     // client/src/pages/LabReports.tsx:102
     h1: `${product.name} — Lab Reports`,
     intro: `Third-party Certificates of Analysis for ${product.name}, published as soon as each batch is tested.`,
+  };
+}
+
+
+async function resolveBlogPost(slug: string, base: MetaBase): Promise<ResolvedMeta> {
+  let post;
+  try {
+    post = await getPublishedBlogPostBySlug(slug);
+  } catch (err) {
+    // Same reasoning as resolveProduct: a database hiccup costs the page its
+    // specific metadata, not its existence.
+    console.error(`Failed to load blog post for route meta (${slug}):`, err);
+    return blogFallback(base, "index, follow");
+  }
+
+  // Covers an unknown slug and a draft alike — getPublishedBlogPostBySlug
+  // filters on status, so an unpublished article is indistinguishable from a
+  // missing one here, and neither should advertise itself.
+  if (!post) return blogFallback(base, "noindex, follow");
+
+  const description = blogDescription(post.excerpt, post.title);
+  const image = post.coverImageUrl ?? base.image;
+  const published = post.publishedAt ?? post.updatedAt;
+
+  return {
+    ...base,
+    title: titleFor(post.title),
+    description,
+    robots: "index, follow",
+    ogType: "article",
+    image,
+    imageAlt: post.title,
+    // client/src/pages/BlogPost.tsx renders {post.title} as the h1 and the
+    // excerpt as the standfirst directly below it.
+    h1: post.title,
+    intro: description,
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        // Google ignores a headline past ~110 characters; the title column
+        // allows 200.
+        headline: truncateAtWord(post.title, 110),
+        description,
+        ...(image !== FALLBACK_OG_IMAGE ? { image: [image] } : {}),
+        datePublished: new Date(published).toISOString(),
+        dateModified: new Date(post.updatedAt).toISOString(),
+        author: { "@type": "Organization", name: BRAND },
+        publisher: {
+          "@type": "Organization",
+          name: BRAND,
+          logo: { "@type": "ImageObject", url: FALLBACK_OG_IMAGE },
+        },
+        mainEntityOfPage: { "@type": "WebPage", "@id": base.canonical },
+      },
+    ],
+  };
+}
+
+/** The blog index's metadata, for a post URL that resolves to nothing. */
+function blogFallback(base: MetaBase, robots: Robots): ResolvedMeta {
+  return {
+    ...base,
+    title: titleFor(STATIC_ROUTE_META["/blog"].title),
+    description: STATIC_ROUTE_META["/blog"].description,
+    robots,
   };
 }
 

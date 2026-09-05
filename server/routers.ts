@@ -29,6 +29,12 @@ import { createShippingLabel, getShippingRates, isUpsSandbox } from "./ups";
 import { cartFingerprint, resolveQuotedRate, storeQuote } from "./shippingQuotes";
 import { fillTrafficGaps } from "@shared/traffic";
 import {
+  BLOG_SLUG_MAX_LENGTH,
+  parseBlogDoc,
+  resolvePublishedAt,
+  slugifyBlogTitle,
+} from "@shared/blog";
+import {
   getAbandonedCheckouts,
   getCustomerMix,
   getOrdersByStatus,
@@ -47,6 +53,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
+import type { InsertBlogCategory, InsertBlogPost } from "../drizzle/schema";
 import { sendEmail, escapeHtml } from "./email";
 import {
   RESET_TOKEN_TTL_MS,
@@ -158,6 +165,21 @@ import {
   getShippingLabelSummary,
   getShippingLabelImage,
   markOrderShipped,
+  blogCategorySlugExists,
+  blogSlugExists,
+  createBlogCategory,
+  createBlogPost,
+  deleteBlogCategory,
+  deleteBlogPost,
+  getBlogCategories,
+  getBlogCategoriesWithPublishedPosts,
+  getBlogPostForAdmin,
+  getBlogPostsForAdmin,
+  getPublishedBlogPostBySlug,
+  getPublishedBlogPosts,
+  setBlogPostCategories,
+  updateBlogCategory,
+  updateBlogPost,
 } from "./db";
 import { storagePut } from "./storage";
 import { compressImage } from "./imageProcessing";
@@ -276,6 +298,65 @@ async function signEmailSession(user: { openId: string; name: string | null }) {
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setExpirationTime(expirationSeconds)
     .sign(JWT_SECRET);
+}
+
+
+// ─── Blog input helpers ───────────────────────────────────────────────────────
+
+const blogPostInput = z.object({
+  title: z.string().min(1).max(200),
+  /** Optional: derived from the title when the admin leaves it blank. */
+  slug: z.string().max(BLOG_SLUG_MAX_LENGTH).optional(),
+  excerpt: z.string().max(300).optional(),
+  /** A stringified ProseMirror document — validated by serializeBlogContent. */
+  content: z.string().optional(),
+  coverImageUrl: z.string().max(500).nullable().optional(),
+  coverImageKey: z.string().max(500).nullable().optional(),
+  status: z.enum(["draft", "published"]).default("draft"),
+  categoryIds: z.array(z.number()).optional(),
+});
+
+const blogCategoryInput = z.object({
+  name: z.string().min(1).max(100),
+  slug: z.string().max(120).optional(),
+  description: z.string().max(1000).optional(),
+});
+
+/**
+ * Settles on the slug to store: what the admin typed, or the title slugified
+ * when they typed nothing. Run over the admin's own input too, so a slug
+ * pasted with spaces or capitals can't reach the database as a broken URL.
+ */
+function normalizeBlogSlug(slug: string | undefined, fallback: string) {
+  const candidate = slugifyBlogTitle((slug ?? "").trim() || fallback);
+  if (!candidate) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Could not derive a URL from this title — enter a slug manually",
+    });
+  }
+  return candidate;
+}
+
+/**
+ * Validates the editor's output and returns the JSON to store.
+ *
+ * Re-serializing from the parsed document rather than passing the string
+ * through means only `type` and `content` survive: anything else the client
+ * attached to the top level is dropped before it reaches the column.
+ */
+function serializeBlogContent(content: string | undefined): string | null {
+  if (content === undefined || content.trim() === "") return null;
+  const doc = parseBlogDoc(content);
+  if (!doc) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Article content is not a valid document" });
+  }
+  return JSON.stringify(doc);
+}
+
+/** Blank excerpts are stored as NULL, so the fallback description kicks in. */
+function normalizeExcerpt(excerpt: string | undefined) {
+  return excerpt?.trim() ? excerpt.trim() : null;
 }
 
 // ─── App Router ───────────────────────────────────────────────────────────────
@@ -1424,6 +1505,198 @@ export const appRouter = router({
         }
         return updateLabReport(id, data);
       }),
+  }),
+
+  // ─── Blog ─────────────────────────────────────────────────────────────────
+  //
+  // The public procedures here call getPublishedBlogPosts /
+  // getPublishedBlogPostBySlug, which filter on status in SQL and take no
+  // parameter that could turn the filter off. Draft visibility is therefore a
+  // property of which function is called, not of what the client sends, and
+  // the admin reads go through separate adminProcedure endpoints.
+  blog: router({
+    list: publicProcedure
+      .input(
+        z
+          .object({
+            categorySlug: optionalTrimmedString,
+            limit: z.number().min(1).max(100).optional(),
+            offset: z.number().min(0).optional(),
+          })
+          .optional()
+      )
+      .query(({ input }) =>
+        getPublishedBlogPosts({
+          categorySlug: input?.categorySlug,
+          limit: input?.limit ?? 30,
+          offset: input?.offset ?? 0,
+        })
+      ),
+
+    bySlug: publicProcedure
+      .input(z.object({ slug: z.string().min(1) }))
+      .query(({ input }) => getPublishedBlogPostBySlug(input.slug)),
+
+    categories: publicProcedure.query(() => getBlogCategoriesWithPublishedPosts()),
+
+    // ── Admin ──
+    adminList: adminProcedure.query(() => getBlogPostsForAdmin()),
+
+    adminById: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ input }) => getBlogPostForAdmin(input.id)),
+
+    /** Includes drafts and every category, each with its article count. */
+    adminCategories: adminProcedure.query(() => getBlogCategories()),
+
+    create: adminProcedure.input(blogPostInput).mutation(async ({ input, ctx }) => {
+      const slug = normalizeBlogSlug(input.slug, input.title);
+      if (await blogSlugExists(slug)) {
+        throw new TRPCError({ code: "CONFLICT", message: `The slug "${slug}" is already in use` });
+      }
+
+      const id = await createBlogPost({
+        title: input.title,
+        slug,
+        excerpt: normalizeExcerpt(input.excerpt),
+        content: serializeBlogContent(input.content),
+        coverImageUrl: input.coverImageUrl ?? null,
+        coverImageKey: input.coverImageKey ?? null,
+        status: input.status,
+        publishedAt: resolvePublishedAt(input.status, null),
+        // Taken from the session, never from the request: the author is
+        // whoever is signed in as admin.
+        authorId: ctx.user.id,
+      });
+
+      if (input.categoryIds) await setBlogPostCategories(id, input.categoryIds);
+      return { id, slug };
+    }),
+
+    update: adminProcedure
+      .input(blogPostInput.partial().extend({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const existing = await getBlogPostForAdmin(input.id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Post not found" });
+
+        const data: Partial<InsertBlogPost> = {};
+
+        if (input.title !== undefined) data.title = input.title;
+        if (input.excerpt !== undefined) data.excerpt = normalizeExcerpt(input.excerpt);
+        if (input.content !== undefined) data.content = serializeBlogContent(input.content);
+        if (input.coverImageUrl !== undefined) data.coverImageUrl = input.coverImageUrl ?? null;
+        if (input.coverImageKey !== undefined) data.coverImageKey = input.coverImageKey ?? null;
+
+        if (input.slug !== undefined || input.title !== undefined) {
+          const slug = normalizeBlogSlug(input.slug ?? existing.slug, input.title ?? existing.title);
+          if (slug !== existing.slug) {
+            if (await blogSlugExists(slug, input.id)) {
+              throw new TRPCError({
+                code: "CONFLICT",
+                message: `The slug "${slug}" is already in use`,
+              });
+            }
+            data.slug = slug;
+          }
+        }
+
+        if (input.status !== undefined) {
+          data.status = input.status;
+          // Stamped once, on the first publish, and preserved from then on.
+          data.publishedAt = resolvePublishedAt(input.status, existing.publishedAt);
+        }
+
+        await updateBlogPost(input.id, data);
+        if (input.categoryIds) await setBlogPostCategories(input.id, input.categoryIds);
+        return { id: input.id };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ input }) => deleteBlogPost(input.id)),
+
+    /**
+     * One endpoint for both the cover and the images dropped into an article.
+     *
+     * Returns the stored URL rather than attaching it to a post, so the same
+     * call works before a post exists — the admin uploads while composing and
+     * the URL rides along with the save.
+     */
+    uploadImage: adminProcedure
+      .input(
+        z.object({
+          kind: z.enum(["cover", "body"]),
+          fileBase64: z.string(),
+          fileName: z.string(),
+          mimeType: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        if (!input.mimeType.startsWith("image/")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Only image files are accepted" });
+        }
+
+        // Covers are displayed wider than body images, hence the two ceilings.
+        const maxWidth = input.kind === "cover" ? 1600 : 1200;
+        const { buffer, mimeType } = await compressImage(
+          Buffer.from(input.fileBase64, "base64"),
+          input.mimeType,
+          maxWidth
+        );
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const folder = input.kind === "cover" ? "covers" : "body";
+        const { key, url } = await storagePut(`blog/${folder}/${nanoid(10)}_${safeName}`, buffer, mimeType);
+        return { key, url };
+      }),
+
+    // ── Admin: categories ──
+    createCategory: adminProcedure
+      .input(blogCategoryInput)
+      .mutation(async ({ input }) => {
+        const slug = normalizeBlogSlug(input.slug, input.name);
+        if (await blogCategorySlugExists(slug)) {
+          throw new TRPCError({ code: "CONFLICT", message: `The slug "${slug}" is already in use` });
+        }
+        const id = await createBlogCategory({
+          name: input.name,
+          slug,
+          description: input.description?.trim() || null,
+        });
+        return { id, slug };
+      }),
+
+    updateCategory: adminProcedure
+      .input(blogCategoryInput.partial().extend({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const data: Partial<InsertBlogCategory> = {};
+        if (input.name !== undefined) data.name = input.name;
+        if (input.description !== undefined) data.description = input.description.trim() || null;
+
+        // Only when the slug is edited directly. Renaming a category must not
+        // silently move /blog?category=… out from under links already shared.
+        if (input.slug !== undefined) {
+          const slug = normalizeBlogSlug(input.slug, input.name ?? "");
+          if (await blogCategorySlugExists(slug, input.id)) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `The slug "${slug}" is already in use`,
+            });
+          }
+          data.slug = slug;
+        }
+
+        await updateBlogCategory(input.id, data);
+        return { id: input.id };
+      }),
+
+    /**
+     * Removes the category and unassigns it everywhere. Articles are never
+     * touched — a category is a label, not a dependency — and the admin UI
+     * shows how many lose the tag before confirming.
+     */
+    deleteCategory: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ input }) => deleteBlogCategory(input.id)),
   }),
 
   admin: router({
