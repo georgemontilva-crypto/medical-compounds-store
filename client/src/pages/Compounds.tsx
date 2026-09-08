@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
-import { Link, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Search, FlaskConical, Plus, Check, ChevronDown, X } from "lucide-react";
 import ProductCard, { VialPlaceholder } from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
@@ -122,24 +122,43 @@ export default function Compounds() {
   const categorySlug = params.get("category") || undefined;
 
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
-  const [selectedStaticCat, setSelectedStaticCat] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [sortOpen, setSortOpen] = useState(false);
   const { addItem } = useCart();
+  const [, navigate] = useLocation();
 
   const { data: categories = [] } = trpc.categories.list.useQuery();
 
-  // Resolve the URL slug to a real category id once categories have
-  // loaded. If the slug doesn't match any real category (e.g. a stale
-  // link), selectedCategory just stays undefined and the page shows the
-  // full catalog instead of silently rendering empty.
-  useEffect(() => {
-    if (!categorySlug || categories.length === 0) return;
-    const match = categories.find((c) => c.slug === categorySlug);
-    if (match) setSelectedCategory(match.id);
-  }, [categorySlug, categories]);
+  // The active filter is derived from the URL on every render, not copied into
+  // state and synced once. That keeps three things honest for free: "All
+  // Compounds" in the navbar (a plain link back to /compounds) really clears
+  // the grid, the browser's back button moves between filters, and a
+  // background refetch of `categories` can't silently re-apply a filter the
+  // user just cleared. A slug matching no real category (e.g. a stale link)
+  // selects nothing, so the page shows the full catalog instead of silently
+  // rendering empty.
+  const selectedCategory = useMemo(
+    () => categories.find((c) => c.slug === categorySlug)?.id,
+    [categories, categorySlug],
+  );
+  // The static fallback has no slugs of its own; its names are single words,
+  // so the lowercased name is the slug.
+  const selectedStaticCat = useMemo(
+    () => STATIC_CATS.find((c) => c.name.toLowerCase() === categorySlug)?.name ?? null,
+    [categorySlug],
+  );
+
+  // Every filter control navigates instead of writing state, so the URL stays
+  // the single source of truth. Any other query param is preserved.
+  function selectCategory(slug?: string) {
+    if (slug === categorySlug) return;
+    const next = new URLSearchParams(searchStr);
+    if (slug) next.set("category", slug);
+    else next.delete("category");
+    const qs = next.toString();
+    navigate(qs ? `/compounds?${qs}` : "/compounds");
+  }
 
   const { data: dbProducts = [], isLoading } = trpc.products.list.useQuery({
     categoryId: selectedCategory, search: search || undefined, sortBy,
@@ -195,8 +214,8 @@ export default function Compounds() {
 
   // Sidebar categories
   const sidebarCats = categories.length > 0
-    ? categories.map((c) => ({ id: c.id, name: c.name, color: c.color ?? "#6b7280", count: categoryCounts[c.id] ?? 0 }))
-    : STATIC_CATS.map((c, i) => ({ id: i + 1, name: c.name, color: CAT_COLORS[c.name] ?? "#6b7280", count: c.count }));
+    ? categories.map((c) => ({ id: c.id, slug: c.slug, name: c.name, color: c.color ?? "#6b7280", count: categoryCounts[c.id] ?? 0 }))
+    : STATIC_CATS.map((c, i) => ({ id: i + 1, slug: c.name.toLowerCase(), name: c.name, color: CAT_COLORS[c.name] ?? "#6b7280", count: c.count }));
 
   return (
     <div className="flex-1 bg-white dark:bg-background">
@@ -223,7 +242,7 @@ export default function Compounds() {
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm dark:bg-card dark:border-border">
               {/* All */}
               <button
-                onClick={() => { setSelectedCategory(undefined); setSelectedStaticCat(null); }}
+                onClick={() => selectCategory(undefined)}
                 className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors ${
                   !selectedCategory && !selectedStaticCat
                     ? "bg-[#d3c4ab] text-white"
@@ -238,14 +257,11 @@ export default function Compounds() {
               {/* Categories */}
               <div className="divide-y divide-gray-50 dark:divide-white/10">
                 {sidebarCats.map((cat) => {
-                  const active = categories.length > 0 ? selectedCategory === cat.id : selectedStaticCat === cat.name;
+                  const active = cat.slug === categorySlug;
                   return (
                     <button
                       key={cat.id}
-                      onClick={() => {
-                        if (categories.length > 0) setSelectedCategory(active ? undefined : cat.id);
-                        else setSelectedStaticCat(active ? null : cat.name);
-                      }}
+                      onClick={() => selectCategory(active ? undefined : cat.slug)}
                       className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                         active ? "bg-[#f2ede6] text-[#baac96] font-semibold dark:bg-white/10" : "text-gray-600 hover:bg-[#F5F2EC] dark:text-gray-300 dark:hover:bg-white/5"
                       }`}
@@ -310,7 +326,7 @@ export default function Compounds() {
             {/* Mobile category pills */}
             <div className="flex gap-2 overflow-x-auto pb-2 mb-4 lg:hidden">
               <button
-                onClick={() => { setSelectedCategory(undefined); setSelectedStaticCat(null); }}
+                onClick={() => selectCategory(undefined)}
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                   !selectedCategory && !selectedStaticCat ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200 dark:bg-card dark:text-gray-300 dark:border-border"
                 }`}
@@ -318,13 +334,10 @@ export default function Compounds() {
                 <FlaskConical size={11} /> All
               </button>
               {sidebarCats.map((cat) => {
-                const active = categories.length > 0 ? selectedCategory === cat.id : selectedStaticCat === cat.name;
+                const active = cat.slug === categorySlug;
                 return (
                   <button key={cat.id}
-                    onClick={() => {
-                      if (categories.length > 0) setSelectedCategory(active ? undefined : cat.id);
-                      else setSelectedStaticCat(active ? null : cat.name);
-                    }}
+                    onClick={() => selectCategory(active ? undefined : cat.slug)}
                     className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                       active ? "bg-[#d3c4ab] text-white border-[#d3c4ab]" : "bg-white text-gray-600 border-gray-200 dark:bg-card dark:text-gray-300 dark:border-border"
                     }`}
@@ -353,7 +366,7 @@ export default function Compounds() {
                   <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-white/10 flex items-center justify-center mb-4"><FlaskConical size={24} className="text-gray-300 dark:text-gray-600" /></div>
                   <p className="font-semibold text-gray-700 dark:text-gray-200 mb-1">No compounds found</p>
                   <p className="text-sm text-gray-400 dark:text-gray-500">Try adjusting your search or filters</p>
-                  <button onClick={() => { setSearch(""); setSelectedStaticCat(null); }} className="mt-4 text-sm text-[#d3c4ab] font-semibold hover:underline">Clear filters</button>
+                  <button onClick={() => { setSearch(""); selectCategory(undefined); }} className="mt-4 text-sm text-[#d3c4ab] font-semibold hover:underline">Clear filters</button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
