@@ -120,8 +120,9 @@ export default function Navbar() {
   // Real categories for the Shop/Science dropdowns' "Reference" links —
   // replaces the old hardcoded SCIENCE_REFS list, which drifted out of sync
   // with the real catalog (it had 6 static entries incl. Endocrine/Combined,
-  // which don't exist as real categories, and slugified names that didn't
-  // match real slugs like "neural-cognitive-rsearch").
+  // which don't exist as real categories, and slugs derived from display
+  // names instead of the ones the catalog actually stores). Slugs are
+  // editable in /admin/categories, so no literal one belongs in this file.
   const { data: realCategories = [] } = trpc.categories.list.useQuery();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileScienceOpen, setMobileScienceOpen] = useState(false);
