@@ -11,6 +11,7 @@ import {
 } from "./db";
 import { constructWebhookEvent } from "./stripe";
 import { settleOrderRewards } from "./rewards";
+import { sendAdminOrderNotificationEmail, sendOrderConfirmationEmail } from "./orderEmails";
 import { notifyOwner } from "./_core/notification";
 
 export const STRIPE_WEBHOOK_PATH = "/api/stripe/webhook";
@@ -182,6 +183,21 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     console.log(
       `Stripe webhook: order ${orderId} rewards — ${rewards.pointsAwarded} points, referral eligible: ${rewards.referralMadeEligible}`
     );
+  }
+
+  // Both sit behind markOrderPaid returning updated:true, so a redelivered
+  // event cannot send a second copy of either. Settled together rather than
+  // awaited in sequence: neither should delay the other, and a failure in one
+  // must not stop the other from going out.
+  const [confirmation, adminNotice] = await Promise.allSettled([
+    sendOrderConfirmationEmail(orderId),
+    sendAdminOrderNotificationEmail(orderId),
+  ]);
+  if (confirmation.status === "rejected") {
+    console.warn(`Stripe webhook: confirmation email threw for order ${orderId}`, confirmation.reason);
+  }
+  if (adminNotice.status === "rejected") {
+    console.warn(`Stripe webhook: admin email threw for order ${orderId}`, adminNotice.reason);
   }
 
   try {

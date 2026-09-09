@@ -412,14 +412,53 @@ export async function createShippingLabel(
   const auth = await getToken();
   if (!("ok" in auth) || auth.ok !== true) return auth as UpsError;
 
-  const body = {
+  const body = buildLabelBody(origin, request, ENV.upsAccountNumber);
+
+  try {
+    const res = await fetch(`${baseUrl()}/api/shipments/v2409/ship`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        transId: `label-${Date.now()}`,
+        transactionSrc: "brighterdayslabs",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS * 2),
+    });
+
+    return await readLabelResponse(res);
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      return fail("timeout", SHOPPER_MESSAGE.timeout, "label request timed out");
+    }
+    return fail("unavailable", SHOPPER_MESSAGE.unavailable, String(err));
+  }
+}
+
+/**
+ * The Shipping request body, separated from the call so its shape can be
+ * asserted without reaching UPS.
+ *
+ * Worth knowing before editing: Shipping and Rating disagree on field names
+ * for the same concepts. The packaging code is `Packaging` here and
+ * `PackagingType` there; sending Rating's name reads to UPS as an absent
+ * field and comes back as 120600.
+ */
+export function buildLabelBody(
+  origin: ShippingOrigin,
+  request: LabelRequest,
+  accountNumber: string
+) {
+  return {
     ShipmentRequest: {
       Request: { RequestOption: "nonvalidate" },
       Shipment: {
         Description: "Laboratory supplies",
         Shipper: {
           ...originAddress(origin),
-          ShipperNumber: ENV.upsAccountNumber,
+          ShipperNumber: accountNumber,
         },
         ShipFrom: originAddress(origin),
         ShipTo: {
@@ -438,13 +477,16 @@ export async function createShippingLabel(
           ShipmentCharge: {
             // 01 — transportation charges, billed to our own account.
             Type: "01",
-            BillShipper: { AccountNumber: ENV.upsAccountNumber },
+            BillShipper: { AccountNumber: accountNumber },
           },
         },
         Service: { Code: request.serviceCode },
         Package: [
           {
-            PackagingType: { Code: "02" },
+            // Shipping calls this field "Packaging"; Rating calls the same
+            // thing "PackagingType". Sending Rating's name here reads as a
+            // missing field and fails with 120600.
+            Packaging: { Code: "02" },
             Dimensions: {
               UnitOfMeasurement: { Code: "IN" },
               Length: String(request.box.lengthIn),
@@ -466,21 +508,11 @@ export async function createShippingLabel(
       },
     },
   };
+}
 
+/** Turns a Shipping API response into a label or a typed failure. */
+async function readLabelResponse(res: Response): Promise<LabelResult> {
   try {
-    const res = await fetch(`${baseUrl()}/api/shipments/v2409/ship`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${auth.token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        transId: `label-${Date.now()}`,
-        transactionSrc: "brighterdayslabs",
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS * 2),
-    });
-
     const text = await res.text();
     if (text.trimStart().startsWith("<")) {
       return fail("unavailable", SHOPPER_MESSAGE.unavailable, "non-JSON response from UPS");

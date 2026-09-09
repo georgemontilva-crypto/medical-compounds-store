@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseRates } from "./ups";
-import { shippingSettingsSchema } from "@shared/shipping";
+import { buildLabelBody, parseRates } from "./ups";
+import { originSchema, shippingSettingsSchema } from "@shared/shipping";
 
 /**
  * Reading a rate response is where a carrier's answer becomes a price a shopper
@@ -174,5 +174,76 @@ describe("parseRates — response shapes", () => {
   it("skips an entry with no service code", () => {
     const json = response([{ TotalCharges: { MonetaryValue: "11.01" } }, rated("03", "11.01")]);
     expect(parseRates(json, groundOnly)).toHaveLength(1);
+  });
+});
+
+/**
+ * The label body. UPS names the same concepts differently between Rating and
+ * Shipping, and the two are edited side by side in this file — so the field
+ * that actually broke a real label is pinned by name here.
+ */
+describe("buildLabelBody", () => {
+  const origin = originSchema.parse({
+    name: "Brighter Days Labs",
+    street: "4200 Steve Reynolds Blvd",
+    city: "Norcross",
+    state: "GA",
+    zip: "30093",
+    country: "US",
+  });
+
+  const request = {
+    serviceCode: "03",
+    weightOz: 8.02,
+    box: { lengthIn: 6, widthIn: 4, heightIn: 3 },
+    recipient: {
+      name: "Jane Roe",
+      street: "1 Main St",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+      phone: "(212) 555-0100",
+    },
+  };
+
+  const pkg = (body: any) => body.ShipmentRequest.Shipment.Package[0];
+
+  it("names the packaging field the way Shipping expects, not the way Rating does", () => {
+    const body = buildLabelBody(origin, request, "A86B60") as any;
+    // Sending Rating's `PackagingType` here is what produced
+    // "120600 Missing or invalid packaging type code" against the live API.
+    expect(pkg(body).Packaging).toEqual({ Code: "02" });
+    expect(pkg(body).PackagingType).toBeUndefined();
+  });
+
+  it("bills the account it was given rather than reading the environment", () => {
+    const body = buildLabelBody(origin, request, "A86B60") as any;
+    expect(body.ShipmentRequest.Shipment.Shipper.ShipperNumber).toBe("A86B60");
+    expect(
+      body.ShipmentRequest.Shipment.PaymentInformation.ShipmentCharge.BillShipper.AccountNumber
+    ).toBe("A86B60");
+  });
+
+  it("sends dimensions and weight as strings, which UPS requires", () => {
+    const body = buildLabelBody(origin, request, "A86B60") as any;
+    expect(pkg(body).Dimensions).toMatchObject({
+      UnitOfMeasurement: { Code: "IN" },
+      Length: "6",
+      Width: "4",
+      Height: "3",
+    });
+    // 8.02 oz rounds up: UPS bills what it weighs, not what we declared.
+    expect(pkg(body).PackageWeight.Weight).toBe("0.6");
+  });
+
+  it("strips punctuation from the recipient phone", () => {
+    const body = buildLabelBody(origin, request, "A86B60") as any;
+    expect(body.ShipmentRequest.Shipment.ShipTo.Phone).toEqual({ Number: "2125550100" });
+  });
+
+  it("omits the phone entirely when there is none, rather than sending an empty one", () => {
+    const withoutPhone = { ...request, recipient: { ...request.recipient, phone: null } };
+    const body = buildLabelBody(origin, withoutPhone, "A86B60") as any;
+    expect(body.ShipmentRequest.Shipment.ShipTo.Phone).toBeUndefined();
   });
 });

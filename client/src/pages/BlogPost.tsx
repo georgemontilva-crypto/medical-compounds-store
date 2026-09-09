@@ -116,7 +116,10 @@ export default function BlogPost() {
                 <Clock size={12} />
                 {readingMinutes} min read
               </span>
-              {post.authorName && <span>By {post.authorName}</span>}
+              {/* Articles are published under the team, not the admin account
+                  that happened to type them — the byline readers see should
+                  not change when a different person writes the next one. */}
+              <span>By Brighter Days Labs Research Team</span>
             </div>
 
             <BlogContent content={post.content} className="text-[15px]" />

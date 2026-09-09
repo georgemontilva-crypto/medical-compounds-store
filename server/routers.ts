@@ -55,6 +55,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import type { InsertBlogCategory, InsertBlogPost } from "../drizzle/schema";
 import { sendEmail, escapeHtml } from "./email";
+import { sendTrackingEmail } from "./orderEmails";
 import {
   RESET_TOKEN_TTL_MS,
   buildResetEmailHtml,
@@ -2142,10 +2143,22 @@ export const appRouter = router({
           data: result.label.data,
         });
 
+        // A label exists, so the parcel is trackable — tell the buyer. Failing
+        // to email must not undo a label that UPS has already issued, so this
+        // is reported rather than thrown.
+        const emailed = await sendTrackingEmail(
+          input.orderId,
+          result.label.trackingNumber
+        ).catch((e) => {
+          console.warn(`[label] tracking email threw for order ${input.orderId}`, e);
+          return false;
+        });
+
         return {
           trackingNumber: result.label.trackingNumber,
           sandbox: isUpsSandbox(),
           oversize: shipment.oversize,
+          trackingEmailSent: emailed,
         };
       }),
 
