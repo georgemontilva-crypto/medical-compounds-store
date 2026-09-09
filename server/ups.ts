@@ -367,6 +367,9 @@ export function parseRates(json: any, settings: ShippingSettings): ShippingRate[
 
 // ─── Labels ──────────────────────────────────────────────────────────────────
 
+/** The formats we ask UPS for. GIF prints anywhere; ZPL needs a thermal printer. */
+export type LabelFormat = "GIF" | "ZPL";
+
 export interface LabelRequest {
   serviceCode: string;
   weightOz: number;
@@ -403,7 +406,8 @@ export type LabelResult = { ok: true; label: PurchasedLabel } | UpsError;
  */
 export async function createShippingLabel(
   origin: ShippingOrigin,
-  request: LabelRequest
+  request: LabelRequest,
+  format: LabelFormat = "GIF"
 ): Promise<LabelResult> {
   if (!ENV.upsAccountNumber) {
     return fail("not_configured", SHOPPER_MESSAGE.not_configured, "UPS_ACCOUNT_NUMBER is unset");
@@ -412,7 +416,7 @@ export async function createShippingLabel(
   const auth = await getToken();
   if (!("ok" in auth) || auth.ok !== true) return auth as UpsError;
 
-  const body = buildLabelBody(origin, request, ENV.upsAccountNumber);
+  const body = buildLabelBody(origin, request, ENV.upsAccountNumber, format);
 
   try {
     const res = await fetch(`${baseUrl()}/api/shipments/v2409/ship`, {
@@ -428,7 +432,7 @@ export async function createShippingLabel(
       signal: AbortSignal.timeout(TIMEOUT_MS * 2),
     });
 
-    return await readLabelResponse(res);
+    return await readLabelResponse(res, format);
   } catch (err) {
     if (err instanceof Error && err.name === "TimeoutError") {
       return fail("timeout", SHOPPER_MESSAGE.timeout, "label request timed out");
@@ -449,7 +453,8 @@ export async function createShippingLabel(
 export function buildLabelBody(
   origin: ShippingOrigin,
   request: LabelRequest,
-  accountNumber: string
+  accountNumber: string,
+  format: LabelFormat = "GIF"
 ) {
   return {
     ShipmentRequest: {
@@ -500,18 +505,27 @@ export function buildLabelBody(
           },
         ],
       },
-      LabelSpecification: {
-        // GIF prints from any browser without a thermal printer, which is what
-        // a small shop actually has. UPS requires a user agent alongside it.
-        LabelImageFormat: { Code: "GIF" },
-        HTTPUserAgent: "Mozilla/5.0",
-      },
+      LabelSpecification:
+        format === "ZPL"
+          ? {
+              // The language a thermal printer reads directly. LabelStockSize
+              // only applies to the thermal formats, and UPS scales to 4x6 at
+              // most whatever is asked for.
+              LabelImageFormat: { Code: "ZPL" },
+              LabelStockSize: { Width: "4", Height: "6" },
+            }
+          : {
+              // An image, for a shop printing onto ordinary paper. UPS wants a
+              // user agent alongside it.
+              LabelImageFormat: { Code: "GIF" },
+              HTTPUserAgent: "Mozilla/5.0",
+            },
     },
   };
 }
 
 /** Turns a Shipping API response into a label or a typed failure. */
-async function readLabelResponse(res: Response): Promise<LabelResult> {
+async function readLabelResponse(res: Response, format: LabelFormat): Promise<LabelResult> {
   try {
     const text = await res.text();
     if (text.trimStart().startsWith("<")) {
@@ -555,7 +569,7 @@ async function readLabelResponse(res: Response): Promise<LabelResult> {
       return fail("unavailable", "UPS did not return a printable label.", "missing label fields");
     }
 
-    return { ok: true, label: { trackingNumber, data, format: "GIF" } };
+    return { ok: true, label: { trackingNumber, data, format } };
   } catch (e) {
     const timedOut = e instanceof Error && e.name === "TimeoutError";
     return fail(

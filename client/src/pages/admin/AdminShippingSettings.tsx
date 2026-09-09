@@ -20,6 +20,7 @@ import {
   MapPin,
   Plus,
   Scale,
+  Printer,
   Trash2,
   Truck,
 } from "lucide-react";
@@ -252,6 +253,44 @@ export default function AdminShippingSettings() {
                   max={100}
                   className="w-40"
                 />
+              </section>
+
+              {/* Label format */}
+              <section className="lab-card p-5">
+                <SectionHeader
+                  icon={Printer}
+                  title="Label format"
+                  note="What a bought label comes back as. Thermal gives an exact 4x6 for a label printer; image prints from a browser onto ordinary paper."
+                />
+                <div className="space-y-2">
+                  {(
+                    [
+                      ["GIF", "Image (GIF)", "Prints from any browser. No special printer needed."],
+                      ["ZPL", "Thermal 4x6 (ZPL)", "Downloads a file for a thermal label printer."],
+                    ] as const
+                  ).map(([value, label, note]) => (
+                    <label
+                      key={value}
+                      className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
+                      style={{
+                        borderColor: form.labelFormat === value ? "#d3c4ab" : undefined,
+                        backgroundColor: form.labelFormat === value ? "#f2ede6" : undefined,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="labelFormat"
+                        className="mt-0.5"
+                        checked={form.labelFormat === value}
+                        onChange={() => setForm(f => ({ ...f, labelFormat: value }))}
+                      />
+                      <span>
+                        <span className="block text-sm font-medium">{label}</span>
+                        <span className="block text-xs text-muted-foreground">{note}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </section>
             </div>
           </div>

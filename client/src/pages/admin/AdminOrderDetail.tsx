@@ -286,6 +286,20 @@ function ShippingLabelCard({
         toast.error("No label image is stored for this order.");
         return;
       }
+
+      // ZPL is printer instructions, not a picture — opening it in a tab shows
+      // a wall of text. It has to arrive as a file the printer can be given.
+      if (label.format === "ZPL") {
+        const zpl = atob(label.data);
+        const url = URL.createObjectURL(new Blob([zpl], { type: "application/octet-stream" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `label-${trackingNumber ?? orderId}.zpl`;
+        link.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
       const mime = label.format === "PDF" ? "application/pdf" : "image/gif";
       const win = window.open("", "_blank");
       if (!win) {

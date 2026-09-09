@@ -247,3 +247,53 @@ describe("buildLabelBody", () => {
     expect(body.ShipmentRequest.Shipment.ShipTo.Phone).toBeUndefined();
   });
 });
+
+/**
+ * Label format. A shop with a thermal printer wants ZPL at 4x6; one without
+ * wants an image it can print from a browser. Asking for the wrong one gives
+ * either a wall of printer instructions or a picture scaled onto label stock.
+ */
+describe("buildLabelBody label format", () => {
+  const origin = originSchema.parse({
+    name: "Brighter Days Labs",
+    street: "4200 Steve Reynolds Blvd",
+    city: "Norcross",
+    state: "GA",
+    zip: "30093",
+    country: "US",
+  });
+
+  const request = {
+    serviceCode: "03",
+    weightOz: 8.02,
+    box: { lengthIn: 6, widthIn: 4, heightIn: 3 },
+    recipient: {
+      name: "Jane Roe",
+      street: "1 Main St",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+      phone: null,
+    },
+  };
+
+  const spec = (format?: "GIF" | "ZPL") =>
+    (buildLabelBody(origin, request, "A86B60", format) as any).ShipmentRequest.LabelSpecification;
+
+  it("asks for an image by default, which prints without special hardware", () => {
+    expect(spec().LabelImageFormat).toEqual({ Code: "GIF" });
+  });
+
+  it("sends the user agent UPS requires alongside a GIF", () => {
+    expect(spec("GIF").HTTPUserAgent).toBeTruthy();
+  });
+
+  it("asks for 4x6 thermal when ZPL is chosen", () => {
+    expect(spec("ZPL").LabelImageFormat).toEqual({ Code: "ZPL" });
+    expect(spec("ZPL").LabelStockSize).toEqual({ Width: "4", Height: "6" });
+  });
+
+  it("omits the stock size for an image, where UPS ignores it", () => {
+    expect(spec("GIF").LabelStockSize).toBeUndefined();
+  });
+});

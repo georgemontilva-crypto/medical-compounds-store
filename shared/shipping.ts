@@ -100,6 +100,15 @@ export const shippingSettingsSchema = z.object({
    */
   handlingFeeUsd: z.number().min(0).max(100).default(0),
   /**
+   * What a bought label comes back as.
+   *
+   * "GIF" is an image that prints from any browser onto ordinary paper.
+   * "ZPL" is the instruction language a thermal printer speaks directly, at
+   * exactly 4x6 — sharper, correctly sized, and useless without such a
+   * printer. Defaults to the one that works on whatever the shop already has.
+   */
+  labelFormat: z.enum(["GIF", "ZPL"]).default("GIF"),
+  /**
    * What one standard vial weighs, in its own packaging.
    *
    * The default for every product, so a catalogue of near-identical vials needs

@@ -2162,19 +2162,23 @@ export const appRouter = router({
           throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No service is enabled." });
         }
 
-        const result = await createShippingLabel(settings.origin, {
-          serviceCode,
-          weightOz: shipment.totalOz,
-          box: shipment.box,
-          recipient: {
-            name: `${order.shippingFirstName ?? ""} ${order.shippingLastName ?? ""}`.trim(),
-            street: order.shippingAddress ?? "",
-            city: order.shippingCity ?? "",
-            state: order.shippingState ?? "",
-            zip: order.shippingZip ?? "",
-            phone: order.shippingPhone,
+        const result = await createShippingLabel(
+          settings.origin,
+          {
+            serviceCode,
+            weightOz: shipment.totalOz,
+            box: shipment.box,
+            recipient: {
+              name: `${order.shippingFirstName ?? ""} ${order.shippingLastName ?? ""}`.trim(),
+              street: order.shippingAddress ?? "",
+              city: order.shippingCity ?? "",
+              state: order.shippingState ?? "",
+              zip: order.shippingZip ?? "",
+              phone: order.shippingPhone,
+            },
           },
-        });
+          settings.labelFormat
+        );
 
         if (!result.ok) {
           if (result.detail) console.error(`[label] ${result.kind}: ${result.detail}`);
