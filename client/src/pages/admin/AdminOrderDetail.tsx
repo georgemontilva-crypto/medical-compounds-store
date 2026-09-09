@@ -235,12 +235,12 @@ function ShippingLabelCard({
   const utils = trpc.useUtils();
   const [downloading, setDownloading] = useState(false);
 
-  // Only asked for once a label exists — there is nothing to say about one
-  // that was never bought.
-  const { data: labelInfo } = trpc.shipping.getLabel.useQuery(
-    { orderId },
-    { enabled: Boolean(trackingNumber) }
-  );
+  // Asked of the environment, not of the label: an order can carry a tracking
+  // number with no stored label row behind it, and the notice still has to
+  // appear — that number is just as unusable either way.
+  const { data: upsMode } = trpc.shipping.isSandbox.useQuery(undefined, {
+    enabled: Boolean(trackingNumber),
+  });
 
   const createLabel = trpc.shipping.createLabel.useMutation({
     onSuccess: (result) => {
@@ -262,7 +262,6 @@ function ShippingLabelCard({
   const discardTestLabel = trpc.shipping.discardTestLabel.useMutation({
     onSuccess: (result) => {
       utils.orders.adminDetail.invalidate({ id: orderId });
-      utils.shipping.getLabel.invalidate({ orderId });
       toast.success(`Test label ${result.discarded} discarded — this order can be labelled again.`);
     },
     onError: (e) => toast.error(e.message),
@@ -313,7 +312,7 @@ function ShippingLabelCard({
 
       {trackingNumber ? (
         <div className="space-y-3">
-          {labelInfo?.sandbox && (
+          {upsMode?.sandbox && (
             <div className="p-3 rounded-xl border border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-950/30 dark:text-yellow-200">
               <p className="text-xs font-semibold mb-0.5">Test label — not valid for shipping</p>
               <p className="text-xs leading-relaxed mb-2.5">

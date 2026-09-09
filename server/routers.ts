@@ -2230,13 +2230,17 @@ export const appRouter = router({
     /** Label metadata, without the image. */
     getLabel: adminProcedure
       .input(z.object({ orderId: z.number() }))
-      .query(async ({ input }) => {
-        const label = await getShippingLabelSummary(input.orderId);
-        // Carried with the label, not just returned when one is bought: the
-        // toast at purchase is gone by the next visit, and a sample label is
-        // indistinguishable from a real one until somebody tries to ship it.
-        return label ? { ...label, sandbox: isUpsSandbox() } : label;
-      }),
+      .query(({ input }) => getShippingLabelSummary(input.orderId)),
+
+    /**
+     * Whether labels bought right now are test labels.
+     *
+     * Its own query rather than a field on getLabel: the notice has to appear
+     * for any order carrying a tracking number, and an order can have one
+     * without a stored label row — the number lives on the order, the image in
+     * a separate table that a failed save can leave empty.
+     */
+    isSandbox: adminProcedure.query(() => ({ sandbox: isUpsSandbox() })),
 
     /**
      * The label image, base64.
