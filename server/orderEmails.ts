@@ -7,6 +7,7 @@
 // exists for the processor, not for the customer, and must not be applied here.
 import { escapeHtml, sendEmail } from "./email";
 import { getOrderById, getOrderItems } from "./db";
+import { ENV } from "./_core/env";
 
 type OrderRow = Awaited<ReturnType<typeof getOrderById>>;
 type OrderItemRow = Awaited<ReturnType<typeof getOrderItems>>[number];
@@ -66,6 +67,24 @@ function totalsRows(order: NonNullable<OrderRow>): string {
   );
 
   return rows.join("");
+}
+
+/**
+ * A guest checkout leaves no account to log into, so the only way back to an
+ * order is this link. Prefilled with the number and address so the buyer
+ * doesn't have to retype anything they were just sent.
+ */
+function trackUrl(order: NonNullable<OrderRow>): string {
+  const base = ENV.publicSiteUrl.replace(/\/$/, "");
+  const email = encodeURIComponent(order.shippingEmail ?? "");
+  return `${base}/track-order?order=${order.id}&email=${email}`;
+}
+
+function trackButton(order: NonNullable<OrderRow>, label: string): string {
+  return `
+    <p style="margin:28px 0 0">
+      <a href="${trackUrl(order)}" style="display:inline-block;background:#d3c4ab;color:#1a1a1a;text-decoration:none;padding:12px 24px;border-radius:999px;font-weight:600;font-size:14px">${label}</a>
+    </p>`;
 }
 
 function shippingBlock(order: NonNullable<OrderRow>): string {
@@ -132,8 +151,10 @@ export async function sendOrderConfirmationEmail(orderId: number): Promise<boole
     </table>
     ${shippingBlock(order)}
     <p style="margin:24px 0 0;color:#666;font-size:13px">
-      We'll email you a tracking number as soon as your parcel ships.
-    </p>`
+      We'll email you a tracking number as soon as your parcel ships. You can
+      check on this order at any time — no account needed.
+    </p>
+    ${trackButton(order, "View my order")}`
   );
 
   const sent = await sendEmail({
@@ -220,7 +241,10 @@ export async function sendTrackingEmail(
     <p style="margin:0 0 8px;color:#666;font-size:13px">Tracking number</p>
     <p style="margin:0 0 20px;font-size:18px;font-weight:bold;letter-spacing:0.5px">${safeTracking}</p>
     <a href="${url}" style="display:inline-block;background:#d3c4ab;color:#1a1a1a;text-decoration:none;padding:12px 24px;border-radius:999px;font-weight:600;font-size:14px">Track this shipment</a>
-    ${shippingBlock(order)}`
+    ${shippingBlock(order)}
+    <p style="margin:24px 0 0;font-size:13px">
+      <a href="${trackUrl(order)}" style="color:#666">View the full order</a>
+    </p>`
   );
 
   const sent = await sendEmail({

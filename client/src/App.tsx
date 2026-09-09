@@ -35,6 +35,7 @@ import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
 import MyAccount from "./pages/MyAccount";
 import OrderDetail from "./pages/OrderDetail";
+import TrackOrder from "./pages/TrackOrder";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -79,6 +80,7 @@ function PublicRoutes() {
       <Route path="/register" component={Register} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/my-account" component={MyAccount} />
+      <Route path="/track-order" component={TrackOrder} />
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/my-orders/:id" component={OrderDetail} />
       <Route path="/lab-reports/:slug" component={LabReports} />

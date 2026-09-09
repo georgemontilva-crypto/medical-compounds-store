@@ -634,6 +634,33 @@ export async function getOrdersByUser(userId: number) {
     .orderBy(desc(orders.createdAt));
 }
 
+/**
+ * An order looked up the way somebody who never made an account has to: the
+ * number from their receipt plus the address it was sent to.
+ *
+ * Both must match. The id alone is guessable — they are sequential — so the
+ * email is what actually authorises the read, and it is compared
+ * case-insensitively because people capitalise inconsistently when typing an
+ * address back in.
+ */
+export async function getOrderForGuest(id: number, email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const normalised = email.trim().toLowerCase();
+  if (!normalised) return undefined;
+
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, id))
+    .limit(1);
+
+  const order = rows[0];
+  if (!order) return undefined;
+  if ((order.shippingEmail ?? "").trim().toLowerCase() !== normalised) return undefined;
+  return order;
+}
+
 export async function getAllOrders(limit = 50, offset = 0) {
   const db = await getDb();
   if (!db) return [];

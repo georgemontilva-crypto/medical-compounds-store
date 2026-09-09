@@ -65,6 +65,7 @@ const PAGE_SOURCES: Record<
   "/compounds": { file: "client/src/pages/Compounds.tsx" },
   "/blog": { file: "client/src/pages/Blog.tsx" },
   "/faq": { file: "client/src/pages/FAQ.tsx" },
+  "/track-order": { file: "client/src/pages/TrackOrder.tsx" },
   "/contact": { file: "client/src/pages/Contact.tsx" },
   "/wholesale": { file: "client/src/pages/WholesaleApplication.tsx" },
   "/lab-tests": { file: "client/src/pages/LabTests.tsx" },

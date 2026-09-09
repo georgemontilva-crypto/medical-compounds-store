@@ -90,6 +90,17 @@ export const STATIC_ROUTE_META: Record<string, RouteMeta> = {
       "Answers to the questions we hear most often about ordering, shipping, purity, and research use.",
   },
 
+  // client/src/pages/TrackOrder.tsx
+  "/track-order": {
+    keyword: "track order",
+    title: "Track Your Order",
+    description:
+      "Look up a Brighter Days Labs order with your order number and email. No account required — tracking and order details for guest checkouts.",
+    h1: "Track your order",
+    intro:
+      "Enter the order number from your confirmation email and the email address you used.",
+  },
+
   // client/src/pages/Contact.tsx
   "/contact": {
     keyword: "contact",

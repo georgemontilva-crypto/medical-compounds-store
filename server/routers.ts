@@ -107,6 +107,7 @@ import {
   getOrderById,
   getOrderItems,
   getOrdersByUser,
+  getOrderForGuest,
   getProductById,
   getProductBySlug,
   getProductImages,
@@ -1126,6 +1127,33 @@ export const appRouter = router({
       const items = await getOrderItems(order.id);
       return { ...order, items };
     }),
+
+    /**
+     * Order tracking for somebody who checked out without an account.
+     *
+     * Guest orders carry userId null, so myOrders and detail — both keyed on
+     * the session — can never return them. Without this, a guest pays and then
+     * has no way to look at what they bought.
+     *
+     * Public by necessity, authorised by the pair: the order number is on
+     * their receipt, the email is the one they had it sent to. Sequential ids
+     * make the number alone guessable, so the email is what actually gates it.
+     */
+    track: publicProcedure
+      .input(z.object({ orderId: z.number(), email: z.string().email() }))
+      .query(async ({ input }) => {
+        const order = await getOrderForGuest(input.orderId, input.email);
+        // Same answer for "no such order" and "wrong email", so this cannot be
+        // used to discover which order numbers exist.
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "We couldn't find an order with that number and email.",
+          });
+        }
+        const items = await getOrderItems(order.id);
+        return { ...order, items };
+      }),
 
     // Admin
     adminList: adminProcedure

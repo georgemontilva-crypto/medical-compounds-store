@@ -22,6 +22,7 @@ const LEGAL_LINKS = [
 const SUPPORT_LINKS = [
   { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/faq" },
+  { label: "Track Order", href: "/track-order" },
   { label: "Contact", href: "/contact" },
 ];
 
