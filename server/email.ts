@@ -6,6 +6,17 @@ import { Resend } from "resend";
 
 const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || "Brighter Days Labs <onboarding@resend.dev>";
 
+/**
+ * Where replies go. Falls back to the sending address, but is worth setting
+ * separately: mail from a noreply-style address that accepts no reply is
+ * treated as less trustworthy, and a customer answering an order confirmation
+ * should reach somebody either way.
+ */
+const REPLY_TO_ADDRESS =
+  process.env.RESEND_REPLY_TO ||
+  FROM_ADDRESS.replace(/^.*<|>.*$/g, "") ||
+  FROM_ADDRESS;
+
 let client: Resend | null = null;
 function getClient(): Resend | null {
   if (client) return client;
@@ -53,6 +64,15 @@ export async function sendEmailWithDetail(input: {
       to: input.to,
       subject: input.subject,
       html: input.html,
+      // A reachable reply address is one of the things filters weigh, and it
+      // is also just true: somebody reads that mailbox.
+      replyTo: REPLY_TO_ADDRESS,
+      headers: {
+        // Transactional mail has no list to leave, but Gmail treats the header
+        // as a mark of a sender who expects to be held accountable, and its
+        // absence as a mark of one who does not.
+        "List-Unsubscribe": `<mailto:${REPLY_TO_ADDRESS}?subject=unsubscribe>`,
+      },
     });
     if (error) {
       console.warn(`[email] Resend rejected email to ${input.to}:`, error);
