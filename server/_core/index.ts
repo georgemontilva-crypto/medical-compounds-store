@@ -10,6 +10,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { headBucket, storagePut } from "../storage";
+import { sendEmailWithDetail } from "../email";
 import { registerStripeWebhook } from "../stripeWebhook";
 import { startTrafficFlush } from "../traffic";
 
@@ -95,6 +96,54 @@ async function startServer() {
         headBucketResult,
       });
     }
+  });
+
+  // TEMPORARY diagnostic route — remove once email delivery is confirmed
+  // working in production. Same gating as the R2 one: a throwaway token rather
+  // than NODE_ENV, because the thing being diagnosed only happens on Railway.
+  app.get("/api/debug/email-test", async (req, res) => {
+    if (req.query.secret !== "maildiag-4c7e19b3f2") {
+      res.status(404).send("Not found");
+      return;
+    }
+
+    const apiKey = process.env.RESEND_API_KEY ?? "";
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL ?? "";
+    const runtimeConfig = {
+      // Prefix and length only: enough to tell a missing key from a wrong one
+      // without printing a credential into a browser tab.
+      resendApiKeyPrefix: apiKey ? apiKey.slice(0, 6) : null,
+      resendApiKeyLength: apiKey.length,
+      resendFromEmail: process.env.RESEND_FROM_EMAIL ?? null,
+      adminNotificationEmail: adminEmail || null,
+    };
+
+    // Where to send it: ?to= wins, otherwise the address alerts are meant to
+    // reach — which is itself the thing under suspicion.
+    const to = typeof req.query.to === "string" && req.query.to ? req.query.to : adminEmail;
+    if (!to) {
+      res.status(400).json({
+        ok: false,
+        reason: "No recipient. Set ADMIN_NOTIFICATION_EMAIL or pass ?to=",
+        runtimeConfig,
+      });
+      return;
+    }
+
+    const result = await sendEmailWithDetail({
+      to,
+      subject: "Brighter Days Labs — email delivery test",
+      html: `
+        <div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;padding:24px">
+          <h1 style="font-size:18px;margin:0 0 8px">Email delivery works</h1>
+          <p style="color:#666;margin:0">
+            If you are reading this, Resend accepted and delivered a message from
+            the production server. Sent ${new Date().toISOString()}.
+          </p>
+        </div>`,
+    });
+
+    res.status(result.ok ? 200 : 500).json({ ...result, to, runtimeConfig });
   });
 
   // tRPC API

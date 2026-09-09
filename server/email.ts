@@ -25,14 +25,30 @@ export function escapeHtml(value: string): string {
 }
 
 export async function sendEmail(input: { to: string; subject: string; html: string }): Promise<boolean> {
+  const result = await sendEmailWithDetail(input);
+  return result.ok;
+}
+
+/**
+ * The same send, with whatever Resend said about it.
+ *
+ * sendEmail deliberately collapses everything to a boolean so a broken
+ * provider can never block saving an order. That is right for callers and
+ * useless for working out *why* nothing arrived, which is what this is for.
+ */
+export async function sendEmailWithDetail(input: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<{ ok: boolean; id?: string; error?: unknown; reason?: string }> {
   const resend = getClient();
   if (!resend) {
     console.warn(`[email] RESEND_API_KEY not set — skipped email to ${input.to}: "${input.subject}"`);
-    return false;
+    return { ok: false, reason: "RESEND_API_KEY is not set on this process" };
   }
 
   try {
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: input.to,
       subject: input.subject,
@@ -40,11 +56,11 @@ export async function sendEmail(input: { to: string; subject: string; html: stri
     });
     if (error) {
       console.warn(`[email] Resend rejected email to ${input.to}:`, error);
-      return false;
+      return { ok: false, error, reason: "Resend rejected the message" };
     }
-    return true;
+    return { ok: true, id: data?.id };
   } catch (err) {
     console.warn(`[email] Failed to send email to ${input.to}:`, err);
-    return false;
+    return { ok: false, error: String(err), reason: "the request to Resend threw" };
   }
 }
