@@ -235,6 +235,13 @@ function ShippingLabelCard({
   const utils = trpc.useUtils();
   const [downloading, setDownloading] = useState(false);
 
+  // Only asked for once a label exists — there is nothing to say about one
+  // that was never bought.
+  const { data: labelInfo } = trpc.shipping.getLabel.useQuery(
+    { orderId },
+    { enabled: Boolean(trackingNumber) }
+  );
+
   const createLabel = trpc.shipping.createLabel.useMutation({
     onSuccess: (result) => {
       utils.orders.adminDetail.invalidate({ id: orderId });
@@ -297,6 +304,16 @@ function ShippingLabelCard({
 
       {trackingNumber ? (
         <div className="space-y-3">
+          {labelInfo?.sandbox && (
+            <div className="p-3 rounded-xl border border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-950/30 dark:text-yellow-200">
+              <p className="text-xs font-semibold mb-0.5">Test label — not valid for shipping</p>
+              <p className="text-xs leading-relaxed">
+                UPS is in sandbox mode, so this barcode is a sample. Set
+                UPS_ENVIRONMENT to production for labels a carrier will accept.
+              </p>
+            </div>
+          )}
+
           <div className="p-3 rounded-xl bg-secondary/60">
             <p className="text-xs text-muted-foreground mb-0.5">Tracking number</p>
             <p className="font-mono text-sm break-all">{trackingNumber}</p>
