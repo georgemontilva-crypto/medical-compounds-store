@@ -1438,6 +1438,25 @@ export async function saveShippingLabel(data: InsertShippingLabel) {
     .where(eq(orders.id, data.orderId));
 }
 
+/**
+ * Throws away a label and frees the order to be labelled again.
+ *
+ * Only ever the right move for a sandbox label: those carry sample barcodes
+ * that no carrier will accept, so an order that got one during testing is
+ * otherwise stuck with it forever. A real label is a purchase — that one gets
+ * cancelled with UPS, not deleted here.
+ */
+export async function discardShippingLabel(orderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.delete(shippingLabels).where(eq(shippingLabels.orderId, orderId));
+  await db
+    .update(orders)
+    .set({ trackingNumber: null })
+    .where(eq(orders.id, orderId));
+}
+
 /** Label metadata for an order, without the image. */
 export async function getShippingLabelSummary(orderId: number) {
   const db = await getDb();

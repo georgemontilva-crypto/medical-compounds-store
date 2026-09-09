@@ -259,6 +259,15 @@ function ShippingLabelCard({
     onError: (e) => toast.error(e.message),
   });
 
+  const discardTestLabel = trpc.shipping.discardTestLabel.useMutation({
+    onSuccess: (result) => {
+      utils.orders.adminDetail.invalidate({ id: orderId });
+      utils.shipping.getLabel.invalidate({ orderId });
+      toast.success(`Test label ${result.discarded} discarded — this order can be labelled again.`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const markShipped = trpc.shipping.markShipped.useMutation({
     onSuccess: () => {
       utils.orders.adminDetail.invalidate({ id: orderId });
@@ -307,10 +316,19 @@ function ShippingLabelCard({
           {labelInfo?.sandbox && (
             <div className="p-3 rounded-xl border border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-950/30 dark:text-yellow-200">
               <p className="text-xs font-semibold mb-0.5">Test label — not valid for shipping</p>
-              <p className="text-xs leading-relaxed">
+              <p className="text-xs leading-relaxed mb-2.5">
                 UPS is in sandbox mode, so this barcode is a sample. Set
-                UPS_ENVIRONMENT to production for labels a carrier will accept.
+                UPS_ENVIRONMENT to production for labels a carrier will accept,
+                then discard this one to label the order for real.
               </p>
+              <button
+                type="button"
+                onClick={() => discardTestLabel.mutate({ orderId })}
+                disabled={discardTestLabel.isPending}
+                className="text-xs font-medium underline underline-offset-2 disabled:opacity-50"
+              >
+                {discardTestLabel.isPending ? "Discarding…" : "Discard test label"}
+              </button>
             </div>
           )}
 

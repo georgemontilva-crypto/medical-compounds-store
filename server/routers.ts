@@ -164,6 +164,7 @@ import {
   getUserOrderStats,
   settlePayoutRequest,
   saveShippingLabel,
+  discardShippingLabel,
   getShippingLabelSummary,
   getShippingLabelImage,
   markOrderShipped,
@@ -2188,6 +2189,42 @@ export const appRouter = router({
           oversize: shipment.oversize,
           trackingEmailSent: emailed,
         };
+      }),
+
+    /**
+     * Throws away a test label so the order can be labelled for real.
+     *
+     * Sandbox labels carry sample barcodes, and createLabel refuses an order
+     * that already has one — correct in production, where a second label is a
+     * second charge, but it leaves every order labelled during testing
+     * permanently unshippable.
+     *
+     * Refuses outright once UPS is live: a real label has been paid for, and
+     * deleting the row would hide that without cancelling anything. That one
+     * gets voided with UPS.
+     */
+    discardTestLabel: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .mutation(async ({ input }) => {
+        if (!isUpsSandbox()) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "This label was bought from UPS. Void it with UPS rather than removing it here.",
+          });
+        }
+
+        const order = await getOrderById(input.orderId);
+        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+        if (!order.trackingNumber) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This order has no label to discard.",
+          });
+        }
+
+        await discardShippingLabel(input.orderId);
+        return { discarded: order.trackingNumber };
       }),
 
     /** Label metadata, without the image. */
