@@ -570,3 +570,16 @@ async function readLabelResponse(res: Response): Promise<LabelResult> {
 export function isUpsSandbox(): boolean {
   return !ENV.upsProduction;
 }
+
+/**
+ * Whether a tracking number came from the sandbox rather than a real purchase.
+ *
+ * UPS returns a literal placeholder — 1ZXXXXXXXXXXXXXXXX — for test labels,
+ * where a bought one has digits. Reading the number rather than the current
+ * environment matters: an order labelled in sandbox is still holding a useless
+ * barcode after somebody switches to production, and that is precisely when it
+ * needs to be replaceable.
+ */
+export function isSandboxTrackingNumber(trackingNumber: string): boolean {
+  return /X{4,}/i.test(trackingNumber.trim());
+}

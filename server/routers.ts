@@ -25,7 +25,12 @@ import {
   shippingReadiness,
   shippingSettingsSchema,
 } from "@shared/shipping";
-import { createShippingLabel, getShippingRates, isUpsSandbox } from "./ups";
+import {
+  createShippingLabel,
+  getShippingRates,
+  isSandboxTrackingNumber,
+  isUpsSandbox,
+} from "./ups";
 import { cartFingerprint, resolveQuotedRate, storeQuote } from "./shippingQuotes";
 import { fillTrafficGaps } from "@shared/traffic";
 import {
@@ -2199,27 +2204,29 @@ export const appRouter = router({
      * second charge, but it leaves every order labelled during testing
      * permanently unshippable.
      *
-     * Refuses outright once UPS is live: a real label has been paid for, and
-     * deleting the row would hide that without cancelling anything. That one
-     * gets voided with UPS.
+     * Which label is a test one is read from the tracking number, not from the
+     * mode we happen to be in now. UPS returns a literal 1ZXXXXXXXXXXXXXXXX
+     * from the sandbox; a bought label has real digits. Judging by the current
+     * mode instead would strand exactly the orders this exists for — the ones
+     * labelled in sandbox before somebody switched to production.
      */
     discardTestLabel: adminProcedure
       .input(z.object({ orderId: z.number() }))
       .mutation(async ({ input }) => {
-        if (!isUpsSandbox()) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message:
-              "This label was bought from UPS. Void it with UPS rather than removing it here.",
-          });
-        }
-
         const order = await getOrderById(input.orderId);
         if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
         if (!order.trackingNumber) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: "This order has no label to discard.",
+          });
+        }
+
+        if (!isSandboxTrackingNumber(order.trackingNumber)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "This label was bought from UPS. Void it with UPS rather than removing it here.",
           });
         }
 
@@ -2233,14 +2240,23 @@ export const appRouter = router({
       .query(({ input }) => getShippingLabelSummary(input.orderId)),
 
     /**
-     * Whether labels bought right now are test labels.
+     * Whether an order's label is a test one, and whether new labels would be.
      *
-     * Its own query rather than a field on getLabel: the notice has to appear
-     * for any order carrying a tracking number, and an order can have one
-     * without a stored label row — the number lives on the order, the image in
-     * a separate table that a failed save can leave empty.
+     * Two different questions. `labelIsTest` looks at the number this order is
+     * actually holding, so the notice survives a switch to production;
+     * `buyingLive` describes what the next purchase would be, which is what
+     * makes the difference between a warning and a bill.
      */
-    isSandbox: adminProcedure.query(() => ({ sandbox: isUpsSandbox() })),
+    labelStatus: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        const order = await getOrderById(input.orderId);
+        const trackingNumber = order?.trackingNumber ?? null;
+        return {
+          labelIsTest: trackingNumber ? isSandboxTrackingNumber(trackingNumber) : false,
+          buyingLive: !isUpsSandbox(),
+        };
+      }),
 
     /**
      * The label image, base64.

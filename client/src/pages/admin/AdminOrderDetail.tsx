@@ -235,12 +235,13 @@ function ShippingLabelCard({
   const utils = trpc.useUtils();
   const [downloading, setDownloading] = useState(false);
 
-  // Asked of the environment, not of the label: an order can carry a tracking
-  // number with no stored label row behind it, and the notice still has to
-  // appear — that number is just as unusable either way.
-  const { data: upsMode } = trpc.shipping.isSandbox.useQuery(undefined, {
-    enabled: Boolean(trackingNumber),
-  });
+  // Read off the number this order is holding, not off the current mode: a
+  // label bought in sandbox stays useless after somebody switches to
+  // production, and that is exactly when it needs replacing.
+  const { data: labelStatus } = trpc.shipping.labelStatus.useQuery(
+    { orderId },
+    { enabled: Boolean(trackingNumber) }
+  );
 
   const createLabel = trpc.shipping.createLabel.useMutation({
     onSuccess: (result) => {
@@ -312,13 +313,13 @@ function ShippingLabelCard({
 
       {trackingNumber ? (
         <div className="space-y-3">
-          {upsMode?.sandbox && (
+          {labelStatus?.labelIsTest && (
             <div className="p-3 rounded-xl border border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-950/30 dark:text-yellow-200">
               <p className="text-xs font-semibold mb-0.5">Test label — not valid for shipping</p>
               <p className="text-xs leading-relaxed mb-2.5">
-                UPS is in sandbox mode, so this barcode is a sample. Set
-                UPS_ENVIRONMENT to production for labels a carrier will accept,
-                then discard this one to label the order for real.
+                {labelStatus.buyingLive
+                  ? "This barcode is a sample from UPS sandbox. Discard it and create the label again — the next one will be real and billed to your account."
+                  : "This barcode is a sample from UPS sandbox. Set UPS_ENVIRONMENT to production for a label a carrier will accept, then discard this one and create it again."}
               </p>
               <button
                 type="button"

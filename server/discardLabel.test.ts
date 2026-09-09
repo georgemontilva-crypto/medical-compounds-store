@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { isUpsSandbox } from "./ups";
+import { isSandboxTrackingNumber } from "./ups";
 import type { TrpcContext } from "./_core/context";
 
 /**
@@ -8,14 +8,13 @@ import type { TrpcContext } from "./_core/context";
  *
  * A sandbox label is a sample barcode, and createLabel refuses an order that
  * already carries one — so an order labelled during testing would be stuck
- * with it forever unless something can throw it away. A production label is
- * the opposite: it was bought, and deleting the row would hide the charge
- * rather than reverse it.
+ * with it forever unless something can throw it away. A bought label is the
+ * opposite: deleting the row would hide the charge rather than reverse it.
  *
- * UPS_ENVIRONMENT is read once when _core/env is imported, so these assert
- * against whichever mode the process is actually in rather than flipping the
- * variable at runtime. That is also worth knowing about deploys: changing
- * that variable needs a restart, not just a save.
+ * Which is which is read from the tracking number rather than the mode in
+ * force, and that distinction is the whole point: the orders that need
+ * discarding are precisely the ones labelled in sandbox *before* somebody
+ * switched to production. Judging by the current mode would strand them.
  */
 
 function adminCtx(): TrpcContext {
@@ -34,6 +33,26 @@ function shopperCtx(): TrpcContext {
   return { ...adminCtx(), user: null };
 }
 
+describe("isSandboxTrackingNumber", () => {
+  it("recognises the placeholder UPS returns from the sandbox", () => {
+    expect(isSandboxTrackingNumber("1ZXXXXXXXXXXXXXXXX")).toBe(true);
+  });
+
+  it("leaves a real tracking number alone", () => {
+    expect(isSandboxTrackingNumber("1Z999AA10123456784")).toBe(false);
+  });
+
+  it("is not fooled by whitespace around the placeholder", () => {
+    expect(isSandboxTrackingNumber("  1ZXXXXXXXXXXXXXXXX  ")).toBe(true);
+  });
+
+  it("does not treat a stray X in a real number as a test label", () => {
+    // A single X is not the placeholder; deleting a paid label over one
+    // character would be the expensive mistake here.
+    expect(isSandboxTrackingNumber("1Z9X9AA10123456784")).toBe(false);
+  });
+});
+
 describe("shipping.discardTestLabel", () => {
   it("is not something a shopper can reach", async () => {
     await expect(
@@ -46,26 +65,5 @@ describe("shipping.discardTestLabel", () => {
       // @ts-expect-error deliberately wrong type
       appRouter.createCaller(adminCtx()).shipping.discardTestLabel({ orderId: "8001" })
     ).rejects.toThrow();
-  });
-
-  it("refuses in production and proceeds in sandbox, according to the mode in force", async () => {
-    const call = appRouter.createCaller(adminCtx()).shipping.discardTestLabel({ orderId: 8001 });
-
-    if (isUpsSandbox()) {
-      // Past the environment guard; stops later, at an order lookup that needs
-      // a database this test does not have.
-      await expect(call).rejects.not.toThrow(/void it with ups/i);
-    } else {
-      await expect(call).rejects.toThrow(/void it with ups/i);
-    }
-  });
-});
-
-describe("isUpsSandbox", () => {
-  it("treats anything other than the exact word production as sandbox", () => {
-    // Pinned because the consequence is asymmetric: guessing "sandbox" wrongly
-    // prints an unusable label, guessing "production" wrongly buys a real one.
-    const live = process.env.UPS_ENVIRONMENT === "production";
-    expect(isUpsSandbox()).toBe(!live);
   });
 });
