@@ -308,8 +308,18 @@ const blogPostInput = z.object({
   /** Optional: derived from the title when the admin leaves it blank. */
   slug: z.string().max(BLOG_SLUG_MAX_LENGTH).optional(),
   excerpt: z.string().max(300).optional(),
-  /** A stringified ProseMirror document — validated by serializeBlogContent. */
-  content: z.string().optional(),
+  /**
+   * The article body, as a ProseMirror document.
+   *
+   * Accepted in either shape it legitimately arrives in: the string
+   * BlogEditor emits (JSON.stringify(editor.getJSON())) when an article is
+   * composed, or the object a read hands back. blog_posts.content is a MySQL
+   * `json` column, so mysql2 parses it on the way out and every save that
+   * follows a read — reopening a draft, flipping it to published — carries
+   * the parsed form. Insisting on the string here made an article saveable
+   * only by retyping its body. serializeBlogContent validates both.
+   */
+  content: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
   coverImageUrl: z.string().max(500).nullable().optional(),
   coverImageKey: z.string().max(500).nullable().optional(),
   status: z.enum(["draft", "published"]).default("draft"),
@@ -339,14 +349,18 @@ function normalizeBlogSlug(slug: string | undefined, fallback: string) {
 }
 
 /**
- * Validates the editor's output and returns the JSON to store.
+ * Validates an article body and returns the JSON to store.
  *
- * Re-serializing from the parsed document rather than passing the string
+ * Takes the document in either shape the input schema allows — parseBlogDoc
+ * normalizes a string and an already-parsed object to the same result.
+ *
+ * Re-serializing from the parsed document rather than passing the input
  * through means only `type` and `content` survive: anything else the client
  * attached to the top level is dropped before it reaches the column.
  */
-function serializeBlogContent(content: string | undefined): string | null {
-  if (content === undefined || content.trim() === "") return null;
+function serializeBlogContent(content: unknown): string | null {
+  if (content === undefined || content === null) return null;
+  if (typeof content === "string" && content.trim() === "") return null;
   const doc = parseBlogDoc(content);
   if (!doc) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Article content is not a valid document" });

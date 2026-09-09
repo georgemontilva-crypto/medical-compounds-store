@@ -15,6 +15,8 @@ import {
   slugifyBlogTitle,
   truncateAtWord,
 } from "@shared/blog";
+import { appRouter } from "./routers";
+import type { TrpcContext } from "./_core/context";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 
@@ -326,5 +328,123 @@ describe("the public list cannot be talked into returning drafts", () => {
     // The admin reads are behind adminProcedure, not a flag on the public one.
     expect(blogRouter).toContain("adminList: adminProcedure");
     expect(blogRouter).toContain("adminById: adminProcedure");
+  });
+});
+
+/**
+ * The admin editor's save path, end to end.
+ *
+ * blog_posts.content is a MySQL `json` column, so mysql2 hands the document
+ * back already parsed: the string the editor saved returns as an object. Every
+ * write that follows a read — reopening an article, flipping a draft to
+ * published — therefore carries an object where the create path carried a
+ * string, and both shapes have to clear the input contract. When only the
+ * string does, an article can be saved solely by retyping its body from
+ * scratch.
+ *
+ * These run without DATABASE_URL (dotenv is loaded by the server entrypoint,
+ * not by vitest), so getDb() returns null and nothing here can reach a real
+ * database. Every call that clears validation dies afterwards at the data
+ * layer instead, which is exactly the signal these tests read.
+ */
+describe("the admin editor's round trip: create → edit → publish", () => {
+  const DOC = {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "Reconstitution and storage." }] },
+    ],
+  };
+  /** What BlogEditor emits: JSON.stringify(editor.getJSON()). */
+  const AS_SAVED = JSON.stringify(DOC);
+
+  /** What a read of the json column returns, forced past an input type that still says string. */
+  const asStored = (doc: object) => doc as unknown as string;
+
+  function adminCaller() {
+    const ctx = {
+      user: {
+        id: 1,
+        openId: "admin_test",
+        email: "admin@biolab.com",
+        name: "Admin User",
+        loginMethod: "email",
+        role: "admin",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      },
+      req: { protocol: "https", headers: {} },
+      res: { cookie: () => {}, clearCookie: () => {} },
+    } as unknown as TrpcContext;
+    return appRouter.createCaller(ctx);
+  }
+
+  /**
+   * The message of an input-contract refusal, or null when the payload was
+   * accepted. A NOT_FOUND or a raw "DB unavailable" means validation passed
+   * and the call only failed for want of a database, which is success here.
+   */
+  async function inputRejection(call: () => Promise<unknown>) {
+    try {
+      await call();
+      return null;
+    } catch (err) {
+      const e = err as { code?: string; message?: string };
+      return e?.code === "BAD_REQUEST" ? e.message ?? "rejected" : null;
+    }
+  }
+
+  it("creates an article from the string the editor emits", async () => {
+    const rejection = await inputRejection(() =>
+      adminCaller().blog.create({
+        title: "How to read a Certificate of Analysis",
+        content: AS_SAVED,
+        status: "draft",
+      })
+    );
+    expect(rejection).toBeNull();
+  });
+
+  it("edits an article whose body came back from the database as an object", async () => {
+    const rejection = await inputRejection(() =>
+      adminCaller().blog.update({
+        id: 1,
+        title: "How to read a Certificate of Analysis",
+        content: asStored(DOC),
+        status: "draft",
+      })
+    );
+    expect(rejection).toBeNull();
+  });
+
+  it("publishes a draft nobody retyped, body still the object the read returned", async () => {
+    // The reported failure: open a draft, change nothing but the status, save.
+    const rejection = await inputRejection(() =>
+      adminCaller().blog.update({
+        id: 1,
+        content: asStored(DOC),
+        status: "published",
+      })
+    );
+    expect(rejection).toBeNull();
+  });
+
+  it("still refuses a body that is not a ProseMirror document", async () => {
+    // Asserted through create, not update: update checks the row exists before
+    // it looks at the content, so without a database it answers NOT_FOUND long
+    // before any body would be judged.
+    //
+    // Widening the contract must not become "accept anything": a bare
+    // paragraph is not a document, in either shape, and neither is a string
+    // that does not parse.
+    const invalid = [asStored({ type: "paragraph" }), "{not json", asStored([])];
+    for (const content of invalid) {
+      expect(
+        await inputRejection(() =>
+          adminCaller().blog.create({ title: "Draft", content, status: "draft" })
+        ),
+        `${JSON.stringify(content)} should not be storable as an article body`
+      ).not.toBeNull();
+    }
   });
 });

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
+import type { Content } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import {
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { isSafeBlogHref } from "@shared/blog";
+import { isSafeBlogHref, parseBlogDoc, type BlogNode } from "@shared/blog";
 
 /**
  * The admin's article editor.
@@ -34,8 +35,12 @@ import { isSafeBlogHref } from "@shared/blog";
  */
 
 type Props = {
-  /** Stringified ProseMirror document, or null for a new post. */
-  value: string | null;
+  /**
+   * The article body to open with, or null for a new post. A string when it
+   * came from this editor, an object when it came from a read of the
+   * `json` column — parseBlogDoc takes either.
+   */
+  value: string | BlogNode | null;
   onChange: (json: string) => void;
 };
 
@@ -265,16 +270,16 @@ export default function BlogEditor({ value, onChange }: Props) {
       // dropped by the renderer's https-only check anyway.
       Image.configure({ inline: false, allowBase64: false }),
     ],
-    // Parsing failures are the editor's business — an unreadable document
+    // parseBlogDoc rather than JSON.parse: the value is already an object
+    // whenever it came from the database, and JSON.parse would throw on it and
+    // open the article blank — with the body then one keystroke from being
+    // overwritten by whatever got typed into the empty editor.
+    //
+    // Parsing failures stay the editor's business: an unreadable document
     // opens blank rather than throwing inside a hook.
-    content: (() => {
-      if (!value) return "";
-      try {
-        return JSON.parse(value);
-      } catch {
-        return "";
-      }
-    })(),
+    // The cast is the one place BlogDoc's deliberate looseness (every field
+    // `unknown` until a guard vouches for it) meets TipTap's JSONContent.
+    content: (parseBlogDoc(value) ?? "") as Content,
     onUpdate: ({ editor: e }) => onChange(JSON.stringify(e.getJSON())),
     editorProps: {
       attributes: {

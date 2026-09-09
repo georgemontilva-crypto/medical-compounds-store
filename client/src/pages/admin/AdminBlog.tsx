@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { BLOG_DESCRIPTION_MAX_LENGTH, slugifyBlogTitle } from "@shared/blog";
+import { BLOG_DESCRIPTION_MAX_LENGTH, slugifyBlogTitle, type BlogNode } from "@shared/blog";
 
 /**
  * TipTap and ProseMirror are ~115 kB gzipped. Loading them lazily keeps them
@@ -29,7 +29,8 @@ type PostForm = {
   title: string;
   slug: string;
   excerpt: string;
-  content: string;
+  /** A string once the editor has touched it; the object a read returned until then. */
+  content: string | BlogNode;
   coverImageUrl: string;
   coverImageKey: string;
   status: "draft" | "published";
