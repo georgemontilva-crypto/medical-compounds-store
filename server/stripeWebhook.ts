@@ -11,7 +11,11 @@ import {
 } from "./db";
 import { constructWebhookEvent } from "./stripe";
 import { settleOrderRewards } from "./rewards";
-import { sendAdminOrderNotificationEmail, sendOrderConfirmationEmail } from "./orderEmails";
+import {
+  sendAdminAlertEmail,
+  sendAdminOrderNotificationEmail,
+  sendOrderConfirmationEmail,
+} from "./orderEmails";
 import { notifyOwner } from "./_core/notification";
 
 export const STRIPE_WEBHOOK_PATH = "/api/stripe/webhook";
@@ -236,6 +240,22 @@ async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
       ? `Stripe webhook: order ${orderId} cancelled — checkout session expired unpaid`
       : `Stripe webhook: order ${orderId} not cancelled (${result.reason})`
   );
+
+  // An abandoned checkout is a sale that nearly happened, and the buyer's
+  // email is on the order — worth knowing about rather than only appearing as
+  // a gap in the numbers.
+  if (!result.updated) return;
+
+  await sendAdminAlertEmail({
+    subject: `Checkout abandoned — Order #${orderId}`,
+    heading: `Order #${orderId} was cancelled`,
+    intro: "The checkout session expired without payment, so the order was closed.",
+    lines: [
+      ["Order", `#${orderId}`],
+      ["Amount", `$${Number(order.total).toFixed(2)}`],
+      ["Buyer", order.shippingEmail ?? "—"],
+    ],
+  }).catch((e) => console.warn("Failed to send abandoned-checkout alert", e));
 }
 
 async function handlePaymentIntentFailed(intent: Stripe.PaymentIntent) {
@@ -255,6 +275,22 @@ async function handlePaymentIntentFailed(intent: Stripe.PaymentIntent) {
       ? `Stripe webhook: order ${orderId} payment failed (${reason})`
       : `Stripe webhook: order ${orderId} not marked failed (${result.reason})`
   );
+
+  // Only on the transition. A shopper retrying a declined card produces one of
+  // these per attempt, and three emails about one order is noise that gets the
+  // alerts filtered.
+  if (!result.updated) return;
+
+  await sendAdminAlertEmail({
+    subject: `Payment failed — Order #${orderId}`,
+    heading: `Payment failed on order #${orderId}`,
+    intro: "The card was declined. The order is still open and can be paid.",
+    lines: [
+      ["Order", `#${orderId}`],
+      ["Reason", reason],
+      ["Amount", `$${(intent.amount / 100).toFixed(2)}`],
+    ],
+  }).catch((e) => console.warn("Failed to send payment-failed alert", e));
 }
 
 async function handleChargeRefunded(charge: Stripe.Charge) {
@@ -278,6 +314,17 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   }
 
   console.log(`Stripe webhook: order ${order.id} marked refunded (charge ${charge.id})`);
+
+  await sendAdminAlertEmail({
+    subject: `Refund issued — Order #${order.id}`,
+    heading: `Refund issued on order #${order.id}`,
+    intro: "Stripe confirmed a full refund. Nothing needs shipping for this order.",
+    lines: [
+      ["Order", `#${order.id}`],
+      ["Refunded", `$${(charge.amount_refunded / 100).toFixed(2)}`],
+      ["Charge", charge.id],
+    ],
+  }).catch((e) => console.warn("Failed to send refund alert", e));
 
   try {
     await notifyOwner({

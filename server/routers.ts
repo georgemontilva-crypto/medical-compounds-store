@@ -60,7 +60,11 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import type { InsertBlogCategory, InsertBlogPost } from "../drizzle/schema";
 import { sendEmail, escapeHtml } from "./email";
-import { sendTrackingEmail } from "./orderEmails";
+import {
+  sendAdminOrderNotificationEmail,
+  sendOrderConfirmationEmail,
+  sendTrackingEmail,
+} from "./orderEmails";
 import {
   RESET_TOKEN_TTL_MS,
   buildResetEmailHtml,
@@ -1194,6 +1198,14 @@ export const appRouter = router({
           // earns the buyer the same points and the affiliate the same
           // commission as one paid by card.
           await settleOrderRewards(input.id);
+
+          // And hears the same thing. From the buyer's side a transfer that an
+          // admin confirmed is not different from a card that cleared: their
+          // order is paid, and silence after paying is the same silence.
+          await Promise.allSettled([
+            sendOrderConfirmationEmail(input.id),
+            sendAdminOrderNotificationEmail(input.id),
+          ]);
         }
 
         return { success: true };

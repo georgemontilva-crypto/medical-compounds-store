@@ -255,3 +255,45 @@ export async function sendTrackingEmail(
   if (!sent) console.warn(`[orderEmails] tracking for order ${orderId} was not delivered`);
   return sent;
 }
+
+/**
+ * A one-line alert to whoever runs the shop.
+ *
+ * Separate from the order emails above because these say something happened
+ * rather than describing a purchase, and because a shop needs to hear about a
+ * refund or a decline even though no customer email should ever mention them.
+ */
+export async function sendAdminAlertEmail(input: {
+  subject: string;
+  heading: string;
+  intro: string;
+  lines: Array<[string, string]>;
+}): Promise<boolean> {
+  const to = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (!to) {
+    console.warn(
+      `[orderEmails] alert skipped ("${input.subject}") — ADMIN_NOTIFICATION_EMAIL is unset`
+    );
+    return false;
+  }
+
+  const rows = input.lines
+    .map(
+      ([label, value]) => `
+      <tr>
+        <td style="padding:6px 16px 6px 0;color:#666;white-space:nowrap">${escapeHtml(label)}</td>
+        <td style="padding:6px 0">${escapeHtml(value)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const html = shell(
+    escapeHtml(input.heading),
+    escapeHtml(input.intro),
+    `<table style="width:100%;border-collapse:collapse;font-size:14px"><tbody>${rows}</tbody></table>`
+  );
+
+  const sent = await sendEmail({ to, subject: input.subject, html });
+  if (!sent) console.warn(`[orderEmails] alert "${input.subject}" was not delivered`);
+  return sent;
+}
