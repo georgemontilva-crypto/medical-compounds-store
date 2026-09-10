@@ -38,11 +38,11 @@ const FORBIDDEN_FRAGMENTS = [
 
 describe("getSanitizedOrderDescriptor", () => {
   it("returns a generic label carrying only the order id", () => {
-    expect(getSanitizedOrderDescriptor(order)).toBe("Lab Supply Item — Order #1042");
+    expect(getSanitizedOrderDescriptor(order)).toBe("Sunny Media LLC — Order #1042");
   });
 
   it("never varies with the products in the order", () => {
-    expect(getSanitizedOrderDescriptor({ id: 7 })).toBe("Lab Supply Item — Order #7");
+    expect(getSanitizedOrderDescriptor({ id: 7 })).toBe("Sunny Media LLC — Order #7");
   });
 });
 
@@ -128,7 +128,7 @@ describe("findRestrictedTerms", () => {
   });
 
   it("does not flag ordinary company text", () => {
-    expect(findRestrictedTerms("Lab Supply Item — Order #12")).toEqual([]);
+    expect(findRestrictedTerms("Sunny Media LLC — Order #12")).toEqual([]);
     expect(findRestrictedTerms("BRIGHTER DAYS LABS")).toEqual([]);
   });
 

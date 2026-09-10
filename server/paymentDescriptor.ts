@@ -17,8 +17,15 @@ import type { Order, OrderItem } from "../drizzle/schema";
 /** Bank-statement line. Stripe allows 5–22 chars and forbids < > \ " ' * */
 export const STATEMENT_DESCRIPTOR = "BRIGHTER DAYS LABS";
 
-/** Generic noun used in place of any product name. */
-const GENERIC_ITEM_LABEL = "Lab Supply Item";
+/**
+ * What a charge is described as, in place of any product name.
+ *
+ * The trading entity rather than a description of goods. A processor reading
+ * a line item wants to see a merchant it recognises against the account, and
+ * a buyer scanning a receipt recognises the same name they saw at checkout —
+ * neither is served by a noun invented to avoid saying what the box holds.
+ */
+const GENERIC_ITEM_LABEL = "Sunny Media LLC";
 
 /**
  * Terms that must never appear in processor-bound text, independent of what

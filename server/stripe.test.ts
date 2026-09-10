@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCheckoutSessionParams } from "./stripe";
-import { STATEMENT_DESCRIPTOR } from "./paymentDescriptor";
+import { STATEMENT_DESCRIPTOR, getSanitizedOrderDescriptor } from "./paymentDescriptor";
 
 /**
  * The point of these tests: prove that the object actually handed to Stripe —
@@ -64,7 +64,7 @@ describe("buildCheckoutSessionParams", () => {
 
     // One line for the whole order — never one per product.
     expect(lineItems).toHaveLength(1);
-    expect(lineItems[0].price_data!.product_data!.name).toBe("Lab Supply Item — Order #1042");
+    expect(lineItems[0].price_data!.product_data!.name).toBe("Sunny Media LLC — Order #1042");
   });
 
   it("charges the order total in cents", () => {
@@ -94,7 +94,12 @@ describe("buildCheckoutSessionParams", () => {
   it("throws rather than sending a leaked product name to Stripe", () => {
     // Simulates a future edit that reintroduces catalog text — the guard has to
     // fail loudly here, not quietly reach the merchant account.
-    const leakyItems = [{ productName: "Lab Supply Item", variationLabel: null, quantity: 1 }];
+    //
+    // The leaked name is derived from the descriptor rather than written out,
+    // so that changing what a charge is called cannot quietly turn this into a
+    // test that passes without checking anything.
+    const leaked = getSanitizedOrderDescriptor({ id: order.id }).split(" — ")[0];
+    const leakyItems = [{ productName: leaked, variationLabel: null, quantity: 1 }];
     expect(() => buildCheckoutSessionParams(order, leakyItems, urls)).toThrow(
       /leaks product name/i
     );
