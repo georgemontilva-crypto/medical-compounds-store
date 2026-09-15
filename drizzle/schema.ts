@@ -72,6 +72,16 @@ export const products = mysqlTable("products", {
   mechanism: text("mechanism"),
   casNumber: varchar("casNumber", { length: 50 }),
   excludeFromBulkDiscount: boolean("excludeFromBulkDiscount").default(false).notNull(),
+  // ─── Analytical claims ─────────────────────────────────────────────────────
+  // What this product's certificate actually reports, rather than a shop-wide
+  // figure applied to everything. Bacteriostatic water is the case that forced
+  // this: its COA measures benzyl alcohol content, fill volume, pH, endotoxins
+  // and a sterility screen — no purity percentage and no mass spectrometry — so
+  // a hardcoded "≥99% · HPLC/MS" badge was describing tests that were never run
+  // on it. Null falls back to the shop default, which is correct for the
+  // peptides and wrong only where a product differs.
+  purityClaim: varchar("purityClaim", { length: 40 }),
+  testingClaim: varchar("testingClaim", { length: 60 }),
   // ─── Shipping weight ───────────────────────────────────────────────────────
   // An override, not a requirement. Almost every product here is a standard
   // vial, and the shop-wide default in shipping settings covers those; this is

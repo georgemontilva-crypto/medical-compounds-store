@@ -116,8 +116,12 @@ export default function LabReports() {
           {/* Trust badges */}
           <div className="mt-6 pt-6 border-t border-gray-50 grid grid-cols-3 gap-2 sm:gap-4">
             {[
-              { label: "Purity", value: "≥99%" },
-              { label: "Testing", value: "HPLC/MS" },
+              // Read from the product rather than fixed, because these describe
+              // what its certificate reports. Bacteriostatic water has no purity
+              // percentage and no mass spectrometry on its COA; showing the
+              // peptide defaults there claimed tests that were never run.
+              { label: "Purity", value: product.purityClaim ?? "≥99%" },
+              { label: "Testing", value: product.testingClaim ?? "HPLC/MS" },
               { label: "Standards", value: "cGMP-aligned" },
             ].map((b) => (
               <div key={b.label} className="text-center">

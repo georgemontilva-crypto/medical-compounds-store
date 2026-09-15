@@ -663,6 +663,8 @@ export const appRouter = router({
           active: z.boolean().optional(),
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
+          purityClaim: z.string().optional(),
+          testingClaim: z.string().optional(),
           excludeFromBulkDiscount: z.boolean().optional(),
           weightOz: optionalDecimal,
         })
@@ -683,6 +685,8 @@ export const appRouter = router({
           active: z.boolean().optional(),
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
+          purityClaim: z.string().optional(),
+          testingClaim: z.string().optional(),
           excludeFromBulkDiscount: z.boolean().optional(),
           weightOz: optionalDecimal,
         })

@@ -23,7 +23,7 @@ const ORIGIN_STATS = [
 ];
 
 const DOCUMENTATION_CHECKS = [
-  { criterion: "Purity ≥99%", status: "Verified" },
+  { criterion: "Purity ≥99% (peptides)", status: "Verified" },
   { criterion: "Identity matches molecular weight", status: "Verified" },
   { criterion: "Mechanism of action documented", status: "Verified" },
   { criterion: "Storage temperature recommendation", status: "Required" },

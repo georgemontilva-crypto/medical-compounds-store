@@ -24,7 +24,7 @@ const FAQS: { question: string; answer: string }[] = [
   {
     question: 'What purity levels do your peptides meet?',
     answer:
-      "Every batch we sell meets or exceeds 98% purity by HPLC, and most batches test at 99% or higher. Exact purity, along with batch and lot data, is published on the Certificate of Analysis for that specific batch.",
+      "Our peptides meet or exceed 99% purity by HPLC. Purity is not a meaningful measure for every product we carry — bacteriostatic water, for example, is characterised by benzyl alcohol content, fill volume, pH and sterility rather than a purity percentage. The analyses actually performed on a given batch, and their results, are published on that batch's Certificate of Analysis.",
   },
   {
     question: 'What does "Research Use Only" (RUO) mean?',

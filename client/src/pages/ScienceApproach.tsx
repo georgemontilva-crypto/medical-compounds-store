@@ -329,7 +329,9 @@ export default function ScienceApproach() {
             <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-950 mb-4 dark:text-white">The purity standard</h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-xl dark:text-gray-400">
               Purity floors vary widely across suppliers. Brighter Days Labs sets ≥99% HPLC-verified purity as the
-              minimum bar for every batch that ships — illustrated below against typical benchmarks.
+              minimum bar for the peptides we ship — illustrated below against typical benchmarks. Purity is not a
+              meaningful measure for every product we carry; each batch's certificate reports the analyses actually
+              performed on it.
             </p>
             <PurityBarChart />
           </div>

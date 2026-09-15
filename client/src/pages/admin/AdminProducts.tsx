@@ -28,6 +28,8 @@ type ProductForm = {
   active: boolean;
   mechanism: string;
   casNumber: string;
+  purityClaim: string;
+  testingClaim: string;
   excludeFromBulkDiscount: boolean;
   weightOz: string;
 };
@@ -43,6 +45,8 @@ const emptyForm: ProductForm = {
   active: true,
   mechanism: "",
   casNumber: "",
+  purityClaim: "",
+  testingClaim: "",
   excludeFromBulkDiscount: false,
   weightOz: "",
 };
@@ -151,7 +155,7 @@ export default function AdminProducts() {
     }
   };
 
-  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null }) => {
+  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; purityClaim?: string | null; testingClaim?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null }) => {
     setEditingId(p.id);
     setForm({
       name: p.name,
@@ -164,6 +168,8 @@ export default function AdminProducts() {
       active: p.active,
       mechanism: p.mechanism ?? "",
       casNumber: p.casNumber ?? "",
+      purityClaim: p.purityClaim ?? "",
+      testingClaim: p.testingClaim ?? "",
       excludeFromBulkDiscount: p.excludeFromBulkDiscount ?? false,
       weightOz: p.weightOz ?? "",
     });
@@ -269,6 +275,33 @@ export default function AdminProducts() {
                     onChange={(e) => setForm({ ...form, casNumber: e.target.value })}
                     placeholder="137525-51-0"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Purity claim</label>
+                  <input
+                    className="lab-input"
+                    value={form.purityClaim}
+                    onChange={(e) => setForm({ ...form, purityClaim: e.target.value })}
+                    placeholder="≥99%"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Shown on the lab reports page. Leave empty for the ≥99% default. Set it to
+                    what this product's certificate reports — bacteriostatic water, for
+                    instance, has no purity figure on its COA.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Testing claim</label>
+                  <input
+                    className="lab-input"
+                    value={form.testingClaim}
+                    onChange={(e) => setForm({ ...form, testingClaim: e.target.value })}
+                    placeholder="HPLC/MS"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Name only the analyses actually performed on this product. Claiming a test
+                    the certificate does not show is the kind of mismatch ad platforms reject.
+                  </p>
                 </div>
                 <div className="flex items-center gap-4 pt-6">
                   <label className="flex items-center gap-2 cursor-pointer">
