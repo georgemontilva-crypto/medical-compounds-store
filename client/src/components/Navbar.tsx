@@ -9,6 +9,7 @@ import {
   Factory,
   ShieldCheck,
   Leaf,
+  FileSearch,
   ArrowRight,
   Menu,
   X,
@@ -29,6 +30,10 @@ const SCIENCE_ITEMS = [
   { icon: Factory, label: "Manufacturing", desc: "US-based cGMP-aligned...", href: "/science/manufacturing" },
   { icon: ShieldCheck, label: "Research Standards", desc: "Compound selection...", href: "/science/research-standards" },
   { icon: Leaf, label: "Responsible Supply", desc: "Manufacturing discipline an...", href: "/science/responsible-supply" },
+  // Reachable from the site, not only from an ad. A guide that exists solely as
+  // a campaign destination reads to a platform reviewer as a page built for the
+  // ad rather than for readers.
+  { icon: FileSearch, label: "Read the Report", desc: "Five checks for lab documentation", href: "/education/read-the-report" },
 ];
 
 // ── Dropdown wrapper ───────────────────────────────────────────────────────────

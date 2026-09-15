@@ -10,6 +10,7 @@ const SCIENCE_LINKS = [
   { label: "Manufacturing", href: "/science/manufacturing" },
   { label: "Research Standards", href: "/science/research-standards" },
   { label: "Lab Tests", href: "/lab-tests" },
+  { label: "Read the Report", href: "/education/read-the-report" },
 ];
 
 const LEGAL_LINKS = [
