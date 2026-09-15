@@ -36,6 +36,8 @@ import MyOrders from "./pages/MyOrders";
 import MyAccount from "./pages/MyAccount";
 import OrderDetail from "./pages/OrderDetail";
 import TrackOrder from "./pages/TrackOrder";
+import EducationReadTheReport from "./pages/EducationReadTheReport";
+import LaboratorySupply from "./pages/LaboratorySupply";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -81,6 +83,8 @@ function PublicRoutes() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/my-account" component={MyAccount} />
       <Route path="/track-order" component={TrackOrder} />
+      <Route path="/education/read-the-report" component={EducationReadTheReport} />
+      <Route path="/laboratory-supply" component={LaboratorySupply} />
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/my-orders/:id" component={OrderDetail} />
       <Route path="/lab-reports/:slug" component={LabReports} />

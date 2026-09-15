@@ -101,6 +101,28 @@ export const STATIC_ROUTE_META: Record<string, RouteMeta> = {
       "Enter the order number from your confirmation email and the email address you used.",
   },
 
+  // client/src/pages/EducationReadTheReport.tsx
+  "/education/read-the-report": {
+    keyword: "laboratory report",
+    title: "Read the Report: A Laboratory Guide",
+    description:
+      "Five checks before you rely on a laboratory report: identify the sample, the method, the result in context, the scope, and how to verify the document.",
+    h1: "Read the Report",
+    intro:
+      "A certificate of analysis can help document what was tested and what was reported. Reading it carefully starts with five practical questions.",
+  },
+
+  // client/src/pages/LaboratorySupply.tsx
+  "/laboratory-supply": {
+    keyword: "laboratory research supply",
+    title: "Laboratory Research Supply",
+    description:
+      "Laboratory research supply for qualified organizations. Discuss requirements with Brighter Days Labs and review documentation for your proposed in vitro work.",
+    h1: "Laboratory research supply",
+    intro:
+      "Discuss your laboratory's requirements with Brighter Days Labs. Our team can provide information about available research materials and published documentation for your proposed in vitro work.",
+  },
+
   // client/src/pages/Contact.tsx
   "/contact": {
     keyword: "contact",
