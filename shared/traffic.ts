@@ -240,3 +240,38 @@ export function fillTrafficGaps(
 
   return Array.from(series.values()).sort((a, b) => a.bucket.localeCompare(b.bucket));
 }
+
+/**
+ * How long a visitor must be actively on a page, and how far down it, before
+ * the visit counts as reading rather than landing.
+ *
+ * Both halves are needed. Time alone counts an open tab nobody is looking at;
+ * scroll alone counts a flick to the bottom. Together they describe somebody
+ * who stayed and moved through the page.
+ *
+ * The numbers are a house definition, not a platform one — worth stating
+ * plainly, because a figure like "engaged sessions" invites the assumption
+ * that it means the same thing everywhere. It does not.
+ */
+export const ENGAGED_ACTIVE_MS = 30_000;
+export const ENGAGED_SCROLL_RATIO = 0.5;
+
+/** Campaign label length, matching the column it is stored in. */
+const MAX_CAMPAIGN_LENGTH = 80;
+
+/**
+ * The campaign a visit belongs to.
+ *
+ * utm_campaign when present, otherwise none — unlike source, there is nothing
+ * sensible to infer from a referrer. A visit that arrived without a campaign
+ * tag did not come from a campaign we tagged, and guessing would put organic
+ * traffic in a paid bucket.
+ */
+export function normalizeCampaign(utmCampaign: string | null | undefined): string | null {
+  const value = (utmCampaign ?? "").trim().toLowerCase();
+  if (!value) return null;
+  // Same character discipline as source: tags are written by hand into ad
+  // platforms and arrive with stray quotes, spaces and braces often enough.
+  const cleaned = value.replace(/[^a-z0-9_.\-]+/g, "_").replace(/^_+|_+$/g, "");
+  return cleaned ? cleaned.slice(0, MAX_CAMPAIGN_LENGTH) : null;
+}

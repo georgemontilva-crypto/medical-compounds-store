@@ -5,6 +5,7 @@ import { Route, Switch, useLocation } from "wouter";
 import { captureReferralFromUrl } from "@/lib/referral";
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import { ENGAGED_ACTIVE_MS, ENGAGED_SCROLL_RATIO } from "@shared/traffic";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -218,7 +219,82 @@ function PageViewTracker() {
       // later one it is this site, which the server files as "direct".
       referrer: document.referrer || undefined,
       utmSource: params.get("utm_source") ?? undefined,
+      utmCampaign: params.get("utm_campaign") ?? undefined,
     });
+  }, [location]);
+
+  return null;
+}
+
+/**
+ * Reports a visit that stayed and read, once.
+ *
+ * An ad platform reports a click. A click is not a reader, and the gap between
+ * the two is what tells a campaign that bought attention from one that bought
+ * interest — so this waits for both halves of the definition in
+ * shared/traffic.ts before saying anything: thirty seconds of *active* time and
+ * half the page scrolled.
+ *
+ * Active is the operative word. The timer stops when the tab is hidden,
+ * otherwise a page left open in a background tab over lunch would report as
+ * read. Scroll is measured as furthest reached rather than current position,
+ * since scrolling back up does not unread a page.
+ *
+ * Only tagged visits are reported. Without a campaign there is nothing for the
+ * number to be about, and the server ignores it anyway.
+ */
+function EngagementTracker() {
+  const [location] = useLocation();
+  const engaged = trpc.traffic.engaged.useMutation();
+  const engagedRef = useRef(engaged.mutate);
+  engagedRef.current = engaged.mutate;
+
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    if (location.startsWith("/admin")) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const utmCampaign = params.get("utm_campaign");
+    if (!utmCampaign) return;
+    const utmSource = params.get("utm_source") ?? undefined;
+
+    let activeMs = 0;
+    let deepEnough = false;
+    let reported = false;
+    let lastTick = Date.now();
+
+    const report = () => {
+      if (reported) return;
+      reported = true;
+      engagedRef.current({ utmSource, utmCampaign });
+    };
+
+    const tick = () => {
+      const now = Date.now();
+      if (document.visibilityState === "visible") activeMs += now - lastTick;
+      lastTick = now;
+      if (activeMs >= ENGAGED_ACTIVE_MS && deepEnough) {
+        report();
+        window.clearInterval(timer);
+      }
+    };
+
+    const onScroll = () => {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      // A page shorter than the viewport cannot be scrolled, and refusing to
+      // count it would make short pages permanently unreadable by this measure.
+      const ratio = scrollable <= 0 ? 1 : (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
+      if (ratio >= ENGAGED_SCROLL_RATIO) deepEnough = true;
+    };
+
+    onScroll();
+    const timer = window.setInterval(tick, 1000);
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [location]);
 
   return null;
@@ -298,6 +374,7 @@ function App() {
                 <Toaster position="top-right" />
                 <ReferralCapture />
                 <PageViewTracker />
+      <EngagementTracker />
                 <ScrollToTop />
                 <BackgroundPatternSync />
                 <FaviconSync />

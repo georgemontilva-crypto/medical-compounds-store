@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import { Building2, ArrowRight } from "lucide-react";
 
 /**
@@ -29,6 +30,11 @@ export default function LaboratorySupply() {
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  const submit = trpc.laboratoryInquiries.create.useMutation({
+    onSuccess: () => setSubmitted(true),
+    onError: (e) => toast.error(e.message),
+  });
+
   const complete =
     form.organization.trim() &&
     form.contactName.trim() &&
@@ -39,10 +45,15 @@ export default function LaboratorySupply() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!complete) return;
-    // Held here until the inquiry endpoint exists. Telling somebody their
-    // request was sent when it was not is worse than the form not working.
-    toast.info("Inquiry handling is being finalised. Please contact us directly in the meantime.");
-    setSubmitted(true);
+    submit.mutate({
+      organization: form.organization.trim(),
+      organizationWebsite: form.organizationWebsite.trim() || undefined,
+      contactName: form.contactName.trim(),
+      role: form.role.trim() || undefined,
+      workEmail: form.workEmail.trim(),
+      researchPurpose: form.researchPurpose.trim(),
+      acknowledged: true,
+    });
   }
 
   return (
@@ -73,8 +84,8 @@ export default function LaboratorySupply() {
                 Thank you — we have your details.
               </p>
               <p className="text-sm text-gray-500 leading-relaxed dark:text-gray-400">
-                Our team reviews each inquiry before responding. If your request is urgent, reach
-                us through the contact page.
+                We've emailed a copy to {form.workEmail}. Our team reviews each inquiry and the
+                organization behind it before responding.
               </p>
               <Link href="/contact">
                 <button className="mt-5 text-sm font-medium inline-flex items-center gap-1.5" style={{ color: "#baac96" }}>
@@ -168,8 +179,12 @@ export default function LaboratorySupply() {
                 </span>
               </label>
 
-              <button type="submit" disabled={!complete} className="btn-primary w-full disabled:opacity-50">
-                Request Laboratory Information
+              <button
+                type="submit"
+                disabled={!complete || submit.isPending}
+                className="btn-primary w-full disabled:opacity-50"
+              >
+                {submit.isPending ? "Sending…" : "Request Laboratory Information"}
               </button>
 
               <p className="text-xs text-gray-400 text-center leading-relaxed dark:text-gray-500">

@@ -3,12 +3,13 @@ import { sql } from "drizzle-orm";
 import {
   hourBucket,
   isBotUserAgent,
+  normalizeCampaign,
   normalizePath,
   normalizeSource,
 } from "@shared/traffic";
 import { getDb } from "./db";
 import { ENV } from "./_core/env";
-import { pageViewStats, trafficSourceStats } from "../drizzle/schema";
+import { campaignStats, pageViewStats, trafficSourceStats } from "../drizzle/schema";
 
 /**
  * Counting page views without keeping anything about the people who make them.
@@ -146,7 +147,26 @@ export interface PageViewHit {
   path: string;
   referrer?: string | null;
   utmSource?: string | null;
+  utmCampaign?: string | null;
 }
+
+/** A visit that met the engagement definition, reported once per landing. */
+export interface EngagementHit {
+  ip: string;
+  userAgent: string;
+  utmSource?: string | null;
+  utmCampaign?: string | null;
+}
+
+interface CampaignBucket {
+  bucketStart: Date;
+  campaign: string;
+  source: string;
+  visits: number;
+  engaged: number;
+}
+
+let campaignBuckets = new Map<string, CampaignBucket>();
 
 /**
  * Adds one page view to the buffer. Never throws and never awaits.
@@ -191,15 +211,76 @@ export function recordPageView(hit: PageViewHit, now: Date = new Date()): void {
   const existing = sourceBuckets.get(sourceKey);
   if (existing) existing.visits += 1;
   else sourceBuckets.set(sourceKey, { bucketStart, source, visits: 1 });
+
+  // Only tagged visits land here. An untagged one is not a campaign visit, and
+  // guessing would file organic traffic under whatever ad ran that week.
+  const campaign = normalizeCampaign(hit.utmCampaign);
+  if (!campaign) return;
+  bumpCampaign(bucketKey, bucketStart, campaign, source, "visits");
+}
+
+function bumpCampaign(
+  bucketKey: string,
+  bucketStart: Date,
+  campaign: string,
+  source: string,
+  field: "visits" | "engaged"
+): void {
+  const key = `${bucketKey}|${campaign}|${source}`;
+  const bucket = campaignBuckets.get(key);
+  if (bucket) {
+    bucket[field] += 1;
+    return;
+  }
+  campaignBuckets.set(key, {
+    bucketStart,
+    campaign,
+    source,
+    visits: field === "visits" ? 1 : 0,
+    engaged: field === "engaged" ? 1 : 0,
+  });
+}
+
+/**
+ * Counts a visit that stayed and read.
+ *
+ * Reported by the browser once the time and scroll thresholds are both met,
+ * which is why it arrives separately from the page view rather than as a field
+ * on it — at the moment a page loads, nobody knows yet whether it will be read.
+ *
+ * Capped per visitor per day by the same map that limits page views, so a tab
+ * left open overnight cannot report engagement repeatedly.
+ */
+export function recordEngagement(hit: EngagementHit, now: Date = new Date()): void {
+  if (isBotUserAgent(hit.userAgent)) return;
+
+  const campaign = normalizeCampaign(hit.utmCampaign);
+  if (!campaign) return;
+
+  const hash = visitorHash(hit.ip, hit.userAgent, now);
+  const engagedKey = `engaged:${hash}:${campaign}`;
+  if (viewsByVisitor.has(engagedKey)) return;
+  if (viewsByVisitor.size >= MAX_TRACKED_VISITORS) return;
+  viewsByVisitor.set(engagedKey, 1);
+
+  const bucketStart = hourBucket(now);
+  const source = normalizeSource(null, hit.utmSource, siteHost());
+  bumpCampaign(bucketStart.toISOString(), bucketStart, campaign, source, "engaged");
 }
 
 /** Empties the buffer and hands back what was in it. */
-function drainBuffer(): { pages: PageBucket[]; sources: SourceBucket[] } {
+function drainBuffer(): {
+  pages: PageBucket[];
+  sources: SourceBucket[];
+  campaigns: CampaignBucket[];
+} {
   const pages = Array.from(pageBuckets.values());
   const sources = Array.from(sourceBuckets.values());
+  const campaigns = Array.from(campaignBuckets.values());
   pageBuckets = new Map();
   sourceBuckets = new Map();
-  return { pages, sources };
+  campaignBuckets = new Map();
+  return { pages, sources, campaigns };
 }
 
 // ─── Flushing ────────────────────────────────────────────────────────────────
@@ -217,12 +298,12 @@ function drainBuffer(): { pages: PageBucket[]; sources: SourceBucket[] } {
  * a minute of page views is not worth that risk.
  */
 export async function flushTrafficBuffer(): Promise<void> {
-  if (pageBuckets.size === 0 && sourceBuckets.size === 0) return;
+  if (pageBuckets.size === 0 && sourceBuckets.size === 0 && campaignBuckets.size === 0) return;
 
   const db = await getDb();
   if (!db) return;
 
-  const { pages, sources } = drainBuffer();
+  const { pages, sources, campaigns } = drainBuffer();
 
   try {
     await Promise.all([
@@ -252,6 +333,23 @@ export async function flushTrafficBuffer(): Promise<void> {
           })
           .onDuplicateKeyUpdate({
             set: { visits: sql`${trafficSourceStats.visits} + ${source.visits}` },
+          })
+      ),
+      ...campaigns.map((campaign) =>
+        db
+          .insert(campaignStats)
+          .values({
+            bucketStart: campaign.bucketStart,
+            campaign: campaign.campaign,
+            source: campaign.source,
+            visits: campaign.visits,
+            engaged: campaign.engaged,
+          })
+          .onDuplicateKeyUpdate({
+            set: {
+              visits: sql`${campaignStats.visits} + ${campaign.visits}`,
+              engaged: sql`${campaignStats.engaged} + ${campaign.engaged}`,
+            },
           })
       ),
     ]);
@@ -287,12 +385,17 @@ export function startTrafficFlush(): void {
 export function resetTrafficStateForTests(): void {
   pageBuckets = new Map();
   sourceBuckets = new Map();
+  campaignBuckets = new Map();
   viewsByVisitor = new Map();
   saltDay = "";
   dailySalt = "";
 }
 
 /** Test seam: what a flush would write, without a database. */
-export function drainTrafficBufferForTests(): { pages: PageBucket[]; sources: SourceBucket[] } {
+export function drainTrafficBufferForTests(): {
+  pages: PageBucket[];
+  sources: SourceBucket[];
+  campaigns: CampaignBucket[];
+} {
   return drainBuffer();
 }

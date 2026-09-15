@@ -621,6 +621,44 @@ export const trafficSourceStats = mysqlTable(
 export type TrafficSourceStat = typeof trafficSourceStats.$inferSelect;
 export type InsertTrafficSourceStat = typeof trafficSourceStats.$inferInsert;
 
+/**
+ * Campaign performance, hourly.
+ *
+ * Separate from traffic_source_stats because a campaign is a narrower thing
+ * than a source: several campaigns run on one platform, and the question worth
+ * answering is which creative earned attention, not which network delivered it.
+ *
+ * `engaged` is the column the advertising plan actually asks for — landing on
+ * a page is what an ad platform reports, and it is not evidence the page was
+ * read. Counting both makes the gap between them visible, which is the point.
+ */
+export const campaignStats = mysqlTable(
+  "campaign_stats",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    /** Start of the hour, UTC. */
+    bucketStart: datetime("bucketStart", { mode: "date" }).notNull(),
+    /** utm_campaign, normalised. */
+    campaign: varchar("campaign", { length: 80 }).notNull(),
+    /** utm_source alongside it, so one campaign can be read per platform. */
+    source: varchar("source", { length: 128 }).notNull(),
+    /** Landings: a page from this campaign was opened. */
+    visits: int("visits").default(0).notNull(),
+    /** Landings that met the engagement definition in shared/traffic.ts. */
+    engaged: int("engaged").default(0).notNull(),
+  },
+  (table) => [
+    uniqueIndex("campaign_stats_bucket_campaign_source_idx").on(
+      table.bucketStart,
+      table.campaign,
+      table.source
+    ),
+  ]
+);
+
+export type CampaignStat = typeof campaignStats.$inferSelect;
+export type InsertCampaignStat = typeof campaignStats.$inferInsert;
+
 // ─── Blog ─────────────────────────────────────────────────────────────────────
 
 /**

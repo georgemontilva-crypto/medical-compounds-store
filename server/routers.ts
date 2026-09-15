@@ -50,10 +50,11 @@ import {
   getTopPages,
   getTopProducts,
   getTopSources,
+  getCampaignPerformance,
   getTrafficOverTime,
   getTrafficSummary,
 } from "./analytics";
-import { clientIp, recordPageView } from "./traffic";
+import { clientIp, recordEngagement, recordPageView } from "./traffic";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -1954,11 +1955,12 @@ export const appRouter = router({
         const since = rangeStart(input.range);
         const granularity = ANALYTICS_RANGES[input.range].granularity;
 
-        const [summary, points, pages, sources] = await Promise.all([
+        const [summary, points, pages, sources, campaigns] = await Promise.all([
           getTrafficSummary(since),
           getTrafficOverTime(since, granularity),
           getTopPages(since, input.limit),
           getTopSources(since, input.limit),
+          getCampaignPerformance(since, input.limit),
         ]);
 
         return {
@@ -1968,6 +1970,7 @@ export const appRouter = router({
           points: fillTrafficGaps(points, since, new Date(), granularity),
           pages,
           sources,
+          campaigns,
         };
       }),
   }),
@@ -1995,6 +1998,7 @@ export const appRouter = router({
           path: z.string().max(2048),
           referrer: z.string().max(2048).optional(),
           utmSource: z.string().max(128).optional(),
+          utmCampaign: z.string().max(120).optional(),
         })
       )
       .mutation(({ ctx, input }) => {
@@ -2004,6 +2008,32 @@ export const appRouter = router({
           path: input.path,
           referrer: input.referrer,
           utmSource: input.utmSource,
+          utmCampaign: input.utmCampaign,
+        });
+        return { ok: true };
+      }),
+
+    /**
+     * Counts a visit that stayed and read.
+     *
+     * Separate from `record` because engagement is not knowable when a page
+     * loads — the browser reports it once the time and scroll thresholds are
+     * both met. Ignored for untagged visits: the figure exists to tell an ad
+     * campaign's landings apart from its readers.
+     */
+    engaged: publicProcedure
+      .input(
+        z.object({
+          utmSource: z.string().max(128).optional(),
+          utmCampaign: z.string().max(120).optional(),
+        })
+      )
+      .mutation(({ ctx, input }) => {
+        recordEngagement({
+          ip: clientIp(ctx.req),
+          userAgent: String(ctx.req.headers["user-agent"] ?? ""),
+          utmSource: input.utmSource,
+          utmCampaign: input.utmCampaign,
         });
         return { ok: true };
       }),
@@ -2400,6 +2430,74 @@ export const appRouter = router({
   }),
 
   // ─── Wholesale Applications ─────────────────────────────────────────────────
+  /**
+   * Laboratory supply inquiries, from the page the ad campaigns point at.
+   *
+   * Emailed rather than stored: unlike a wholesale application there is no
+   * review queue or status to track, and the research purpose a lab describes
+   * is free text that belongs in somebody's inbox rather than a table nobody
+   * reads. If a queue becomes useful, the shape here is the wholesale one.
+   */
+  laboratoryInquiries: router({
+    create: publicProcedure
+      .input(
+        z.object({
+          organization: z.string().min(1).max(200),
+          organizationWebsite: z.string().max(300).optional(),
+          contactName: z.string().min(1).max(150),
+          role: z.string().max(150).optional(),
+          workEmail: z.string().email().max(255),
+          researchPurpose: z.string().min(1).max(2000),
+          acknowledged: z.literal(true, {
+            message: "The research-use acknowledgement is required.",
+          }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+
+        const [, notified] = await Promise.all([
+          sendEmail({
+            to: input.workEmail,
+            subject: "We've received your laboratory inquiry — Brighter Days Labs",
+            html: `
+              <p>Hi ${escapeHtml(input.contactName)},</p>
+              <p>Thanks for contacting Brighter Days Labs about laboratory research supply. Our team reviews each inquiry and the organization behind it before responding, and will follow up at this address.</p>
+              <p><strong>Organization:</strong> ${escapeHtml(input.organization)}</p>
+              <p>Submitting an inquiry does not establish purchasing eligibility. Materials are for laboratory research only and are not intended for human or veterinary use.</p>
+              <p>— Brighter Days Labs</p>
+            `,
+          }),
+          adminEmail
+            ? sendEmail({
+                to: adminEmail,
+                subject: `New laboratory inquiry: ${input.organization}`,
+                html: `
+                  <p>New laboratory supply inquiry received.</p>
+                  <ul>
+                    <li><strong>Organization:</strong> ${escapeHtml(input.organization)}</li>
+                    <li><strong>Website:</strong> ${input.organizationWebsite ? escapeHtml(input.organizationWebsite) : "—"}</li>
+                    <li><strong>Contact:</strong> ${escapeHtml(input.contactName)}</li>
+                    <li><strong>Role:</strong> ${input.role ? escapeHtml(input.role) : "—"}</li>
+                    <li><strong>Work email:</strong> ${escapeHtml(input.workEmail)}</li>
+                  </ul>
+                  <p><strong>Research purpose and documentation requested:</strong></p>
+                  <p>${escapeHtml(input.researchPurpose).replace(/\n/g, "<br/>")}</p>
+                  <p>Verify the organization through independent contact information before responding.</p>
+                `,
+              })
+            : Promise.resolve(false),
+        ]);
+
+        if (!adminEmail) {
+          console.warn(
+            "[laboratoryInquiries] ADMIN_NOTIFICATION_EMAIL is unset — nobody was told about this inquiry"
+          );
+        }
+        return { received: true, notified };
+      }),
+  }),
+
   wholesaleApplications: router({
     create: publicProcedure
       .input(

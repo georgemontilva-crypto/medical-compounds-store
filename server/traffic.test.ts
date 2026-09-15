@@ -12,8 +12,10 @@ import {
   MAX_VIEWS_PER_VISITOR_DAY,
   clientIp,
   drainTrafficBufferForTests,
+  recordEngagement,
   recordPageView,
   resetTrafficStateForTests,
+  type PageViewHit,
 } from "./traffic";
 
 /**
@@ -322,6 +324,138 @@ describe("recordPageView", () => {
     recordPageView(hit(), AT_NOON);
     drainTrafficBufferForTests();
 
-    expect(drainTrafficBufferForTests()).toEqual({ pages: [], sources: [] });
+    expect(drainTrafficBufferForTests()).toEqual({ pages: [], sources: [], campaigns: [] });
+  });
+});
+
+/**
+ * Campaigns and engagement.
+ *
+ * The distinction these exist to preserve: an ad platform reports clicks, and
+ * a click is not a reader. Counting both makes the gap visible, which is the
+ * only reason the engaged column is there.
+ */
+describe("campaign tracking", () => {
+  beforeEach(() => resetTrafficStateForTests());
+
+  const tagged = (overrides: Partial<PageViewHit> = {}): PageViewHit => ({
+    ...hit(),
+    utmSource: "facebook",
+    utmCampaign: "bdl_report_guide",
+    ...overrides,
+  });
+
+  it("records a landing against its campaign", () => {
+    recordPageView(tagged(), AT_NOON);
+    const { campaigns } = drainTrafficBufferForTests();
+
+    expect(campaigns).toHaveLength(1);
+    expect(campaigns[0]).toMatchObject({
+      campaign: "bdl_report_guide",
+      source: "facebook",
+      visits: 1,
+      engaged: 0,
+    });
+  });
+
+  it("leaves an untagged visit out of campaign counts entirely", () => {
+    // Filing organic traffic under whichever campaign happened to be running
+    // would make every campaign look better than it was.
+    recordPageView(hit(), AT_NOON);
+    const { campaigns, sources } = drainTrafficBufferForTests();
+
+    expect(campaigns).toHaveLength(0);
+    expect(sources).toHaveLength(1);
+  });
+
+  it("keeps two campaigns on the same platform apart", () => {
+    recordPageView(tagged({ ip: "203.0.113.1" }), AT_NOON);
+    recordPageView(
+      tagged({ ip: "203.0.113.2", utmCampaign: "bdl_bac_water" }),
+      AT_NOON
+    );
+    const { campaigns } = drainTrafficBufferForTests();
+
+    expect(campaigns).toHaveLength(2);
+    expect(campaigns.map((c) => c.campaign).sort()).toEqual([
+      "bdl_bac_water",
+      "bdl_report_guide",
+    ]);
+  });
+
+  it("normalises a campaign tag typed by hand into an ad platform", () => {
+    recordPageView(tagged({ utmCampaign: "  BDL Report Guide  " }), AT_NOON);
+    const { campaigns } = drainTrafficBufferForTests();
+
+    expect(campaigns[0].campaign).toBe("bdl_report_guide");
+  });
+
+  it("counts an engaged visit against the same campaign", () => {
+    recordEngagement(
+      { ...hit(), utmSource: "facebook", utmCampaign: "bdl_report_guide" },
+      AT_NOON
+    );
+    const { campaigns } = drainTrafficBufferForTests();
+
+    expect(campaigns[0]).toMatchObject({ engaged: 1, visits: 0 });
+  });
+
+  it("counts one engagement per visitor per campaign, however many times reported", () => {
+    // A page that fires twice, or a visitor who reloads, must not make one
+    // reader look like several.
+    const engagement = {
+      ...hit(),
+      utmSource: "facebook",
+      utmCampaign: "bdl_report_guide",
+    };
+    recordEngagement(engagement, AT_NOON);
+    recordEngagement(engagement, AT_NOON);
+    recordEngagement(engagement, AT_NOON);
+
+    const { campaigns } = drainTrafficBufferForTests();
+    expect(campaigns[0].engaged).toBe(1);
+  });
+
+  it("lets the same visitor be engaged on two different campaigns", () => {
+    const base = { ...hit(), utmSource: "facebook" };
+    recordEngagement({ ...base, utmCampaign: "bdl_report_guide" }, AT_NOON);
+    recordEngagement({ ...base, utmCampaign: "bdl_bac_water" }, AT_NOON);
+
+    const { campaigns } = drainTrafficBufferForTests();
+    expect(campaigns).toHaveLength(2);
+    expect(campaigns.every((c) => c.engaged === 1)).toBe(true);
+  });
+
+  it("ignores engagement with no campaign attached", () => {
+    recordEngagement({ ...hit(), utmSource: "facebook" }, AT_NOON);
+    expect(drainTrafficBufferForTests().campaigns).toHaveLength(0);
+  });
+
+  it("ignores a bot claiming to have read the page", () => {
+    recordEngagement(
+      {
+        ...hit(),
+        userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1)",
+        utmCampaign: "bdl_report_guide",
+      },
+      AT_NOON
+    );
+    expect(drainTrafficBufferForTests().campaigns).toHaveLength(0);
+  });
+
+  it("adds a landing and its later engagement to one row", () => {
+    const visitor = { ip: "203.0.113.9", userAgent: hit().userAgent };
+    recordPageView(
+      { ...visitor, path: "/education/read-the-report", utmSource: "facebook", utmCampaign: "bdl_report_guide" },
+      AT_NOON
+    );
+    recordEngagement(
+      { ...visitor, utmSource: "facebook", utmCampaign: "bdl_report_guide" },
+      AT_NOON
+    );
+
+    const { campaigns } = drainTrafficBufferForTests();
+    expect(campaigns).toHaveLength(1);
+    expect(campaigns[0]).toMatchObject({ visits: 1, engaged: 1 });
   });
 });

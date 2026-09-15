@@ -317,6 +317,47 @@ export default function AdminAnalytics() {
           />
         </div>
 
+        {/* Campaigns */}
+        <ChartCard
+          title="Campaign performance"
+          note="Landings are what an ad platform reports. Readers are landings that stayed 30 active seconds and scrolled half the page — our own definition, not a platform one. The gap between the two columns is the point of the table."
+        >
+          {traffic.isLoading ? (
+            <ChartSkeleton />
+          ) : (traffic.data?.campaigns.length ?? 0) === 0 ? (
+            <EmptyState message="No tagged campaign traffic in this window yet. Add utm_campaign to an ad's link to see it here." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground border-b border-border">
+                    <th className="pb-2 font-medium">Campaign</th>
+                    <th className="pb-2 font-medium">Source</th>
+                    <th className="pb-2 font-medium text-right">Landings</th>
+                    <th className="pb-2 font-medium text-right">Readers</th>
+                    <th className="pb-2 font-medium text-right">Read rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {traffic.data?.campaigns.map((c) => (
+                    <tr key={`${c.campaign}|${c.source}`} className="border-b border-border/50">
+                      <td className="py-2.5 font-medium">{c.campaign}</td>
+                      <td className="py-2.5 text-muted-foreground">{c.source}</td>
+                      <td className="py-2.5 text-right tabular-nums">{c.visits}</td>
+                      <td className="py-2.5 text-right tabular-nums">{c.engaged}</td>
+                      <td className="py-2.5 text-right tabular-nums">
+                        {c.engagementRate === null
+                          ? "—"
+                          : `${Math.round(c.engagementRate * 100)}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </ChartCard>
+
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Orders by status */}
           <ChartCard

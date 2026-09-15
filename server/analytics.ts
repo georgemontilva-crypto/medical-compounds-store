@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
+  campaignStats,
   orderItems,
   orders,
   pageViewStats,
@@ -461,4 +462,55 @@ export async function getTopSources(since: Date, limit: number): Promise<SourceP
     source: String(r.source ?? ""),
     visits: Number(r.visits ?? 0),
   }));
+}
+
+export interface CampaignPerformance {
+  campaign: string;
+  source: string;
+  visits: number;
+  engaged: number;
+  /** Share of landings that met the engagement definition, or null with none. */
+  engagementRate: number | null;
+}
+
+/**
+ * Campaign performance for a window.
+ *
+ * Ordered by engaged rather than visits: a campaign that delivered a thousand
+ * clicks and four readers is worse than one that delivered fifty and thirty,
+ * and sorting by the number an ad platform reports would put the first on top.
+ */
+export async function getCampaignPerformance(
+  since: Date,
+  limit: number
+): Promise<CampaignPerformance[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      campaign: campaignStats.campaign,
+      source: campaignStats.source,
+      visits: sql<number>`sum(${campaignStats.visits})`.as("visits"),
+      engaged: sql<number>`sum(${campaignStats.engaged})`.as("engaged"),
+    })
+    .from(campaignStats)
+    .where(sql`${campaignStats.bucketStart} >= ${utcBound(since)}`)
+    .groupBy(campaignStats.campaign, campaignStats.source)
+    .orderBy(sql`engaged desc, visits desc`)
+    .limit(limit);
+
+  return rows.map((r) => {
+    const visits = Number(r.visits ?? 0);
+    const engaged = Number(r.engaged ?? 0);
+    return {
+      campaign: String(r.campaign ?? ""),
+      source: String(r.source ?? ""),
+      visits,
+      engaged,
+      // Null rather than zero with no landings: a rate of 0% claims nobody read
+      // it, which is a different statement from nobody having arrived.
+      engagementRate: visits > 0 ? engaged / visits : null,
+    };
+  });
 }
