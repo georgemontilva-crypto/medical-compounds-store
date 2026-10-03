@@ -8,6 +8,7 @@ import {
   resolveRouteMeta,
   STATIC_ROUTE_META,
 } from "./_core/seoMeta";
+import { FAQS } from "@shared/faqs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 
@@ -80,6 +81,11 @@ const PAGE_SOURCES: Record<
   "/legal/terms-of-service": { file: "client/src/pages/LegalTermsOfService.tsx" },
   "/legal/shipping-policy": { file: "client/src/pages/LegalShippingPolicy.tsx" },
 };
+
+/** The @type of a JSON-LD block, for asserting which kinds a page carries. */
+function typeOf(block: object): string {
+  return (block as { "@type": string })["@type"];
+}
 
 describe("STATIC_ROUTE_META stays in sync with the pages it describes", () => {
   it("covers every route that has a page source, and no others", () => {
@@ -170,18 +176,60 @@ describe("resolveRouteMeta", () => {
     expect(filtered.canonical).toBe(catalog.canonical);
   });
 
-  it("serves Organization and WebSite JSON-LD on the home page only", async () => {
+  it("claims to be the organisation on the home page and nowhere else", async () => {
     const home = await resolveRouteMeta("/");
-    expect(home.jsonLd.map((block) => (block as { "@type": string })["@type"])).toEqual([
-      "Organization",
-      "WebSite",
-    ]);
+    expect(home.jsonLd.map(typeOf)).toEqual(["Organization", "WebSite"]);
 
+    // Other pages may carry structured data of their own — a breadcrumb, the
+    // FAQ's questions — but repeating Organization on all of them tells Google
+    // every page is the site itself, which was the original bug here.
     for (const route of Object.keys(STATIC_ROUTE_META)) {
       if (route === "/") continue;
-      const meta = await resolveRouteMeta(route);
-      expect(meta.jsonLd, `${route} should carry no JSON-LD`).toEqual([]);
+      const types = (await resolveRouteMeta(route)).jsonLd.map(typeOf);
+      expect(types, route).not.toContain("Organization");
+      expect(types, route).not.toContain("WebSite");
     }
+  });
+
+  it("puts the questions on the FAQ, matching the list the page renders", async () => {
+    const faq = await resolveRouteMeta("/faq");
+    const block = faq.jsonLd.find((b) => typeOf(b) === "FAQPage") as
+      | { mainEntity: { name: string; acceptedAnswer: { text: string } }[] }
+      | undefined;
+
+    expect(block, "the FAQ should carry FAQPage markup").toBeDefined();
+    // Markup that promises an answer the page does not give is the failure
+    // mode Google acts on, so this compares against the rendered list itself
+    // rather than a copy written here.
+    expect(block!.mainEntity).toHaveLength(FAQS.length);
+    expect(block!.mainEntity.map((q) => q.name)).toEqual(FAQS.map((f) => f.question));
+    expect(block!.mainEntity.map((q) => q.acceptedAnswer.text)).toEqual(
+      FAQS.map((f) => f.answer)
+    );
+  });
+
+  it("gives a nested page a trail home, and a top-level page none", async () => {
+    const legal = await resolveRouteMeta("/legal/terms-of-service");
+    const crumb = legal.jsonLd.find((b) => typeOf(b) === "BreadcrumbList") as
+      | { itemListElement: { position: number; name: string; item: string }[] }
+      | undefined;
+
+    expect(crumb, "a nested page should carry a breadcrumb").toBeDefined();
+    expect(crumb!.itemListElement[0]).toMatchObject({
+      position: 1,
+      item: "https://www.brighterdayslabs.com/",
+    });
+    expect(crumb!.itemListElement.at(-1)).toMatchObject({
+      item: "https://www.brighterdayslabs.com/legal/terms-of-service",
+    });
+    // Positions have to run 1..n without gaps or Google discards the trail.
+    expect(crumb!.itemListElement.map((c) => c.position)).toEqual(
+      crumb!.itemListElement.map((_, i) => i + 1)
+    );
+
+    // One click from home needs no trail back to it.
+    const faq = await resolveRouteMeta("/faq");
+    expect(faq.jsonLd.map(typeOf)).not.toContain("BreadcrumbList");
   });
 
   it("marks session and account routes noindex with a title of their own", async () => {
@@ -260,9 +308,14 @@ describe("injectSeoMeta rewrites the served document", () => {
     expect(html).not.toContain('content="Made in the USA"');
   });
 
-  it("carries no JSON-LD on a route that should not claim to be the site", async () => {
+  it("does not repeat the organisation block on an inner page", async () => {
     const html = injectSeoMeta(INDEX_HTML, await resolveRouteMeta("/legal/terms-of-service"));
-    expect(html).not.toContain("application/ld+json");
+    // The page carries a breadcrumb, which is its own structured data; what it
+    // must not do is announce itself as the site, which is what every page
+    // doing so originally cost us.
+    expect(html).toContain("BreadcrumbList");
+    expect(html).not.toContain('"Organization"');
+    expect(html).not.toContain('"WebSite"');
   });
 
   it("escapes a title that would otherwise break out of its tag", () => {

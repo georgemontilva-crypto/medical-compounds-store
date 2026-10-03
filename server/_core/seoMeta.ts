@@ -1,5 +1,6 @@
 import { getProductBySlug, getProductImages, getPublishedBlogPostBySlug } from "../db";
 import { blogDescription, truncateAtWord } from "@shared/blog";
+import { FAQS } from "@shared/faqs";
 
 const SITE_URL = "https://www.brighterdayslabs.com";
 const BRAND = "Brighter Days Labs";
@@ -325,6 +326,80 @@ function organizationJsonLd(): object[] {
 }
 
 /**
+ * Structured data for a page in the route table.
+ *
+ * The homepage identifies the organisation; the FAQ carries its questions;
+ * anything nested gets a breadcrumb. Top-level pages get none — a trail from
+ * Home to a page one click from Home is noise.
+ */
+function staticJsonLd(path: string, title: string): object[] {
+  if (path === "/") return organizationJsonLd();
+
+  const blocks: object[] = [];
+  if (path === "/faq") blocks.push(...faqJsonLd());
+  if (path.split("/").filter(Boolean).length > 1) {
+    blocks.push(breadcrumbJsonLd(path, title));
+  }
+  return blocks;
+}
+
+/**
+ * The questions, as structured data.
+ *
+ * Read from the same list the page renders, because this markup is a claim
+ * about what the page contains. A result that promises an answer the page does
+ * not give is the thing Google penalises, and the only reliable way to avoid it
+ * is to have one source rather than two that agree today.
+ */
+function faqJsonLd(): object[] {
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: FAQS.map((entry) => ({
+        "@type": "Question",
+        name: entry.question,
+        acceptedAnswer: { "@type": "Answer", text: entry.answer },
+      })),
+    },
+  ];
+}
+
+/**
+ * The trail from the homepage down to this page.
+ *
+ * What it buys is the path appearing in a search result in place of a raw URL,
+ * which reads as a site with structure rather than a loose page. Built from the
+ * path itself, so a route added later gets one without being told.
+ */
+function breadcrumbJsonLd(path: string, leafName: string): object {
+  const segments = path.split("/").filter(Boolean);
+  const crumbs = [{ name: "Home", url: `${SITE_URL}/` }];
+
+  // Intermediate segments are section prefixes — /science, /legal, /blog — and
+  // only earn a crumb when that section is a page somebody can open. A crumb
+  // pointing at a 404 is worse than one fewer crumb.
+  let built = "";
+  for (const segment of segments.slice(0, -1)) {
+    built += `/${segment}`;
+    if (!(built in STATIC_ROUTE_META)) continue;
+    crumbs.push({ name: STATIC_ROUTE_META[built].title, url: `${SITE_URL}${built}` });
+  }
+  crumbs.push({ name: leafName, url: `${SITE_URL}${path}` });
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.name,
+      item: crumb.url,
+    })),
+  };
+}
+
+/**
  * The metadata every route is served with. Never throws: an unknown path or a
  * database hiccup falls back to a generic descriptor rather than 500ing a page
  * that would otherwise have rendered fine client-side.
@@ -369,7 +444,7 @@ export async function resolveRouteMeta(originalUrl: string): Promise<ResolvedMet
       robots: "index, follow",
       h1: staticMeta.h1,
       intro: staticMeta.intro,
-      jsonLd: path === "/" ? organizationJsonLd() : [],
+      jsonLd: staticJsonLd(path, staticMeta.title),
     };
   }
 
@@ -428,6 +503,7 @@ async function resolveProduct(slug: string, base: MetaBase): Promise<ResolvedMet
     h1: product.name,
     intro: description,
     jsonLd: [
+      breadcrumbJsonLd(`/compounds/${product.slug}`, product.name),
       {
         "@context": "https://schema.org",
         "@type": "Product",
@@ -507,6 +583,7 @@ async function resolveBlogPost(slug: string, base: MetaBase): Promise<ResolvedMe
     h1: post.title,
     intro: description,
     jsonLd: [
+      breadcrumbJsonLd(`/blog/${post.slug}`, post.title),
       {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
