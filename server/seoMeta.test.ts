@@ -169,11 +169,25 @@ describe("normalizePath", () => {
 });
 
 describe("resolveRouteMeta", () => {
-  it("canonicalises every category URL onto /compounds", async () => {
-    const filtered = await resolveRouteMeta("/compounds?category=metabolic-research");
+  it("sends the old category filter to the page that replaced it", async () => {
+    // Links to ?category= were shared before categories became pages. They must
+    // keep working and must point at the page, not compete with it — otherwise
+    // whatever standing the old URL has is spent arguing with the new one.
+    const legacy = await resolveRouteMeta("/compounds?category=metabolic-research");
+    const page = await resolveRouteMeta("/compounds/category/metabolic-research");
+
+    expect(legacy.canonical).toBe(
+      "https://www.brighterdayslabs.com/compounds/category/metabolic-research"
+    );
+    expect(legacy.canonical).toBe(page.canonical);
+    // And neither is the bare catalog any more.
     const catalog = await resolveRouteMeta("/compounds");
-    expect(filtered.canonical).toBe("https://www.brighterdayslabs.com/compounds");
-    expect(filtered.canonical).toBe(catalog.canonical);
+    expect(legacy.canonical).not.toBe(catalog.canonical);
+  });
+
+  it("leaves a query string that is not a category alone", async () => {
+    const sorted = await resolveRouteMeta("/compounds?sortBy=price_asc");
+    expect(sorted.canonical).toBe("https://www.brighterdayslabs.com/compounds");
   });
 
   it("claims to be the organisation on the home page and nowhere else", async () => {

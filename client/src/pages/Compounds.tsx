@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useLocation, useRoute, useSearch } from "wouter";
 import { Search, FlaskConical, Plus, Check, ChevronDown, X } from "lucide-react";
 import ProductCard, { VialPlaceholder } from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
@@ -116,10 +116,12 @@ function StaticCard({ product, onAdd, added }: {
 export default function Compounds() {
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
-  // CategoryShowcase/Navbar/HeroSlider all link here with ?category=<slug>
-  // (stable and URL-friendly, unlike a numeric id or a display name that
-  // can drift out of sync with the real catalog).
-  const categorySlug = params.get("category") || undefined;
+  // A category is an address now — /compounds/category/<slug> — rather than a
+  // filter on the catalog. The query form still works and still filters, so
+  // links shared before the change keep working, but it canonicalises to the
+  // path so the two are never indexed as separate pages.
+  const [, pathCategory] = useRoute("/compounds/category/:slug");
+  const categorySlug = pathCategory?.slug ?? params.get("category") ?? undefined;
 
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("featured");
@@ -138,10 +140,11 @@ export default function Compounds() {
   // user just cleared. A slug matching no real category (e.g. a stale link)
   // selects nothing, so the page shows the full catalog instead of silently
   // rendering empty.
-  const selectedCategory = useMemo(
-    () => categories.find((c) => c.slug === categorySlug)?.id,
+  const activeCategory = useMemo(
+    () => categories.find((c) => c.slug === categorySlug),
     [categories, categorySlug],
   );
+  const selectedCategory = activeCategory?.id;
   // The static fallback has no slugs of its own; its names are single words,
   // so the lowercased name is the slug.
   const selectedStaticCat = useMemo(
@@ -153,11 +156,12 @@ export default function Compounds() {
   // the single source of truth. Any other query param is preserved.
   function selectCategory(slug?: string) {
     if (slug === categorySlug) return;
+    // Any other query param — a search term, a sort — survives the move.
     const next = new URLSearchParams(searchStr);
-    if (slug) next.set("category", slug);
-    else next.delete("category");
+    next.delete("category");
     const qs = next.toString();
-    navigate(qs ? `/compounds?${qs}` : "/compounds");
+    const base = slug ? `/compounds/category/${slug}` : "/compounds";
+    navigate(qs ? `${base}?${qs}` : base);
   }
 
   const { data: dbProducts = [], isLoading } = trpc.products.list.useQuery({
@@ -222,18 +226,33 @@ export default function Compounds() {
       <div className="container py-10">
         {/* Page header */}
         <div className="mb-8">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-1">Full Catalog</p>
-          <h1 className="text-3xl font-extrabold text-gray-950 dark:text-white">Research Compounds</h1>
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#d3c4ab] mb-1">
+            {activeCategory ? "Research Category" : "Full Catalog"}
+          </p>
+          {/* On a category address the heading is the category, because that is
+              what server/_core/seoMeta.ts declares as the h1 for that route and
+              the two have to say the same thing. */}
+          <h1 className="text-3xl font-extrabold text-gray-950 dark:text-white">
+            {activeCategory?.name ?? "Research Compounds"}
+          </h1>
           <div className="w-10 h-0.5 bg-gradient-to-r from-[#dbcfba] to-[#C8A84B] mt-2 mb-3 rounded-full" />
           {/* The opening sentence is static on purpose: it's the paragraph
               server/_core/seoMeta.ts injects into #root for this route, and a
               crawler that doesn't run JS can't see the counts that follow it.
-              Keep it identical to `intro` for "/compounds" over there. */}
-          <p className="text-gray-400 text-sm dark:text-gray-500">
-            Research-grade peptides and compounds organized by biological mechanism.{" "}
-            {totalCount} compound{totalCount !== 1 ? "s" : ""} across {sidebarCats.length} research categories.
-            Click any card to view the full research monograph.
-          </p>
+              Keep it identical to `intro` over there. */}
+          {activeCategory ? (
+            <p className="text-gray-400 text-sm dark:text-gray-500">
+              {activeCategory.tagline?.trim() || activeCategory.description?.trim() || (
+                <>Research-grade peptides and compounds organized by biological mechanism.</>
+              )}
+            </p>
+          ) : (
+            <p className="text-gray-400 text-sm dark:text-gray-500">
+              Research-grade peptides and compounds organized by biological mechanism.{" "}
+              {totalCount} compound{totalCount !== 1 ? "s" : ""} across {sidebarCats.length} research categories.
+              Click any card to view the full research monograph.
+            </p>
+          )}
         </div>
 
         <div className="flex gap-7 items-start">

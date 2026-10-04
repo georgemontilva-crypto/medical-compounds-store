@@ -287,6 +287,25 @@ export async function getCategoryById(id: number) {
   return result[0];
 }
 
+/** A category by its slug, which is what its public address is built from. */
+export async function getCategoryBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
+  return result[0];
+}
+
+/** How many active products sit in a category, for its page description. */
+export async function countActiveProductsInCategory(categoryId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(products)
+    .where(and(eq(products.categoryId, categoryId), eq(products.active, true)));
+  return Number(result[0]?.count ?? 0);
+}
+
 export async function createCategory(data: InsertCategory) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");

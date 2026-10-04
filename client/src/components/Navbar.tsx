@@ -191,7 +191,7 @@ export default function Navbar() {
                 </p>
                 <div className="grid grid-cols-2 gap-0.5">
                   {realCategories.map((cat) => (
-                    <Link key={cat.id} href={`/compounds?category=${cat.slug}`}>
+                    <Link key={cat.id} href={`/compounds/category/${cat.slug}`}>
                       <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group dark:hover:bg-white/5">
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
@@ -250,7 +250,7 @@ export default function Navbar() {
                     Reference
                   </p>
                   {realCategories.map((cat) => (
-                    <Link key={cat.id} href={`/compounds?category=${cat.slug}`}>
+                    <Link key={cat.id} href={`/compounds/category/${cat.slug}`}>
                       <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group dark:hover:bg-white/5">
                         <span
                           className="w-2 h-2 rounded-full shrink-0"

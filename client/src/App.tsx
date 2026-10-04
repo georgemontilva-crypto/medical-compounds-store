@@ -76,6 +76,8 @@ function PublicRoutes() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/compounds" component={Compounds} />
+      {/* Before /compounds/:slug, which would otherwise swallow "category". */}
+      <Route path="/compounds/category/:slug" component={Compounds} />
       <Route path="/compounds/:slug" component={ProductDetail} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />

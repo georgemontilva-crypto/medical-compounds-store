@@ -65,7 +65,7 @@ export default function Footer() {
   const topCategories = categories.slice(0, 5);
   const shopLinks = [
     { label: "Browse Compounds", href: "/compounds" },
-    ...topCategories.map((c) => ({ label: c.name, href: `/compounds?category=${c.slug}` })),
+    ...topCategories.map((c) => ({ label: c.name, href: `/compounds/category/${c.slug}` })),
     { label: "Apply for Wholesale", href: "/wholesale" },
   ];
 

@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import {
+  getAllCategories,
   getProductSlugsWithLabReports,
   getProducts,
   getPublishedBlogPostSlugs,
@@ -33,20 +34,24 @@ function urlEntry(loc: string, lastmod?: Date | string | null) {
 export function registerSitemapRoute(app: Express) {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
-      const [products, labReported, blogPosts] = await Promise.all([
+      const [products, categories, labReported, blogPosts] = await Promise.all([
         getProducts({ active: true, limit: 10000 }),
+        getAllCategories(),
         getProductSlugsWithLabReports(),
         // Published only — the helper filters on status in SQL, so a draft
         // cannot reach the sitemap even briefly.
         getPublishedBlogPostSlugs(),
       ]);
 
-      // /compounds?category=<slug> is deliberately absent. Those four URLs
-      // render the same catalog with a client-side filter, and seoMeta.ts
-      // canonicalises them to /compounds — listing them here would tell Google
-      // to index pages that then disclaim themselves.
+      // Categories are listed now that each is a page with its own address,
+      // title and description. The old ?category= form stays out: it resolves
+      // to the same page, and listing both would ask Google to index one URL
+      // that points at another.
       const entries = [
         ...STATIC_PATHS.map((p) => urlEntry(`${SITE_URL}${p}`)),
+        ...categories.map((c) =>
+          urlEntry(`${SITE_URL}/compounds/category/${c.slug}`, c.updatedAt)
+        ),
         ...products.map((p) => urlEntry(`${SITE_URL}/compounds/${p.slug}`, p.updatedAt)),
         ...labReported.map((r) => urlEntry(`${SITE_URL}/lab-reports/${r.slug}`, r.lastmod)),
         ...blogPosts.map((p) => urlEntry(`${SITE_URL}/blog/${p.slug}`, p.lastmod)),

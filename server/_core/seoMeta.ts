@@ -1,4 +1,10 @@
-import { getProductBySlug, getProductImages, getPublishedBlogPostBySlug } from "../db";
+import {
+  countActiveProductsInCategory,
+  getCategoryBySlug,
+  getProductBySlug,
+  getProductImages,
+  getPublishedBlogPostBySlug,
+} from "../db";
 import { blogDescription, truncateAtWord } from "@shared/blog";
 import { FAQS } from "@shared/faqs";
 
@@ -265,6 +271,7 @@ const NOINDEX_ROUTE_TITLES: Record<string, string> = {
 /** Everything under these prefixes is noindex, however deep. */
 const NOINDEX_PREFIXES = ["/admin", "/my-orders/"];
 
+const CATEGORY_PATH = /^\/compounds\/category\/([^/]+)$/;
 const PRODUCT_PATH = /^\/compounds\/([^/]+)$/;
 const LAB_REPORT_PATH = /^\/lab-reports\/([^/]+)$/;
 const BLOG_POST_PATH = /^\/blog\/([^/]+)$/;
@@ -292,9 +299,9 @@ function titleFor(title: string) {
 }
 
 /**
- * Query strings never produce a distinct canonical. `/compounds?category=x`
- * renders the same catalog with a client-side filter applied, so all four
- * category URLs collapse onto /compounds rather than competing with it.
+ * Query strings never produce a distinct canonical. `/compounds?category=x` is
+ * handled a step above this, where it resolves to the category's own page —
+ * every other query string collapses onto the path it decorates.
  */
 export function normalizePath(originalUrl: string) {
   const path = originalUrl.split(/[?#]/)[0] || "/";
@@ -406,6 +413,24 @@ function breadcrumbJsonLd(path: string, leafName: string): object {
  */
 export async function resolveRouteMeta(originalUrl: string): Promise<ResolvedMeta> {
   const path = normalizePath(originalUrl);
+
+  // The old filter form, kept working for links shared before categories became
+  // pages. It resolves to the category's page rather than being treated as a
+  // separate URL, so the two never compete and the older link passes its
+  // standing on to the page that replaced it.
+  if (path === "/compounds") {
+    const legacy = new URLSearchParams(originalUrl.split("?")[1] ?? "").get("category");
+    if (legacy) {
+      return resolveCategory(legacy, {
+        canonical: `${SITE_URL}/compounds/category/${legacy}`,
+        ogType: "website",
+        image: FALLBACK_OG_IMAGE,
+        imageAlt: BRAND,
+        jsonLd: [],
+      });
+    }
+  }
+
   const canonical = `${SITE_URL}${path === "/" ? "/" : path}`;
 
   const base: MetaBase = {
@@ -415,6 +440,11 @@ export async function resolveRouteMeta(originalUrl: string): Promise<ResolvedMet
     imageAlt: BRAND,
     jsonLd: [],
   };
+
+  // Checked before the product pattern, which would otherwise read "category"
+  // as a product slug.
+  const categoryMatch = CATEGORY_PATH.exec(path);
+  if (categoryMatch) return resolveCategory(decodeURIComponent(categoryMatch[1]), base);
 
   const productMatch = PRODUCT_PATH.exec(path);
   if (productMatch) return resolveProduct(decodeURIComponent(productMatch[1]), base);
@@ -455,6 +485,61 @@ export async function resolveRouteMeta(originalUrl: string): Promise<ResolvedMet
     title: titleFor("Page Not Found"),
     description: STATIC_ROUTE_META["/"].description,
     robots: "noindex, follow",
+  };
+}
+
+/**
+ * A category as a page of its own.
+ *
+ * These exist because "metabolic research compounds" is a thing people search
+ * for and the catalog filter was not a page that could answer it — it
+ * canonicalised to /compounds and sat outside the sitemap, which told Google
+ * not to index it at all.
+ *
+ * Copy comes from the category row the admin already maintains, so a renamed
+ * category changes its own page without anyone editing a route table.
+ */
+async function resolveCategory(slug: string, base: MetaBase): Promise<ResolvedMeta> {
+  let category;
+  try {
+    category = await getCategoryBySlug(slug);
+  } catch (err) {
+    console.error(`Failed to load category for route meta (${slug}):`, err);
+    return catalogFallback(base, "index, follow");
+  }
+
+  // An unknown slug shows the full catalog client-side rather than a not-found
+  // state, so it must not be indexed as if it were a category.
+  if (!category) return catalogFallback(base, "noindex, follow");
+
+  let count = 0;
+  try {
+    count = await countActiveProductsInCategory(category.id);
+  } catch {
+    // The count only enriches the description; losing it is not worth a 500.
+  }
+
+  const canonical = `${SITE_URL}/compounds/category/${category.slug}`;
+  const description = truncateAtWord(
+    category.description?.trim() ||
+      category.tagline?.trim() ||
+      `${category.name} research compounds from ${BRAND}${count ? `, ${count} in the catalog` : ""}. Third-party tested, with a certificate of analysis for every batch.`,
+    160
+  );
+
+  return {
+    ...base,
+    canonical,
+    title: titleFor(`${category.name} Research Compounds`),
+    description,
+    robots: "index, follow",
+    image: category.heroImageUrl || base.image,
+    imageAlt: category.name,
+    // client/src/pages/Compounds.tsx renders the category name as the heading
+    // when one is selected.
+    h1: category.name,
+    intro: category.tagline?.trim() || description,
+    jsonLd: [breadcrumbJsonLd(`/compounds/category/${category.slug}`, category.name)],
   };
 }
 

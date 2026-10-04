@@ -37,7 +37,7 @@ const SLIDES = [
     headline: "Cellular Signaling\nCompounds",
     sub: "Explore our catalog of cellular and neural research peptides with documented mechanisms.",
     cta: "View Catalog",
-    ctaHref: "/compounds?category=cellular-research",
+    ctaHref: "/compounds/category/cellular-research",
     // stat1/stat2 for this slide are overridden with live counts at render time — see LIVE_STATS_SLIDE_ID below.
     stat1: { value: "—", label: "Compounds" },
     stat2: { value: "—", label: "Categories" },
@@ -54,7 +54,7 @@ const SLIDES = [
     headline: "Metabolic Research\nGrade Compounds",
     sub: "NAD+, MOTS-C and more — compounds studied for their role in cellular energy and longevity pathways.",
     cta: "Metabolic Compounds",
-    ctaHref: "/compounds?category=metabolic-research",
+    ctaHref: "/compounds/category/metabolic-research",
     stat1: { value: "GMP", label: "Compliant" },
     stat2: { value: "HPLC", label: "Verified" },
     accent: "#d7cab3",
