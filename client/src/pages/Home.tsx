@@ -932,7 +932,10 @@ const SUNNY_POINTS = [
   "Move forward with confidence",
 ];
 const SUNNY_CTA_LABEL = "Ask Sunny";
-const SUNNY_CHAT_URL = "https://www.asksunny.io/chat";
+// Tagged separately from the navbar link so the two placements can be told
+// apart — the banner and the menu are different invitations.
+const SUNNY_CHAT_URL =
+  "https://www.asksunny.io/chat?utm_source=brighterdayslabs&utm_medium=referral&utm_campaign=ask_sunny_banner";
 
 /**
  * Section label, in place of the display-size wordmark this used to be.

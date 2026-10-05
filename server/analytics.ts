@@ -514,3 +514,50 @@ export async function getCampaignPerformance(
     };
   });
 }
+
+export interface ChannelRevenue {
+  source: string;
+  medium: string | null;
+  campaign: string | null;
+  orders: number;
+  revenue: number;
+}
+
+/**
+ * Revenue by where the buyer came from.
+ *
+ * Orders placed before attribution shipped carry nothing, and they are grouped
+ * under "unattributed" rather than dropped or folded into direct. Both of those
+ * would misreport the period: dropping them understates revenue, and calling
+ * them direct credits a channel that may have had nothing to do with it.
+ */
+export async function getRevenueByChannel(since: Date): Promise<ChannelRevenue[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      source: sql<string>`coalesce(${orders.trafficSource}, 'unattributed')`.as("source"),
+      medium: orders.trafficMedium,
+      campaign: orders.trafficCampaign,
+      orderCount: sql<number>`count(*)`.as("orderCount"),
+      revenue: sql<string>`sum(${orders.total})`.as("revenue"),
+    })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.paymentStatus, "paid"),
+        sql`coalesce(${orders.paidAt}, ${orders.createdAt}) >= ${utcBound(since)}`
+      )
+    )
+    .groupBy(sql`source`, orders.trafficMedium, orders.trafficCampaign)
+    .orderBy(sql`revenue desc`);
+
+  return rows.map((r) => ({
+    source: String(r.source ?? "unattributed"),
+    medium: r.medium ?? null,
+    campaign: r.campaign ?? null,
+    orders: Number(r.orderCount ?? 0),
+    revenue: Number(r.revenue ?? 0),
+  }));
+}

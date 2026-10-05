@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import { captureReferralFromUrl } from "@/lib/referral";
+import { captureAttributionFromUrl } from "@/lib/attribution";
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { ENGAGED_ACTIVE_MS, ENGAGED_SCROLL_RATIO } from "@shared/traffic";
@@ -181,6 +182,9 @@ function ReferralCapture() {
 
   useEffect(() => {
     captureReferralFromUrl();
+    // Recorded on the same landing, since both answer "where did this sale come
+    // from" — one for an affiliate's commission, one for the channel report.
+    captureAttributionFromUrl();
   }, [location]);
 
   return null;

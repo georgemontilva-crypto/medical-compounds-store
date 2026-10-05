@@ -989,6 +989,11 @@ export const appRouter = router({
           referralCode: z.string().optional(),
           shippingQuoteId: z.string().optional(),
           shippingService: z.string().max(10).optional(),
+          // Carried from the buyer's first visit. Optional throughout: an
+          // order must never fail because a browser blocked storage.
+          trafficSource: z.string().max(128).optional(),
+          trafficMedium: z.string().max(64).optional(),
+          trafficCampaign: z.string().max(80).optional(),
           researcherType: z.enum([
             "private_researcher",
             "lab_company_researcher",
@@ -1061,6 +1066,9 @@ export const appRouter = router({
           dateOfBirth: input.dateOfBirth,
           shippingFirstName: input.shipping.firstName,
           shippingLastName: input.shipping.lastName,
+          trafficSource: input.trafficSource,
+          trafficMedium: input.trafficMedium,
+          trafficCampaign: input.trafficCampaign,
           shippingEmail: input.shipping.email,
           shippingPhone: input.shipping.phone,
           shippingAddress: input.shipping.address,

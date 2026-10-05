@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { getStoredAttribution } from "@/lib/attribution";
 import { useCart } from "@/contexts/CartContext";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
@@ -279,6 +280,14 @@ export default function Checkout() {
       // Only ever an id and a code — the price is the server's to decide.
       shippingQuoteId: rates.data?.ok ? rates.data.quoteId : undefined,
       shippingService: shippingService ?? undefined,
+      // Read at submit rather than held in state, so an order placed in a tab
+      // opened before the visit that set it still carries the right source.
+      ...(() => {
+        const a = getStoredAttribution();
+        return a
+          ? { trafficSource: a.source, trafficMedium: a.medium, trafficCampaign: a.campaign }
+          : {};
+      })(),
       shippingZip: shipping.zip || undefined,
     },
     { enabled: items.length > 0 && step !== "confirmation" }

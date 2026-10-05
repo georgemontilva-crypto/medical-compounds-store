@@ -216,6 +216,13 @@ export const orders = mysqlTable("orders", {
   // name is stored alongside the code because it is what they were shown and
   // agreed to — re-deriving it later would rewrite history if the shop ever
   // changes which services it offers.
+  // ─── Attribution ───────────────────────────────────────────────────────────
+  // Where the buyer came from, carried from their first visit. Traffic reports
+  // say how many arrived from each channel; without this nothing says which of
+  // them bought, which is the question anyone paying for ads asks first.
+  trafficSource: varchar("trafficSource", { length: 128 }),
+  trafficMedium: varchar("trafficMedium", { length: 64 }),
+  trafficCampaign: varchar("trafficCampaign", { length: 80 }),
   shippingService: varchar("shippingService", { length: 10 }),
   shippingServiceName: varchar("shippingServiceName", { length: 60 }),
   shippingCost: decimal("shippingCost", { precision: 10, scale: 2 }).default("0.00").notNull(),

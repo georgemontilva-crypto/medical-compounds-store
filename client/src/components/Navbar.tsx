@@ -25,6 +25,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
+/**
+ * Where "Ask Sunny" sends people, tagged so Sunny's analytics can separate
+ * arrivals from this site from everything else. Without the tag the two sites
+ * have no way to see that a visitor came from one to the other, and the
+ * question "how many people did BDL send to Sunny" has no answer.
+ */
+const SUNNY_CHAT_URL =
+  "https://www.asksunny.io/chat?utm_source=brighterdayslabs&utm_medium=referral&utm_campaign=ask_sunny_nav";
+
 const SCIENCE_ITEMS = [
   { icon: Target, label: "Approach", desc: "How we organize compounds...", href: "/science/approach" },
   { icon: Factory, label: "Manufacturing", desc: "US-based cGMP-aligned...", href: "/science/manufacturing" },
@@ -300,7 +309,7 @@ export default function Navbar() {
                 Wholesale's outline so the two read as different kinds of action
                 rather than a pair. */}
             <a
-              href="https://www.asksunny.io/chat"
+              href={SUNNY_CHAT_URL}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -511,7 +520,7 @@ export default function Navbar() {
               likewise a plain anchor. Matches the Wholesale pill's footprint
               here but filled, to stay distinct. */}
           <a
-            href="https://www.asksunny.io/chat"
+            href={SUNNY_CHAT_URL}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMobileOpen(false)}
