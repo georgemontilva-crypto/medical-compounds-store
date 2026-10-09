@@ -162,7 +162,7 @@ export function slugifyBlogTitle(title: string): string {
 
 // ─── Publication ─────────────────────────────────────────────────────────────
 
-export type BlogStatus = "draft" | "published";
+export type BlogStatus = "draft" | "scheduled" | "published";
 
 /**
  * What `publishedAt` becomes when a post is saved with `nextStatus`.
@@ -171,14 +171,56 @@ export type BlogStatus = "draft" | "published";
  * Unpublishing to fix a typo therefore keeps the original date, so
  * republishing doesn't re-date an article Google has already indexed or move
  * its `datePublished` in the BlogPosting block.
+ *
+ * A scheduled post is dated forward, to the release date, and that is the
+ * point: every consumer of publishedAt — the listing's sort, the byline, the
+ * BlogPosting block, the sitemap — then needs no knowledge that scheduling
+ * exists. The date is a claim about when the article is published, which is
+ * true on the day it matters and visible to nobody before then. Falling back
+ * to the existing stamp keeps an already-published article from being
+ * re-dated by someone scheduling a correction.
  */
 export function resolvePublishedAt(
   nextStatus: BlogStatus,
   currentPublishedAt: Date | null,
-  now: Date = new Date()
+  now: Date = new Date(),
+  scheduledFor: Date | null = null
 ): Date | null {
   if (nextStatus === "published") return currentPublishedAt ?? now;
+  if (nextStatus === "scheduled" && scheduledFor) return currentPublishedAt ?? scheduledFor;
   return currentPublishedAt;
+}
+
+/**
+ * What `scheduledFor` becomes when a post is saved with `nextStatus`.
+ *
+ * Cleared for anything that isn't scheduled, so a post published early by
+ * hand doesn't keep a pending date that the promoter would act on later.
+ */
+export function resolveScheduledFor(nextStatus: BlogStatus, requested: Date | null): Date | null {
+  return nextStatus === "scheduled" ? requested : null;
+}
+
+/**
+ * Whether a post is visible to the public right now.
+ *
+ * The single definition of "live". server/db.ts expresses the same rule in
+ * SQL so the filter runs in the database rather than over rows already
+ * fetched; this version is what the tests pin and what the admin UI uses to
+ * label a row. If the two ever disagree, the SQL is the one that decides what
+ * a visitor sees — which is why blog.test.ts asserts them against the same
+ * cases.
+ */
+export function isBlogPostLive(
+  status: BlogStatus,
+  scheduledFor: Date | null,
+  now: Date = new Date()
+): boolean {
+  if (status === "published") return true;
+  if (status === "scheduled") {
+    return scheduledFor !== null && scheduledFor.getTime() <= now.getTime();
+  }
+  return false;
 }
 
 // ─── Summaries ───────────────────────────────────────────────────────────────

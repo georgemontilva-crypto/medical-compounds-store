@@ -13,6 +13,7 @@ import { headBucket, storagePut } from "../storage";
 import { sendEmailWithDetail } from "../email";
 import { registerStripeWebhook } from "../stripeWebhook";
 import { startTrafficFlush } from "../traffic";
+import { startBlogScheduler } from "../blogSchedule";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -164,6 +165,11 @@ async function startServer() {
   // Page views are counted in memory and written out once a minute; this
   // starts that loop and registers the flush that runs on a clean shutdown.
   startTrafficFlush();
+
+  // Converts scheduled articles whose date has passed to `published`. They
+  // are already public by then — see server/blogSchedule.ts for why this is
+  // housekeeping rather than the mechanism.
+  startBlogScheduler();
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);

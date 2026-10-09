@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, like, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   CartItem,
@@ -1541,9 +1541,57 @@ const BLOG_LIST_COLUMNS = {
   coverImageUrl: blogPosts.coverImageUrl,
   status: blogPosts.status,
   publishedAt: blogPosts.publishedAt,
+  scheduledFor: blogPosts.scheduledFor,
   createdAt: blogPosts.createdAt,
   updatedAt: blogPosts.updatedAt,
 };
+
+/**
+ * "Visible to the public right now", in SQL.
+ *
+ * Every public blog read goes through this one expression. A scheduled post
+ * whose date has passed is live here, before any background job has touched
+ * it, which is what makes the release date the mechanism rather than the
+ * promoter's uptime: if the promoter never runs again, articles still appear
+ * on their day and only the tidying is lost.
+ *
+ * NOW() is the database's clock, deliberately. The app server and MySQL are
+ * separate processes on Railway and nothing keeps their clocks in step;
+ * picking one and using it everywhere is what stops an article from being
+ * live to the listing and missing from the sitemap in the same second.
+ */
+const blogIsPublic = sql`(${blogPosts.status} = 'published' or (${blogPosts.status} = 'scheduled' and ${blogPosts.scheduledFor} is not null and ${blogPosts.scheduledFor} <= now()))`;
+
+/**
+ * Flips scheduled posts whose date has passed to `published`.
+ *
+ * Pure housekeeping — blogIsPublic has already made these articles visible.
+ * What this buys is a row that says what is true: an admin list that doesn't
+ * show "scheduled" next to a live article, and a status column that means the
+ * same thing to a future query written by someone who hasn't read
+ * blogIsPublic. publishedAt is left alone because it was already set to the
+ * release date when the post was scheduled.
+ *
+ * Idempotent and safe to run concurrently: the WHERE clause excludes
+ * everything a previous run already converted.
+ */
+export async function promoteDueBlogPosts(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .update(blogPosts)
+    .set({ status: "published" })
+    .where(
+      and(
+        eq(blogPosts.status, "scheduled"),
+        isNotNull(blogPosts.scheduledFor),
+        lte(blogPosts.scheduledFor, sql`now()`)
+      )
+    );
+
+  return (result[0] as { affectedRows?: number }).affectedRows ?? 0;
+}
 
 /**
  * Every category attached to each of the given posts, as one query rather than
@@ -1579,10 +1627,11 @@ async function getCategoriesForPosts(postIds: number[]) {
 /**
  * The public article list.
  *
- * `status = 'published'` is applied here, in SQL, and there is no parameter to
- * turn it off — the public router calls this one and the admin calls
- * getBlogPostsForAdmin. A draft is not reachable through this path even with a
- * crafted request, which is the property worth having.
+ * blogIsPublic is applied here, in SQL, and there is no parameter to turn it
+ * off — the public router calls this one and the admin calls
+ * getBlogPostsForAdmin. A draft, or a scheduled post whose date hasn't
+ * arrived, is not reachable through this path even with a crafted request,
+ * which is the property worth having.
  *
  * Ordered by publishedAt with createdAt as a tiebreaker, so two posts released
  * in the same second still come out in a stable order.
@@ -1604,14 +1653,14 @@ export async function getPublishedBlogPosts(options?: {
         .from(blogPosts)
         .innerJoin(blogPostCategories, eq(blogPostCategories.postId, blogPosts.id))
         .innerJoin(blogCategories, eq(blogCategories.id, blogPostCategories.categoryId))
-        .where(and(eq(blogPosts.status, "published"), eq(blogCategories.slug, options.categorySlug)))
+        .where(and(blogIsPublic, eq(blogCategories.slug, options.categorySlug)))
         .orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
         .limit(limit)
         .offset(offset)
     : await db
         .select(BLOG_LIST_COLUMNS)
         .from(blogPosts)
-        .where(eq(blogPosts.status, "published"))
+        .where(blogIsPublic)
         .orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
         .limit(limit)
         .offset(offset);
@@ -1623,8 +1672,10 @@ export async function getPublishedBlogPosts(options?: {
 /**
  * One published article, with its body, categories and author name.
  *
- * Returns undefined for a draft as well as for a slug that doesn't exist —
- * the caller can't tell the two apart, and shouldn't be able to.
+ * Returns undefined for a draft, for a scheduled post still waiting for its
+ * date, and for a slug that doesn't exist alike — the caller can't tell them
+ * apart, and shouldn't be able to. That is what keeps next Wednesday's
+ * article from leaking to anyone who guesses the URL.
  */
 export async function getPublishedBlogPostBySlug(slug: string) {
   const db = await getDb();
@@ -1644,7 +1695,7 @@ export async function getPublishedBlogPostBySlug(slug: string) {
     })
     .from(blogPosts)
     .leftJoin(users, eq(blogPosts.authorId, users.id))
-    .where(and(eq(blogPosts.slug, slug), eq(blogPosts.status, "published")))
+    .where(and(eq(blogPosts.slug, slug), blogIsPublic))
     .limit(1);
 
   const post = result[0];
@@ -1662,7 +1713,7 @@ export async function getPublishedBlogPostSlugs() {
   return db
     .select({ slug: blogPosts.slug, lastmod: blogPosts.updatedAt })
     .from(blogPosts)
-    .where(eq(blogPosts.status, "published"))
+    .where(blogIsPublic)
     .orderBy(desc(blogPosts.publishedAt));
 }
 
@@ -1796,7 +1847,7 @@ export async function getBlogCategoriesWithPublishedPosts() {
     .from(blogCategories)
     .innerJoin(blogPostCategories, eq(blogPostCategories.categoryId, blogCategories.id))
     .innerJoin(blogPosts, eq(blogPosts.id, blogPostCategories.postId))
-    .where(eq(blogPosts.status, "published"))
+    .where(blogIsPublic)
     .groupBy(blogCategories.id, blogCategories.name, blogCategories.slug)
     .orderBy(blogCategories.name);
 }

@@ -10,8 +10,10 @@ import {
   blogReadingMinutes,
   isSafeBlogHref,
   isSafeBlogImageSrc,
+  isBlogPostLive,
   parseBlogDoc,
   resolvePublishedAt,
+  resolveScheduledFor,
   slugifyBlogTitle,
   truncateAtWord,
 } from "@shared/blog";
@@ -173,6 +175,98 @@ describe("publishedAt", () => {
   it("leaves a never-published draft with no date", () => {
     expect(resolvePublishedAt("draft", null, now)).toBeNull();
   });
+
+  it("dates a scheduled post forward, to its release date", () => {
+    // The whole point: every consumer of publishedAt — the listing's sort,
+    // the byline, BlogPosting's datePublished, the sitemap — then works on a
+    // scheduled article without knowing scheduling exists.
+    const release = new Date("2026-10-14T13:00:00Z");
+    expect(resolvePublishedAt("scheduled", null, now, release)).toBe(release);
+  });
+
+  it("does not re-date an already-published article being rescheduled", () => {
+    const release = new Date("2026-10-14T13:00:00Z");
+    expect(resolvePublishedAt("scheduled", originally, now, release)).toBe(originally);
+  });
+
+  it("leaves a scheduled post with no date alone rather than stamping now", () => {
+    // The router rejects this combination outright; if one ever reaches here,
+    // silently publishing it today would be the worse failure.
+    expect(resolvePublishedAt("scheduled", null, now, null)).toBeNull();
+  });
+});
+
+describe("scheduledFor", () => {
+  const release = new Date("2026-10-14T13:00:00Z");
+
+  it("keeps the date on a scheduled post", () => {
+    expect(resolveScheduledFor("scheduled", release)).toBe(release);
+  });
+
+  it("clears the date on every other status", () => {
+    // An article published early by hand must not keep a pending date — the
+    // promoter would find it later and the admin would see a live article
+    // flip back to "scheduled" for no reason anyone could explain.
+    expect(resolveScheduledFor("published", release)).toBeNull();
+    expect(resolveScheduledFor("draft", release)).toBeNull();
+  });
+});
+
+describe("what counts as live", () => {
+  const now = new Date("2026-10-14T13:00:00Z");
+
+  it("shows a published article", () => {
+    expect(isBlogPostLive("published", null, now)).toBe(true);
+  });
+
+  it("hides a draft, with or without a stray date", () => {
+    expect(isBlogPostLive("draft", null, now)).toBe(false);
+    expect(isBlogPostLive("draft", new Date("2020-01-01T00:00:00Z"), now)).toBe(false);
+  });
+
+  it("hides a scheduled article until its moment arrives", () => {
+    expect(isBlogPostLive("scheduled", new Date("2026-10-14T13:00:01Z"), now)).toBe(false);
+    expect(isBlogPostLive("scheduled", new Date("2026-10-16T13:00:00Z"), now)).toBe(false);
+  });
+
+  it("shows it from that moment on", () => {
+    // Inclusive at the boundary: an article scheduled for 9:00 is live at
+    // 9:00, not at 9:00:01.
+    expect(isBlogPostLive("scheduled", now, now)).toBe(true);
+    expect(isBlogPostLive("scheduled", new Date("2026-10-09T13:00:00Z"), now)).toBe(true);
+  });
+
+  it("never shows a scheduled article with no date", () => {
+    expect(isBlogPostLive("scheduled", null, now)).toBe(false);
+  });
+});
+
+describe("the scheduler is housekeeping, not the mechanism", () => {
+  const dbSource = readSource("server/db.ts");
+
+  it("promotes only posts whose date has passed, and does it idempotently", () => {
+    const start = dbSource.indexOf("export async function promoteDueBlogPosts");
+    expect(start, "promoteDueBlogPosts is missing").toBeGreaterThan(-1);
+    const body = dbSource.slice(start, dbSource.indexOf("\nexport ", start + 1));
+
+    // Excluding rows a previous run already converted is what makes a second
+    // process, or a restart mid-sweep, harmless.
+    expect(body).toContain('eq(blogPosts.status, "scheduled")');
+    expect(body).toContain("lte(blogPosts.scheduledFor");
+
+    // publishedAt is set when the post is scheduled and must not be touched
+    // here — rewriting it on promotion would move the date Google indexed.
+    expect(body).not.toContain("publishedAt:");
+  });
+
+  it("does not gate public visibility on the promoter having run", () => {
+    // The regression this guards against is someone "simplifying"
+    // blogIsPublic down to a status check, which would make every article's
+    // release depend on a background timer nobody is watching at 9am.
+    const start = dbSource.indexOf("const blogIsPublic");
+    const fragment = dbSource.slice(start, dbSource.indexOf(";", start));
+    expect(fragment).toContain("scheduledFor");
+  });
 });
 
 describe("slugifyBlogTitle", () => {
@@ -302,9 +396,11 @@ describe("plain text and reading time", () => {
 describe("the public list cannot be talked into returning drafts", () => {
   const dbSource = readSource("server/db.ts");
 
-  it("filters on status inside the published queries", () => {
+  it("filters on visibility inside the published queries", () => {
     // Not a parameter with a default the client could override — the filter is
-    // written into the query itself.
+    // written into the query itself. It used to read
+    // `eq(blogPosts.status, "published")`; since scheduling landed the same
+    // rule lives in one SQL fragment, which is what these must apply.
     for (const fn of [
       "getPublishedBlogPosts",
       "getPublishedBlogPostBySlug",
@@ -313,10 +409,26 @@ describe("the public list cannot be talked into returning drafts", () => {
       const start = dbSource.indexOf(`export async function ${fn}`);
       expect(start, `${fn} is missing`).toBeGreaterThan(-1);
       const body = dbSource.slice(start, dbSource.indexOf("\nexport ", start + 1));
-      expect(body, `${fn} must filter on published status`).toContain(
+      expect(body, `${fn} must filter on blogIsPublic`).toContain("blogIsPublic");
+      expect(body, `${fn} must not hand-roll the status filter`).not.toContain(
         'eq(blogPosts.status, "published")'
       );
     }
+  });
+
+  it("defines visibility once, and a pending article is not part of it", () => {
+    const start = dbSource.indexOf("const blogIsPublic");
+    expect(start, "blogIsPublic is missing").toBeGreaterThan(-1);
+    const fragment = dbSource.slice(start, dbSource.indexOf(";", start));
+
+    // A published post is live, and a scheduled one only once its date has
+    // passed. The `is not null` guard matters on its own: in MySQL a NULL
+    // comparison is NULL rather than false, but a scheduled row with no date
+    // is a bug worth excluding explicitly rather than relying on that.
+    expect(fragment).toContain("'published'");
+    expect(fragment).toContain("'scheduled'");
+    expect(fragment).toContain("is not null");
+    expect(fragment).toContain("<= now()");
   });
 
   it("routes the public procedures at the published helpers", () => {

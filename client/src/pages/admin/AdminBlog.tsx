@@ -13,10 +13,16 @@ import {
   EyeOff,
   Tags,
   ExternalLink,
+  CalendarClock,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { BLOG_DESCRIPTION_MAX_LENGTH, slugifyBlogTitle, type BlogNode } from "@shared/blog";
+import {
+  BLOG_DESCRIPTION_MAX_LENGTH,
+  slugifyBlogTitle,
+  type BlogNode,
+  type BlogStatus,
+} from "@shared/blog";
 
 /**
  * TipTap and ProseMirror are ~115 kB gzipped. Loading them lazily keeps them
@@ -33,7 +39,13 @@ type PostForm = {
   content: string | BlogNode;
   coverImageUrl: string;
   coverImageKey: string;
-  status: "draft" | "published";
+  status: BlogStatus;
+  /**
+   * The release date, in the `datetime-local` format the input wants
+   * ("2026-10-14T09:00") and in the admin's own timezone. Converted to a real
+   * instant on submit; empty for anything that isn't scheduled.
+   */
+  scheduledFor: string;
   categoryIds: number[];
 };
 
@@ -45,6 +57,7 @@ const emptyForm: PostForm = {
   coverImageUrl: "",
   coverImageKey: "",
   status: "draft",
+  scheduledFor: "",
   categoryIds: [],
 };
 
@@ -57,13 +70,86 @@ function formatDate(value: Date | string | null) {
   });
 }
 
-function StatusBadge({ status }: { status: "draft" | "published" }) {
-  return status === "published" ? (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-500/10 dark:text-emerald-400">
-      <Eye size={11} />
-      Published
-    </span>
-  ) : (
+/** Date and time, for a schedule where the hour is part of the decision. */
+function formatDateTime(value: Date | string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * A Date to the string `<input type="datetime-local">` accepts.
+ *
+ * Built from the local getters rather than toISOString(), which would shift
+ * the value by the timezone offset and show an admin in Caracas a 1pm release
+ * for an article going out at 9am.
+ */
+function toDateTimeLocal(value: Date | string | null): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * The next Monday, Wednesday or Friday at 9am — the cycle's publishing
+ * rhythm — used as the default when an article is first switched to
+ * scheduled. Only a starting point; the admin can move it.
+ */
+function nextWeekdayMorning(now: Date = new Date()): Date {
+  const next = new Date(now);
+  next.setHours(9, 0, 0, 0);
+  // Strictly in the future: scheduling for a moment that has already passed
+  // would publish the article the instant it was saved.
+  if (next.getTime() <= now.getTime()) next.setDate(next.getDate() + 1);
+  while (![1, 3, 5].includes(next.getDay())) next.setDate(next.getDate() + 1);
+  return next;
+}
+
+function StatusBadge({
+  status,
+  scheduledFor,
+}: {
+  status: BlogStatus;
+  scheduledFor: Date | string | null;
+}) {
+  if (status === "published") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-500/10 dark:text-emerald-400">
+        <Eye size={11} />
+        Published
+      </span>
+    );
+  }
+
+  if (status === "scheduled") {
+    // A scheduled post whose date has passed is already public — the server
+    // decides that per request and the promoter converts the row within a few
+    // minutes. Saying "Scheduled" about a live article would be a lie, so the
+    // badge checks the clock rather than trusting the stored status.
+    const live = scheduledFor !== null && new Date(scheduledFor).getTime() <= Date.now();
+    if (live) {
+      return (
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-500/10 dark:text-emerald-400">
+          <Eye size={11} />
+          Published
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full dark:bg-amber-500/10 dark:text-amber-400">
+        <CalendarClock size={11} />
+        {formatDateTime(scheduledFor)}
+      </span>
+    );
+  }
+
+  return (
     <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full dark:bg-white/10 dark:text-gray-400">
       <EyeOff size={11} />
       Draft
@@ -182,6 +268,7 @@ export default function AdminBlog() {
         coverImageUrl: post.coverImageUrl ?? "",
         coverImageKey: post.coverImageKey ?? "",
         status: post.status,
+        scheduledFor: toDateTimeLocal(post.scheduledFor),
         categoryIds: post.categories.map((c) => c.id),
       });
       setEditingId(id);
@@ -193,6 +280,12 @@ export default function AdminBlog() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (form.status === "scheduled" && !form.scheduledFor) {
+      toast.error("Pick a date and time for the scheduled article");
+      return;
+    }
+
     const payload = {
       title: form.title,
       slug: form.slug,
@@ -201,6 +294,13 @@ export default function AdminBlog() {
       coverImageUrl: form.coverImageUrl || null,
       coverImageKey: form.coverImageKey || null,
       status: form.status,
+      // `new Date("2026-10-14T09:00")` reads as local time, which is what the
+      // admin typed and meant. Sent as an ISO instant so the server stores
+      // the moment rather than a wall clock the database would reinterpret.
+      scheduledFor:
+        form.status === "scheduled" && form.scheduledFor
+          ? new Date(form.scheduledFor).toISOString()
+          : null,
       categoryIds: form.categoryIds,
     };
 
@@ -424,24 +524,52 @@ export default function AdminBlog() {
 
               {/* Status + actions */}
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-gray-100 dark:border-border">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Status</span>
-                  <div className="flex rounded-lg border border-gray-200 overflow-hidden dark:border-border">
-                    {(["draft", "published"] as const).map((status) => (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => setForm({ ...form, status })}
-                        className={`text-sm px-3 py-1.5 capitalize transition-colors ${
-                          form.status === status
-                            ? "bg-[#dbcfba] text-gray-900 font-medium"
-                            : "text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5"
-                        }`}
-                      >
-                        {status}
-                      </button>
-                    ))}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Status</span>
+                    <div className="flex rounded-lg border border-gray-200 overflow-hidden dark:border-border">
+                      {(["draft", "scheduled", "published"] as const).map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() =>
+                            setForm((f) => ({
+                              ...f,
+                              status,
+                              // Switching to scheduled with no date yet lands
+                              // on next Monday at 9am rather than an empty
+                              // field: the publishing rhythm is Mon/Wed/Fri
+                              // mornings, so that is the answer far more
+                              // often than not.
+                              scheduledFor:
+                                status === "scheduled" && !f.scheduledFor
+                                  ? toDateTimeLocal(nextWeekdayMorning())
+                                  : f.scheduledFor,
+                            }))
+                          }
+                          className={`text-sm px-3 py-1.5 capitalize transition-colors ${
+                            form.status === status
+                              ? "bg-[#dbcfba] text-gray-900 font-medium"
+                              : "text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5"
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {form.status === "scheduled" && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <CalendarClock size={15} className="text-gray-400" />
+                      <input
+                        type="datetime-local"
+                        value={form.scheduledFor}
+                        onChange={(e) => setForm({ ...form, scheduledFor: e.target.value })}
+                        className="lab-input py-1.5 text-sm"
+                      />
+                    </label>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -507,7 +635,7 @@ export default function AdminBlog() {
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <StatusBadge status={post.status} />
+                        <StatusBadge status={post.status} scheduledFor={post.scheduledFor} />
                       </td>
                       <td className="px-5 py-3">
                         {post.categories.length === 0 ? (
@@ -527,14 +655,27 @@ export default function AdminBlog() {
                             onClick={() =>
                               toggleStatus.mutate({
                                 id: post.id,
-                                status: post.status === "published" ? "draft" : "published",
+                                // The eye means "make it a draft" for
+                                // anything currently public or pending, and
+                                // "publish now" only for a draft. Sending
+                                // scheduledFor: null with the draft is what
+                                // cancels a schedule rather than leaving a
+                                // date the promoter would act on later.
+                                status: post.status === "draft" ? "published" : "draft",
+                                ...(post.status === "scheduled" ? { scheduledFor: null } : {}),
                               })
                             }
                             disabled={toggleStatus.isPending}
-                            title={post.status === "published" ? "Unpublish" : "Publish"}
+                            title={
+                              post.status === "draft"
+                                ? "Publish"
+                                : post.status === "scheduled"
+                                  ? "Cancel schedule"
+                                  : "Unpublish"
+                            }
                             className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 dark:hover:bg-white/10"
                           >
-                            {post.status === "published" ? <EyeOff size={15} /> : <Eye size={15} />}
+                            {post.status === "draft" ? <Eye size={15} /> : <EyeOff size={15} />}
                           </button>
                           {post.status === "published" && (
                             <a

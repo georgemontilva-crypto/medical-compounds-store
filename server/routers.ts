@@ -37,6 +37,7 @@ import {
   BLOG_SLUG_MAX_LENGTH,
   parseBlogDoc,
   resolvePublishedAt,
+  resolveScheduledFor,
   slugifyBlogTitle,
 } from "@shared/blog";
 import {
@@ -335,7 +336,17 @@ const blogPostInput = z.object({
   content: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
   coverImageUrl: z.string().max(500).nullable().optional(),
   coverImageKey: z.string().max(500).nullable().optional(),
-  status: z.enum(["draft", "published"]).default("draft"),
+  status: z.enum(["draft", "scheduled", "published"]).default("draft"),
+  /**
+   * When a `scheduled` post becomes public, as an ISO timestamp.
+   *
+   * Coerced rather than taken as a Date: this crosses the wire as a string
+   * from the admin's datetime input, and superjson is not in play on this
+   * router. Ignored for any other status — resolveScheduledFor clears it —
+   * so a post switched back to draft can't keep a pending date that the
+   * promoter would act on next week.
+   */
+  scheduledFor: z.coerce.date().nullable().optional(),
   categoryIds: z.array(z.number()).optional(),
 });
 
@@ -1629,6 +1640,14 @@ export const appRouter = router({
         throw new TRPCError({ code: "CONFLICT", message: `The slug "${slug}" is already in use` });
       }
 
+      const scheduledFor = resolveScheduledFor(input.status, input.scheduledFor ?? null);
+      if (input.status === "scheduled" && !scheduledFor) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "A scheduled article needs a publication date",
+        });
+      }
+
       const id = await createBlogPost({
         title: input.title,
         slug,
@@ -1637,7 +1656,8 @@ export const appRouter = router({
         coverImageUrl: input.coverImageUrl ?? null,
         coverImageKey: input.coverImageKey ?? null,
         status: input.status,
-        publishedAt: resolvePublishedAt(input.status, null),
+        scheduledFor,
+        publishedAt: resolvePublishedAt(input.status, null, new Date(), scheduledFor),
         // Taken from the session, never from the request: the author is
         // whoever is signed in as admin.
         authorId: ctx.user.id,
@@ -1675,9 +1695,30 @@ export const appRouter = router({
         }
 
         if (input.status !== undefined) {
+          // A status change with no date of its own keeps the one already
+          // stored, so the list's publish/unpublish toggle — which sends
+          // status alone — doesn't silently drop a schedule.
+          const requestedDate =
+            input.scheduledFor !== undefined ? input.scheduledFor : existing.scheduledFor;
+          const scheduledFor = resolveScheduledFor(input.status, requestedDate ?? null);
+
+          if (input.status === "scheduled" && !scheduledFor) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "A scheduled article needs a publication date",
+            });
+          }
+
           data.status = input.status;
-          // Stamped once, on the first publish, and preserved from then on.
-          data.publishedAt = resolvePublishedAt(input.status, existing.publishedAt);
+          data.scheduledFor = scheduledFor;
+          // Stamped once, on the first publish or schedule, and preserved
+          // from then on.
+          data.publishedAt = resolvePublishedAt(
+            input.status,
+            existing.publishedAt,
+            new Date(),
+            scheduledFor
+          );
         }
 
         await updateBlogPost(input.id, data);

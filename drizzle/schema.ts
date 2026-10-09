@@ -698,20 +698,46 @@ export const blogPosts = mysqlTable(
     content: longtext("content"),
     coverImageUrl: varchar("coverImageUrl", { length: 500 }),
     coverImageKey: varchar("coverImageKey", { length: 500 }),
-    status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
+    /**
+     * `scheduled` is a draft with a release date: invisible to the public
+     * until `scheduledFor` passes, then visible without anyone touching it.
+     * It is a third state rather than a flag on `draft` so that the index
+     * below still answers the public listing in one range scan.
+     */
+    status: mysqlEnum("status", ["draft", "scheduled", "published"]).default("draft").notNull(),
     /**
      * Set the first time a post goes live and never cleared afterwards —
      * see resolvePublishedAt() in shared/blog.ts. Nullable because a draft
      * that has never been published genuinely has no publication date.
+     *
+     * A scheduled post carries its intended date here from the moment it is
+     * saved, which is what lets the listing order, the article byline and the
+     * BlogPosting datePublished all work on it unchanged — visibility is
+     * decided by status and scheduledFor, never by this column.
      */
     publishedAt: timestamp("publishedAt"),
+    /**
+     * When a `scheduled` post becomes public. Null for every other status.
+     *
+     * Read as a predicate by the public queries (see blogIsPublic in
+     * server/db.ts) rather than only by a background promoter, so an article
+     * appears on its date even if the promoter never runs — a process that
+     * restarts, a deploy at the wrong minute, a worker that quietly died.
+     * The promoter exists to tidy the row afterwards, not to be the mechanism.
+     */
+    scheduledFor: timestamp("scheduledFor"),
     authorId: int("authorId").references(() => users.id),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   // The public listing's exact access path: filter on status, order by
   // publishedAt. Leading with status keeps drafts out of the scan entirely.
-  (table) => [index("blog_posts_status_published_idx").on(table.status, table.publishedAt)]
+  (table) => [
+    index("blog_posts_status_published_idx").on(table.status, table.publishedAt),
+    // The promoter's access path: the posts whose date has passed. Without
+    // this it scans every scheduled row on every tick.
+    index("blog_posts_scheduled_idx").on(table.status, table.scheduledFor),
+  ]
 );
 
 export type BlogPost = typeof blogPosts.$inferSelect;
