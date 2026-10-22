@@ -204,6 +204,14 @@ import {
   getStripe,
   isStripeConfigured,
 } from "./stripe";
+import {
+  buildArgentClientConfig,
+  fetchPaymentIntent,
+  isArgentClientConfigured,
+  isArgentServerConfigured,
+  verifyArgentPayment,
+} from "./argent";
+import { settlePaidOrder } from "./orderSettlement";
 import { settleOrderRewards } from "./rewards";
 import {
   MIN_PAYOUT_AMOUNT,
@@ -395,6 +403,44 @@ function serializeBlogContent(content: unknown): string | null {
 /** Blank excerpts are stored as NULL, so the fallback description kicks in. */
 function normalizeExcerpt(excerpt: string | undefined) {
   return excerpt?.trim() ? excerpt.trim() : null;
+}
+
+// ─── Payment guards ───────────────────────────────────────────────────────────
+
+/**
+ * Loads an order that may still be paid for, or throws the reason it may not.
+ *
+ * Shared by every processor so the rules cannot drift apart: a guest order is
+ * payable by anyone holding its id, an order belonging to an account is
+ * payable only by that account, and an order already paid or cancelled is
+ * payable by nobody. Checking ownership before anything else is what stops
+ * the endpoint becoming a way to confirm the existence and total of someone
+ * else's order.
+ */
+async function loadPayableOrder(orderId: number, userId: number | undefined) {
+  const order = await getOrderById(orderId);
+  if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+
+  if (order.userId !== null && order.userId !== userId) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  if (order.paymentStatus === "paid") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "This order has already been paid." });
+  }
+  if (order.status === "cancelled") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "This order was cancelled." });
+  }
+  // Card processors refuse charges under roughly half a dollar, so a fully
+  // discounted order can never go through. Fail with something a human can
+  // act on instead of surfacing a raw processor error.
+  if (Number(order.total) < 0.5) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "This order total is too low to charge online. We'll contact you to complete it.",
+    });
+  }
+
+  return order;
 }
 
 // ─── App Router ───────────────────────────────────────────────────────────────
@@ -1436,6 +1482,28 @@ export const appRouter = router({
 
   // ─── Payments ──────────────────────────────────────────────────────────────
   payments: router({
+    // Both processors below go through loadPayableOrder (defined above the
+    // router), so "whose order is this and may it still be paid" has one
+    // answer rather than one per processor.
+
+    /**
+     * Which processor the checkout should use.
+     *
+     * ArgentPlatforms is the destination; Stripe is what keeps the shop
+     * taking money until Argent's credentials are in place. The decision is
+     * made here, from configuration, rather than being baked into the client
+     * bundle — so the switch happens when the environment variables are set,
+     * not when this code is deployed, and reverting is unsetting a variable
+     * rather than shipping a release.
+     *
+     * "none" is an honest answer: a deployment that cannot verify a payment
+     * should say card payments are unavailable instead of taking one.
+     */
+    method: publicProcedure.query(() => {
+      if (isArgentClientConfigured() && isArgentServerConfigured()) return { processor: "argent" as const };
+      if (isStripeConfigured()) return { processor: "stripe" as const };
+      return { processor: "none" as const };
+    }),
     /**
      * Opens a Stripe Checkout session for an already-created order.
      *
@@ -1453,32 +1521,7 @@ export const appRouter = router({
           });
         }
 
-        const order = await getOrderById(input.orderId);
-        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
-
-        if (order.userId !== null && order.userId !== ctx.user?.id) {
-          throw new TRPCError({ code: "FORBIDDEN" });
-        }
-        if (order.paymentStatus === "paid") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "This order has already been paid.",
-          });
-        }
-        if (order.status === "cancelled") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "This order was cancelled." });
-        }
-        // Stripe refuses charges under ~$0.50, so a fully-discounted order can
-        // never go through Checkout. Fail with something a human can act on
-        // instead of surfacing a raw Stripe amount error.
-        if (Number(order.total) < 0.5) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "This order total is too low to charge online. We'll contact you to complete it.",
-          });
-        }
-
+        const order = await loadPayableOrder(input.orderId, ctx.user?.id);
         const items = await getOrderItems(order.id);
 
         // buildCheckoutSessionParams runs assertPayloadIsSanitized over
@@ -1508,6 +1551,116 @@ export const appRouter = router({
         await setOrderPaymentSession(order.id, session.id);
 
         return { url: session.url };
+      }),
+
+    /**
+     * Hands the browser what PaymentJS needs to mount the card fields.
+     *
+     * Refuses when the server cannot verify a payment, which is the important
+     * half. With PaymentJS the shopper's browser both submits the amount and
+     * reports the success, so a deployment holding only the public key could
+     * render a working payment form, charge a real card, and have no way to
+     * establish that it happened. Better to show "payments unavailable" than
+     * to take money for an order that can never be confirmed.
+     */
+    argentConfig: publicProcedure
+      .input(z.object({ orderId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!isArgentClientConfigured() || !isArgentServerConfigured()) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Card payments are not available right now.",
+          });
+        }
+
+        const order = await loadPayableOrder(input.orderId, ctx.user?.id);
+        const items = await getOrderItems(order.id);
+        return buildArgentClientConfig(order, items);
+      }),
+
+    /**
+     * Turns "the browser says the payment worked" into a settled order, or
+     * into nothing at all.
+     *
+     * The client sends a payment intent id and nothing else that matters: not
+     * the amount, not the status, not which order it paid for. All three are
+     * read back from ArgentPlatforms and checked against the stored order, so
+     * the worst a tampered browser can do is name a payment id — and a payment
+     * that was not completed, was for another order, or was for a different
+     * amount settles nothing.
+     */
+    argentConfirm: publicProcedure
+      .input(
+        z.object({
+          orderId: z.number(),
+          paymentIntentId: z.string().min(1).max(200),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const existing = await getOrderById(input.orderId);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+        if (existing.userId !== null && existing.userId !== ctx.user?.id) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        // Idempotent: a shopper refreshing the confirmation page, or two tabs
+        // finishing at once, should see success rather than an error.
+        if (existing.paymentStatus === "paid") return { settled: true as const };
+
+        let intent;
+        try {
+          intent = await fetchPaymentIntent(input.paymentIntentId);
+        } catch (err) {
+          // Including the not-configured case. The order stays unpaid and a
+          // human looks at it; the alternative is trusting the browser, which
+          // is the one thing this endpoint exists to avoid.
+          console.error(
+            `ArgentPlatforms: could not verify ${input.paymentIntentId} for order ${input.orderId}`,
+            err
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "We could not confirm your payment yet. Don't pay again — we'll email you shortly.",
+          });
+        }
+
+        const verdict = verifyArgentPayment(intent, existing);
+        if (!verdict.ok) {
+          console.error(`ArgentPlatforms: refusing to settle order ${input.orderId} — ${verdict.detail}`);
+          // A mismatched amount or a payment borrowed from another order is
+          // somebody probing, not a glitch. Tell the owner; tell the shopper
+          // only that it did not go through.
+          if (verdict.reason === "wrong-amount" || verdict.reason === "wrong-order") {
+            try {
+              await notifyOwner({
+                title: `Rejected payment confirmation — Order #${input.orderId}`,
+                content: `${verdict.detail}\n\nThe order has NOT been marked paid.`,
+              });
+            } catch (e) {
+              console.warn("Failed to send rejected-confirmation notification", e);
+            }
+          }
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "We could not confirm this payment. Please contact support.",
+          });
+        }
+
+        const settlement = await settlePaidOrder({
+          orderId: existing.id,
+          paymentReference: intent.id,
+          paidCents: intent.amountInMinorUnits,
+          processor: "argent",
+        });
+
+        if (!settlement.settled && settlement.reason !== "already-settled") {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "We could not complete your order. Please contact support.",
+          });
+        }
+
+        return { settled: true as const };
       }),
   }),
 

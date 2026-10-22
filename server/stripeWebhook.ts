@@ -10,12 +10,8 @@ import {
   markOrderRefunded,
 } from "./db";
 import { constructWebhookEvent } from "./stripe";
-import { settleOrderRewards } from "./rewards";
-import {
-  sendAdminAlertEmail,
-  sendAdminOrderNotificationEmail,
-  sendOrderConfirmationEmail,
-} from "./orderEmails";
+import { settlePaidOrder } from "./orderSettlement";
+import { sendAdminAlertEmail } from "./orderEmails";
 import { notifyOwner } from "./_core/notification";
 
 export const STRIPE_WEBHOOK_PATH = "/api/stripe/webhook";
@@ -149,69 +145,21 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  const order = await getOrderById(orderId);
-  if (!order) {
-    console.warn(`Stripe session ${session.id} references unknown order ${orderId}`);
-    return;
-  }
-
-  // The session was created from orders.total, so a mismatch means the amount
-  // was altered somewhere between creation and payment. Refuse to settle it and
-  // leave the order for a human, rather than retrying a check that cannot pass.
-  const expectedCents = Math.round(Number(order.total) * 100);
-  if (session.amount_total !== expectedCents) {
-    console.error(
-      `Stripe session ${session.id} paid ${session.amount_total} but order ${orderId} totals ${expectedCents} — not marking paid`
-    );
-    return;
-  }
-
   const paymentReference =
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : (session.payment_intent?.id ?? session.id);
 
-  const result = await markOrderPaid(orderId, paymentReference);
-  if (!result.updated) {
-    // Stripe redelivers events; an already-paid order is the expected outcome.
-    console.log(`Stripe webhook: order ${orderId} not updated (${result.reason})`);
-    return;
-  }
-
-  console.log(`Stripe webhook: order ${orderId} marked paid (${paymentReference})`);
-
-  // Behind markOrderPaid returning updated:true, so a redelivered event cannot
-  // award the same points twice.
-  const rewards = await settleOrderRewards(orderId);
-  if (rewards.pointsAwarded > 0 || rewards.referralMadeEligible) {
-    console.log(
-      `Stripe webhook: order ${orderId} rewards — ${rewards.pointsAwarded} points, referral eligible: ${rewards.referralMadeEligible}`
-    );
-  }
-
-  // Both sit behind markOrderPaid returning updated:true, so a redelivered
-  // event cannot send a second copy of either. Settled together rather than
-  // awaited in sequence: neither should delay the other, and a failure in one
-  // must not stop the other from going out.
-  const [confirmation, adminNotice] = await Promise.allSettled([
-    sendOrderConfirmationEmail(orderId),
-    sendAdminOrderNotificationEmail(orderId),
-  ]);
-  if (confirmation.status === "rejected") {
-    console.warn(`Stripe webhook: confirmation email threw for order ${orderId}`, confirmation.reason);
-  }
-  if (adminNotice.status === "rejected") {
-    console.warn(`Stripe webhook: admin email threw for order ${orderId}`, adminNotice.reason);
-  }
-
-  try {
-    await notifyOwner({
-      title: `Payment received — Order #${orderId}`,
-      content: `Stripe payment confirmed for order #${orderId}.\n\nAmount: $${Number(order.total).toFixed(2)}\nReference: ${paymentReference}`,
-    });
-  } catch (e) {
-    console.warn("Failed to send payment notification", e);
-  }
+  // Everything that follows a confirmed payment — the amount check, marking
+  // the order paid, rewards, emails, the owner notification — lives in
+  // orderSettlement.ts and is shared with the other processor. A redelivered
+  // event is handled there, by the order already being paid.
+  await settlePaidOrder({
+    orderId,
+    paymentReference,
+    paidCents: session.amount_total ?? -1,
+    processor: "stripe",
+  });
 }
 
 async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {

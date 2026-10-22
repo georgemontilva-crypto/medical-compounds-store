@@ -13,8 +13,21 @@ export const ENV = {
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
-  /** Absolute origin Stripe sends the shopper back to. */
+  /** Absolute origin a processor sends the shopper back to. */
   publicSiteUrl: process.env.PUBLIC_SITE_URL ?? "https://www.brighterdayslabs.com",
+  // ArgentPlatforms. The public key is handed to the browser by design — it is
+  // what PaymentJS initialises with. The secret key is what lets the server
+  // ask the API what a payment actually was, and without it no order can be
+  // settled: with PaymentJS the amount and the "it worked" signal both come
+  // from the shopper's browser, so the server's own lookup is the only thing
+  // standing between the shop and a payment of any amount the payer chooses.
+  argentPublicKey: process.env.ARGENT_PUBLIC_KEY ?? "",
+  argentSecretKey: process.env.ARGENT_SECRET_KEY ?? "",
+  /** Base URL of the ArgentPlatforms server API, from their documentation. */
+  argentApiUrl: process.env.ARGENT_API_URL ?? "",
+  // Same reasoning as UPS: live card processing has to be a decision somebody
+  // made, not a variable somebody forgot.
+  argentProduction: process.env.ARGENT_ENVIRONMENT === "production",
   // UPS. Business decisions — origin, services, handling — are configured in
   // the admin; these are the credentials, which belong to the environment.
   upsClientId: process.env.UPS_CLIENT_ID ?? "",

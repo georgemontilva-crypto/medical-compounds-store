@@ -722,7 +722,13 @@ export type MarkOrderPaidResult =
  */
 export async function markOrderPaid(
   id: number,
-  paymentReference: string
+  paymentReference: string,
+  /**
+   * Which processor took the money. Defaults to stripe so the existing
+   * webhook keeps writing what it always wrote; a second processor passes
+   * its own name rather than filing its payments under Stripe's.
+   */
+  paymentMethod: string = "stripe"
 ): Promise<MarkOrderPaidResult> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
@@ -735,7 +741,7 @@ export async function markOrderPaid(
     .update(orders)
     .set({
       paymentStatus: "paid",
-      paymentMethod: "stripe",
+      paymentMethod,
       paymentReference,
       // Stamped here rather than in the webhook handler so every path that
       // marks an order paid records when, and the early return above keeps a

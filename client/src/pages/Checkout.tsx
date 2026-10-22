@@ -17,6 +17,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import ArgentPayment from "@/components/ArgentPayment";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getStoredReferralCode } from "@/lib/referral";
 import { AFFILIATE_UI_ENABLED } from "@shared/affiliate";
@@ -32,7 +33,7 @@ import {
   type BirthDateParts,
 } from "@shared/birthDate";
 
-type Step = "form" | "confirmation";
+type Step = "form" | "payment" | "confirmation";
 
 type ResearcherType =
   | ""
@@ -55,7 +56,13 @@ interface ShippingForm {
 }
 
 /**
- * Stripe returns the shopper to /checkout with the outcome in the query string.
+ * Reads a payment outcome out of the query string.
+ *
+ * Card payments are taken on the page now and never leave it, so nothing in
+ * the current flow sets these parameters. It stays for the orders that were
+ * started on Stripe Checkout before the switch and can still come back here,
+ * and for the Stripe webhook's own return URLs.
+ *
  * Read synchronously during the first render: resolving it in an effect would
  * flash the empty-cart screen before the confirmation appears.
  */
@@ -106,6 +113,12 @@ export default function Checkout() {
     paymentReturn && !paymentReturn.paid ? "unpaid" : "paid"
   );
 
+  // ArgentPlatforms once its credentials are configured, Stripe until then.
+  // Deciding here rather than in the bundle means the cutover is an
+  // environment change, and so is rolling it back.
+  const paymentMethod = trpc.payments.method.useQuery();
+  const processor = paymentMethod.data?.processor ?? "none";
+
   const validateCoupon = trpc.coupons.validate.useMutation({
     onSuccess: (data) => {
       setAppliedCoupon({
@@ -122,9 +135,6 @@ export default function Checkout() {
     },
   });
 
-  // Sends the shopper to Stripe Checkout. The order already exists at this
-  // point, so a failure here is recoverable — we fall back to the confirmation
-  // screen and the order can be settled by hand rather than being lost.
   const createCheckoutSession = trpc.payments.createCheckoutSession.useMutation({
     onSuccess: ({ url }) => {
       window.location.href = url;
@@ -138,11 +148,51 @@ export default function Checkout() {
     },
   });
 
+  /**
+   * Fetches what the card form needs and moves to the payment step.
+   *
+   * The order already exists by the time this runs, so a failure here is
+   * recoverable rather than lost: the shopper lands on the confirmation
+   * screen marked unpaid and the order can be settled by hand.
+   */
+  const argentConfig = trpc.payments.argentConfig.useMutation({
+    onError: (err) => {
+      toast.error(
+        err.message || "We couldn't open the payment form. We'll email you to arrange payment."
+      );
+      setPaymentOutcome("unpaid");
+      setStep("confirmation");
+    },
+  });
+
+  /**
+   * Hands the payment intent id to the server, which is the only party that
+   * decides whether the order is paid. The browser's own success callback is
+   * not treated as an answer — see server/argent.ts.
+   */
+  const argentConfirm = trpc.payments.argentConfirm.useMutation({
+    onSuccess: () => {
+      setPaymentOutcome("paid");
+      setStep("confirmation");
+    },
+    onError: (err) => {
+      // The money may well have been taken; what failed is our confirmation.
+      // Telling the shopper to try again would risk a second charge.
+      toast.error(err.message || "We couldn't confirm your payment. We'll be in touch shortly.");
+      setPaymentOutcome("unpaid");
+      setStep("confirmation");
+    },
+  });
+
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: (data) => {
       setOrderId(data.orderId);
       clearCart();
-      createCheckoutSession.mutate({ orderId: data.orderId });
+      if (processor === "stripe") {
+        createCheckoutSession.mutate({ orderId: data.orderId });
+      } else {
+        argentConfig.mutate({ orderId: data.orderId }, { onSuccess: () => setStep("payment") });
+      }
     },
     onError: (err) => {
       toast.error(err.message || "Failed to place order");
@@ -219,7 +269,7 @@ export default function Checkout() {
   // The cart's own arithmetic is only a placeholder until this resolves. It
   // sums prices captured when each item was added, which drift from the catalog
   // whenever a line crosses a volume tier or an admin edits a price — the same
-  // numbers the server re-derives and Stripe is charged. Quoting from the
+  // numbers the server re-derives and the card is charged. Quoting from the
   // server makes the summary and the charge the same figure by construction.
   // ─── Shipping ──────────────────────────────────────────────────────────────
   // Rates need a real destination, so nothing is asked for until the address is
@@ -299,7 +349,7 @@ export default function Checkout() {
   const shippingCost = quoted?.shipping ?? 0;
   const finalTotal = quoted?.total ?? Math.max(0, total - discount);
   // Blocked rather than merely unpriced: orders.create would reject the same
-  // cart, so sending the shopper to Stripe could only fail later.
+  // cart, so opening the payment form could only fail later.
   const quoteError = quote.error?.message ?? null;
 
   // Auto-apply the welcome coupon assigned right after registering via the checkout incentive modal.
@@ -330,7 +380,7 @@ export default function Checkout() {
   const placeOrder = () => {
     createOrder.mutate({
       // Prices and names are re-derived server side; sending them
-      // from here would let the browser set what Stripe charges.
+      // from here would let the browser set what the processor charges.
       items: items.map((i) => ({
         productId: i.productId,
         variationId: i.variationId,
@@ -360,7 +410,8 @@ export default function Checkout() {
     });
   };
 
-  const isPlacingOrder = createOrder.isPending || createCheckoutSession.isPending;
+  const isPlacingOrder =
+    createOrder.isPending || argentConfig.isPending || createCheckoutSession.isPending;
   // A shipping choice is part of the price, so the order is not payable until
   // one is made — otherwise the shopper would be charged for goods alone and
   // the parcel would go out unpaid for.
@@ -374,7 +425,7 @@ export default function Checkout() {
       ? AGE_REQUIREMENT_MESSAGE
       : null;
 
-  if (items.length === 0 && step !== "confirmation") {
+  if (items.length === 0 && step === "form") {
     return (
       <div className="flex-1 hex-cream flex items-center justify-center p-4">
         <div className="lab-card p-8 max-w-md w-full text-center">
@@ -383,6 +434,53 @@ export default function Checkout() {
           <Link href="/compounds">
             <button className="lab-btn-primary mt-4">Browse Compounds</button>
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "payment") {
+    const config = argentConfig.data;
+    return (
+      <div className="flex-1 hex-cream flex items-center justify-center p-4">
+        <div className="lab-card p-8 max-w-md w-full">
+          <div className="text-center mb-6">
+            <p className="lab-section-title mb-1">Order #{orderId}</p>
+            <h2 className="text-xl font-bold">Payment</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Total due ${finalTotal.toFixed(2)}
+            </p>
+          </div>
+
+          {config ? (
+            <ArgentPayment
+              config={config}
+              amountLabel={`$${finalTotal.toFixed(2)}`}
+              confirming={argentConfirm.isPending}
+              billingAddress={{
+                line_1: shipping.address,
+                city: shipping.city,
+                state: shipping.state,
+                postal_code: shipping.zip,
+                country_code: shipping.country,
+              }}
+              onPaid={(paymentIntentId) => {
+                if (orderId === null) return;
+                argentConfirm.mutate({ orderId, paymentIntentId });
+              }}
+              onDeclined={(message) => toast.error(message)}
+              onUnavailable={(message) => {
+                toast.error(message);
+                setPaymentOutcome("unpaid");
+                setStep("confirmation");
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center gap-2 py-10 text-sm text-gray-500">
+              <Loader2 size={15} className="animate-spin" />
+              Preparing payment…
+            </div>
+          )}
         </div>
       </div>
     );
@@ -963,7 +1061,7 @@ function MobilePayBar({
         ) : (
           <>
             <Lock size={15} />
-            Pay with Stripe
+            Continue to payment
           </>
         )}
       </button>
@@ -1225,19 +1323,19 @@ function OrderSummary({
           {isPlacingOrder ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              Redirecting to payment…
+              Preparing payment…
             </>
           ) : (
             <>
               <Lock size={15} />
-              Pay ${finalTotal.toFixed(2)} with Stripe
+              Continue to payment — ${finalTotal.toFixed(2)}
             </>
           )}
         </button>
       </div>
 
       <p className="text-xs text-muted-foreground mt-3">
-        Pay securely on Stripe — your card details never touch our servers.
+        Secure card payment — your card details never touch our servers.
       </p>
 
       {/* The one notice on this page with legal weight, kept outside the
