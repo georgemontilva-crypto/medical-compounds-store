@@ -19,17 +19,16 @@
  * that payment actually was, and the order is settled only if the API says it
  * completed, for this order, for the exact amount the order totals.
  *
- * ─── What is still missing ───────────────────────────────────────────────────
+ * Written against the published API reference at
+ * https://api.argentplatforms.com/docs. Three details there are easy to get
+ * wrong and each has a test below: the amount is a decimal figure, not minor
+ * units; the currency comes back as an object on a read but as a plain
+ * `currency_code` string on a write; and `completed` is the only status that
+ * means the money was captured.
  *
- * The PaymentJS document covers the browser library only. It does not include
- * the server API: no base URL, no authentication scheme, no response shape.
- * `fetchPaymentIntent` below is written against the conventional REST shape
- * and is the single place to correct once ArgentPlatforms supplies their
- * server documentation — see the note on that function.
- *
- * Until it is configured and confirmed against their real API, this module
- * refuses to settle anything. That is deliberate. An integration that cannot
- * verify a payment should decline to confirm orders, not assume the best.
+ * Until the credentials are configured, this module refuses to settle
+ * anything. An integration that cannot verify a payment should decline to
+ * confirm orders, not assume the best.
  */
 
 import { createHmac, timingSafeEqual } from "crypto";
@@ -57,6 +56,8 @@ export function isArgentClientConfigured(): boolean {
  * letting a shopper be charged for an order that can never be settled.
  */
 export function isArgentServerConfigured(): boolean {
+  // Only the secret key is required: the base URL is published and defaulted,
+  // so a deployment supplies credentials rather than infrastructure.
   return ENV.argentSecretKey.length > 0 && ENV.argentApiUrl.length > 0;
 }
 
@@ -93,6 +94,30 @@ export function referenceMatchesOrder(reference: string, orderId: number): boole
 }
 
 // ─── What the browser is given ───────────────────────────────────────────────
+
+/**
+ * The API caps `descriptor` at 18 characters, letters, numbers and spaces
+ * only. "BRIGHTER DAYS LABS" is exactly 18, which means any future edit to
+ * the statement descriptor is one character away from being rejected by the
+ * processor — so it is checked here rather than discovered at the till.
+ */
+export const ARGENT_DESCRIPTOR_MAX_LENGTH = 18;
+
+export function assertValidArgentDescriptor(descriptor: string): string {
+  if (descriptor.length > ARGENT_DESCRIPTOR_MAX_LENGTH) {
+    throw new Error(
+      `Statement descriptor "${descriptor}" is ${descriptor.length} characters; ` +
+        `ArgentPlatforms allows ${ARGENT_DESCRIPTOR_MAX_LENGTH}`
+    );
+  }
+  if (!/^[A-Za-z0-9 ]*$/.test(descriptor)) {
+    throw new Error(
+      `Statement descriptor "${descriptor}" has characters ArgentPlatforms rejects; ` +
+        "letters, numbers and spaces only"
+    );
+  }
+  return descriptor;
+}
 
 export type ArgentClientConfig = {
   publicKey: string;
@@ -131,7 +156,7 @@ export function buildArgentClientConfig(
     reference: orderPaymentReference(order.id),
     amount: String(payload.amountInCents),
     currencyCode: payload.currency.toUpperCase(),
-    descriptor: getSanitizedStatementDescriptor(),
+    descriptor: assertValidArgentDescriptor(getSanitizedStatementDescriptor()),
   };
 
   // The same guard Stripe's payload goes through: nothing leaves here carrying
@@ -144,16 +169,37 @@ export function buildArgentClientConfig(
 
 // ─── Verification ────────────────────────────────────────────────────────────
 
-/** What the server needs to know about a payment, whatever shape the API uses. */
+/**
+ * The documented statuses of a payment intent.
+ *
+ * Only `completed` is money in the account. `pending` is the retry schedule
+ * for a merchant-initiated payment, which a shop checkout does not use;
+ * `requires_action` is a 3DS step still in flight; `in_progress` and `draft`
+ * are mid-flight; `failed` is permanent.
+ */
+export const ARGENT_CAPTURED_STATUS = "completed";
+
+/** What the server needs to know about a payment. */
 export type ArgentPaymentIntent = {
   id: string;
-  /** True only when the money is actually captured. */
+  status: string;
+  /** True only for the one status that means the money was captured. */
   completed: boolean;
-  /** Minor units, as reported by the API. */
+  /**
+   * Minor units. The API reports a decimal figure ("amount": 123.00); it is
+   * converted here so every comparison downstream is integer arithmetic and
+   * 249.50 cannot miss 249.5 by a floating-point hair.
+   */
   amountInMinorUnits: number;
   currencyCode: string;
   /** The reference the intent was created with, used to bind it to an order. */
   reference: string;
+  /**
+   * The payment this intent produced, which is what a refund is taken
+   * against (POST /refunds takes `payment`, not the intent). Null until the
+   * intent completes.
+   */
+  paymentId: string | null;
 };
 
 export class ArgentNotConfiguredError extends Error {
@@ -166,33 +212,38 @@ export class ArgentNotConfiguredError extends Error {
 /**
  * Asks ArgentPlatforms what a payment intent actually is.
  *
- * ─────────────────────────────────────────────────────────────────────────────
- * THIS IS THE ONE FUNCTION TO CORRECT when ArgentPlatforms supply their server
- * API documentation. The request below uses the conventional REST shape — a
- * GET to /payment_intents/{id} with a bearer token — because their PaymentJS
- * document does not specify it. The endpoint path, the auth header and the
- * response field names may all differ.
+ * `GET /payment-intents/{id}`, authenticated with the secret key. The API
+ * reference states that API keys and JWTs are both accepted but does not name
+ * the header, so the scheme is configurable (ARGENT_AUTH_SCHEME) and defaults
+ * to the bearer form; if their dashboard issues a key that wants a different
+ * prefix, that is one environment variable rather than a code change.
  *
- * What must NOT change is the behaviour around it: unknown shape, unparseable
- * response, non-2xx status and missing configuration all throw. Nothing here
- * may return a value that reads as "completed" unless the API clearly said so.
- * ─────────────────────────────────────────────────────────────────────────────
+ * Every failure throws: a non-2xx status, an unreadable body, missing
+ * configuration. Nothing here returns a value that reads as "completed"
+ * unless the API plainly said so.
  */
 export async function fetchPaymentIntent(paymentIntentId: string): Promise<ArgentPaymentIntent> {
   if (!isArgentServerConfigured()) throw new ArgentNotConfiguredError();
 
   const base = ENV.argentApiUrl.replace(/\/$/, "");
-  const response = await fetch(`${base}/payment_intents/${encodeURIComponent(paymentIntentId)}`, {
+  const response = await fetch(`${base}/payment-intents/${encodeURIComponent(paymentIntentId)}`, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${ENV.argentSecretKey}`,
+      Authorization: `${ENV.argentAuthScheme} ${ENV.argentSecretKey}`.trim(),
       Accept: "application/json",
     },
   });
 
   if (!response.ok) {
+    // 401 and 403 mean the credential or its header form is wrong, which is
+    // worth distinguishing: everything else is a payment problem, this one is
+    // a configuration problem and no payment will ever verify until it is fixed.
+    const hint =
+      response.status === 401 || response.status === 403
+        ? " — check ARGENT_SECRET_KEY and ARGENT_AUTH_SCHEME"
+        : "";
     throw new Error(
-      `ArgentPlatforms lookup for ${paymentIntentId} failed with HTTP ${response.status}`
+      `ArgentPlatforms lookup for ${paymentIntentId} failed with HTTP ${response.status}${hint}`
     );
   }
 
@@ -225,21 +276,41 @@ export function parsePaymentIntent(expectedId: string, body: unknown): ArgentPay
   const id = typeof node.id === "string" ? node.id : null;
   const status = typeof node.status === "string" ? node.status.toLowerCase() : null;
   const reference = typeof node.reference === "string" ? node.reference : null;
-  const amountRaw = node.amount ?? node.amount_total;
-  const amount =
+
+  // A decimal figure, per the API reference: "amount": 123.00. Reading it as
+  // minor units would see $123.00 as $1.23 and settle a hundredfold short.
+  const amountRaw = node.amount;
+  const amountDecimal =
     typeof amountRaw === "number"
       ? amountRaw
-      : typeof amountRaw === "string" && /^\d+$/.test(amountRaw)
+      : typeof amountRaw === "string" && /^-?\d+(\.\d+)?$/.test(amountRaw)
         ? Number(amountRaw)
         : null;
+
+  // A read returns `currency` as an object; a write takes `currency_code` as
+  // a string. Both shapes are accepted so this does not depend on which one
+  // the caller happens to be looking at.
+  const currencyNode = node.currency;
   const currency =
     typeof node.currency_code === "string"
       ? node.currency_code
-      : typeof node.currency === "string"
-        ? node.currency
+      : typeof currencyNode === "string"
+        ? currencyNode
+        : currencyNode && typeof currencyNode === "object"
+          ? (((currencyNode as Record<string, unknown>).code as string | undefined) ?? null)
+          : null;
+
+  // `payment` is the id a refund is taken against. A nested object on the
+  // create response, a plain id on the retrieve response.
+  const paymentNode = node.payment;
+  const paymentId =
+    typeof paymentNode === "string" && paymentNode.length > 0
+      ? paymentNode
+      : paymentNode && typeof paymentNode === "object"
+        ? (((paymentNode as Record<string, unknown>).id as string | undefined) ?? null)
         : null;
 
-  if (id === null || status === null || reference === null || amount === null) {
+  if (id === null || status === null || reference === null || amountDecimal === null) {
     throw new Error(
       `ArgentPlatforms response for ${expectedId} is missing id, status, reference or amount`
     );
@@ -247,13 +318,16 @@ export function parsePaymentIntent(expectedId: string, body: unknown): ArgentPay
 
   return {
     id,
-    // Only these mean the money is captured. Anything else — pending,
-    // requires_action, authorised-but-not-captured, a status nobody has seen
-    // yet — is not a payment this shop will ship against.
-    completed: status === "completed" || status === "succeeded" || status === "captured",
-    amountInMinorUnits: amount,
+    status,
+    // `completed` is the only status that means the money was captured.
+    // `pending` is a scheduled retry, `requires_action` an unfinished 3DS
+    // step, `in_progress` and `draft` mid-flight, `failed` final. None of
+    // them is a payment this shop will ship against.
+    completed: status === ARGENT_CAPTURED_STATUS,
+    amountInMinorUnits: Math.round(amountDecimal * 100),
     currencyCode: (currency ?? "USD").toUpperCase(),
     reference,
+    paymentId,
   };
 }
 

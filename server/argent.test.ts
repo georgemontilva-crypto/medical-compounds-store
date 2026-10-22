@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  ARGENT_DESCRIPTOR_MAX_LENGTH,
+  assertValidArgentDescriptor,
   buildArgentClientConfig,
   orderPaymentReference,
   parsePaymentIntent,
@@ -33,6 +35,8 @@ function intent(overrides: Partial<ArgentPaymentIntent> = {}): ArgentPaymentInte
     amountInMinorUnits: expectedCents,
     currencyCode: "USD",
     reference: orderPaymentReference(order.id),
+    status: "completed",
+    paymentId: "pay_abc123",
     ...overrides,
   };
 }
@@ -115,12 +119,15 @@ describe("verification refuses everything that is not this order, paid in full",
 });
 
 describe("reading the API's answer", () => {
+  // Shaped like the real Retrieve a Payment Intent response: a decimal
+  // amount, currency as an object, payment as an id.
   const good = {
     id: "pymnt_abc123",
     status: "completed",
-    amount: 24950,
-    currency_code: "USD",
+    amount: 249.5,
+    currency: { id: "cur_1", code: "USD", name: "US Dollar", symbol: "$" },
     reference: orderPaymentReference(order.id),
+    payment: "pay_abc123",
   };
 
   it("reads a flat response", () => {
@@ -132,18 +139,44 @@ describe("reading the API's answer", () => {
     expect(parsePaymentIntent("pymnt_abc123", { payment_intent: good }).completed).toBe(true);
   });
 
-  it("accepts an amount sent as a numeric string", () => {
-    const parsed = parsePaymentIntent("pymnt_abc123", { ...good, amount: "24950" });
-    expect(parsed.amountInMinorUnits).toBe(24950);
+  it("reads the amount as a decimal figure, not as minor units", () => {
+    // The single most expensive mistake available here: the API reports
+    // "amount": 249.50, and reading that as minor units would settle a
+    // $249.50 order against $2.50.
+    expect(parsePaymentIntent("pymnt_abc123", good).amountInMinorUnits).toBe(24950);
+    expect(parsePaymentIntent("x", { ...good, amount: 123 }).amountInMinorUnits).toBe(12300);
+    expect(parsePaymentIntent("x", { ...good, amount: "249.50" }).amountInMinorUnits).toBe(24950);
+    expect(parsePaymentIntent("x", { ...good, amount: 0.99 }).amountInMinorUnits).toBe(99);
   });
 
-  it("treats only unambiguous captures as complete", () => {
-    for (const status of ["completed", "succeeded", "captured"]) {
-      expect(parsePaymentIntent("x", { ...good, status }).completed).toBe(true);
-    }
-    // Authorised-but-not-captured, awaiting a 3DS step, or a status nobody has
-    // seen yet. None of these is money in the account.
-    for (const status of ["pending", "requires_action", "authorized", "processing", "weird"]) {
+  it("reads the currency from the object a retrieve returns", () => {
+    expect(parsePaymentIntent("x", good).currencyCode).toBe("USD");
+    // …and from the plain string a create takes.
+    const flat = { ...good, currency: undefined, currency_code: "usd" };
+    expect(parsePaymentIntent("x", flat).currencyCode).toBe("USD");
+  });
+
+  it("keeps the payment id, which is what a refund is taken against", () => {
+    expect(parsePaymentIntent("x", good).paymentId).toBe("pay_abc123");
+    // The create response nests it instead.
+    expect(parsePaymentIntent("x", { ...good, payment: { id: "pay_nested" } }).paymentId).toBe(
+      "pay_nested"
+    );
+    expect(parsePaymentIntent("x", { ...good, payment: undefined }).paymentId).toBeNull();
+  });
+
+  it("treats completed, and only completed, as money captured", () => {
+    expect(parsePaymentIntent("x", { ...good, status: "completed" }).completed).toBe(true);
+    // Every other documented status, plus one nobody has seen. A scheduled
+    // retry and an unfinished 3DS step are not payments to ship against.
+    for (const status of [
+      "pending",
+      "requires_action",
+      "in_progress",
+      "draft",
+      "failed",
+      "weird",
+    ]) {
       expect(parsePaymentIntent("x", { ...good, status }).completed).toBe(false);
     }
   });
@@ -162,6 +195,26 @@ describe("reading the API's answer", () => {
 
   it("does not accept a non-numeric amount", () => {
     expect(() => parsePaymentIntent("x", { ...good, amount: "lots" })).toThrow();
+  });
+});
+
+describe("the statement descriptor fits what the API accepts", () => {
+  it("accepts the one in use, which is exactly at the limit", () => {
+    const config = buildArgentClientConfig(order, [
+      { quantity: 1, productName: "x", variationLabel: null },
+    ]);
+    expect(config.descriptor.length).toBeLessThanOrEqual(ARGENT_DESCRIPTOR_MAX_LENGTH);
+    expect(assertValidArgentDescriptor(config.descriptor)).toBe(config.descriptor);
+  });
+
+  it("rejects one character more", () => {
+    // "BRIGHTER DAYS LABS" is 18 of an allowed 18. Any future edit to the
+    // descriptor should fail here rather than at the processor.
+    expect(() => assertValidArgentDescriptor("BRIGHTER DAYS LABSX")).toThrow(/19 characters/);
+  });
+
+  it("rejects punctuation the processor does not allow", () => {
+    expect(() => assertValidArgentDescriptor("BRIGHTER-DAYS")).toThrow(/letters, numbers/);
   });
 });
 

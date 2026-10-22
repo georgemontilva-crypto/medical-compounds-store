@@ -23,8 +23,14 @@ export const ENV = {
   // standing between the shop and a payment of any amount the payer chooses.
   argentPublicKey: process.env.ARGENT_PUBLIC_KEY ?? "",
   argentSecretKey: process.env.ARGENT_SECRET_KEY ?? "",
-  /** Base URL of the ArgentPlatforms server API, from their documentation. */
-  argentApiUrl: process.env.ARGENT_API_URL ?? "",
+  /** Base URL of the ArgentPlatforms server API, per their API reference. */
+  argentApiUrl: process.env.ARGENT_API_URL ?? "https://api.argentplatforms.com",
+  /**
+   * How the secret key is presented. Their reference says API keys and JWTs
+   * are both accepted but does not name the header form, so this is a
+   * variable rather than a guess compiled into the build.
+   */
+  argentAuthScheme: process.env.ARGENT_AUTH_SCHEME ?? "Bearer",
   // Same reasoning as UPS: live card processing has to be a decision somebody
   // made, not a variable somebody forgot.
   argentProduction: process.env.ARGENT_ENVIRONMENT === "production",
