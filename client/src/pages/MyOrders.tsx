@@ -2,16 +2,9 @@ import { trpc } from "@/lib/trpc";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { FlaskConical, Package, ChevronRight, Clock } from "lucide-react";
-import CompletePaymentButton, { isAwaitingPayment } from "@/components/CompletePaymentButton";
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  confirmed: "bg-blue-100 text-blue-700",
-  processing: "bg-[#f2ede6] text-[#d3c4ab]",
-  shipped: "bg-[#d0f0ed] text-[#baac96]",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-};
+import CompletePaymentButton from "@/components/CompletePaymentButton";
+import { isAwaitingPayment } from "@shared/orderStatus";
+import { FulfillmentBadge, PaymentBadge } from "@/components/StatusBadge";
 
 export default function MyOrders() {
   const { isAuthenticated, isLoading: authLoading } = useAuthContext();
@@ -89,16 +82,8 @@ export default function MyOrders() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap justify-end">
-                      {isAwaitingPayment(order) && (
-                        <span className="lab-badge text-xs font-medium bg-amber-100 text-amber-700">
-                          Payment due
-                        </span>
-                      )}
-                      <span
-                        className={`lab-badge text-xs font-medium ${STATUS_COLORS[order.status] ?? "bg-secondary text-muted-foreground"}`}
-                      >
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
+                      <PaymentBadge order={order} />
+                      <FulfillmentBadge order={order} />
                       <p className="font-semibold text-primary">${Number(order.total).toFixed(2)}</p>
                       {isAwaitingPayment(order) && (
                         <CompletePaymentButton orderId={order.id} size="small" />

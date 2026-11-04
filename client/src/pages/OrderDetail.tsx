@@ -1,24 +1,10 @@
 import { useAuthContext } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Package, Truck, CheckCircle, XCircle, Clock, CreditCard } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link, useParams } from "wouter";
-import CompletePaymentButton, { isAwaitingPayment } from "@/components/CompletePaymentButton";
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "Pending", color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
-  confirmed: { label: "Confirmed", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle },
-  processing: { label: "Processing", color: "text-[#d3c4ab] bg-[#f2ede6] border-[#dbcfba]", icon: Package },
-  shipped: { label: "Shipped", color: "text-[#baac96] bg-[#d0f0ed] border-[#d7cab3]", icon: Truck },
-  delivered: { label: "Delivered", color: "text-green-600 bg-green-50 border-green-200", icon: CheckCircle },
-  cancelled: { label: "Cancelled", color: "text-red-600 bg-red-50 border-red-200", icon: XCircle },
-};
-
-const PAYMENT_CONFIG: Record<string, { label: string; color: string }> = {
-  pending: { label: "Pending", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
-  paid: { label: "Paid", color: "text-green-600 bg-green-50 border-green-200" },
-  failed: { label: "Failed", color: "text-red-600 bg-red-50 border-red-200" },
-  refunded: { label: "Refunded", color: "text-gray-600 bg-gray-50 border-gray-200" },
-};
+import CompletePaymentButton from "@/components/CompletePaymentButton";
+import { isAwaitingPayment } from "@shared/orderStatus";
+import { FulfillmentBadge, PaymentBadge } from "@/components/StatusBadge";
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -64,10 +50,6 @@ export default function OrderDetail() {
     );
   }
 
-  const statusCfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
-  const paymentCfg = PAYMENT_CONFIG[order.paymentStatus] ?? PAYMENT_CONFIG.pending;
-  const StatusIcon = statusCfg.icon;
-
   return (
     <div className="flex-1 hex-cream">
       <div className="max-w-3xl mx-auto px-4 py-10">
@@ -97,14 +79,16 @@ export default function OrderDetail() {
         )}
 
         {/* Status row */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${statusCfg.color}`}>
-            <StatusIcon size={12} />
-            {statusCfg.label}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 mb-6">
+          {/* Labelled, because "Pending" on its own next to another "Pending"
+              is what made people ask which one meant the money. */}
+          <span className="inline-flex items-center gap-2">
+            <span className="text-xs text-lab-muted">Payment</span>
+            <PaymentBadge order={order} />
           </span>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${paymentCfg.color}`}>
-            <CreditCard size={12} />
-            Payment: {paymentCfg.label}
+          <span className="inline-flex items-center gap-2">
+            <span className="text-xs text-lab-muted">Shipping</span>
+            <FulfillmentBadge order={order} />
           </span>
           <span className="text-xs text-lab-muted self-center ml-auto">
             {new Date(order.createdAt).toLocaleDateString("en-US", {

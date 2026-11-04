@@ -1,25 +1,8 @@
-import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
-import { ShoppingCart, ChevronRight, Clock, Package } from "lucide-react";
+import { ShoppingCart, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
-import { toast } from "sonner";
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  confirmed: "bg-blue-100 text-blue-700",
-  processing: "bg-[#f2ede6] text-[#d3c4ab]",
-  shipped: "bg-[#d0f0ed] text-[#baac96]",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-};
-
-const PAYMENT_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  paid: "bg-green-100 text-green-700",
-  failed: "bg-red-100 text-red-700",
-  refunded: "bg-gray-100 text-gray-700",
-};
+import { FulfillmentBadge, PaymentBadge } from "@/components/StatusBadge";
 
 export default function AdminOrders() {
   const { data: orders, isLoading } = trpc.orders.adminList.useQuery({ limit: 100 });
@@ -55,8 +38,8 @@ export default function AdminOrders() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Order</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Customer</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Date</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Payment</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Fulfillment</th>
                     <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Total</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -73,14 +56,10 @@ export default function AdminOrders() {
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`lab-badge text-xs ${STATUS_COLORS[order.status] ?? "bg-secondary"}`}>
-                          {order.status}
-                        </span>
+                        <PaymentBadge order={order} audience="admin" />
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`lab-badge text-xs ${PAYMENT_COLORS[order.paymentStatus] ?? "bg-secondary"}`}>
-                          {order.paymentStatus}
-                        </span>
+                        <FulfillmentBadge order={order} />
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-primary">
                         ${Number(order.total).toFixed(2)}

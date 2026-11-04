@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSearch } from "wouter";
-import { Package, Truck, CheckCircle, XCircle, Clock, Search } from "lucide-react";
-import CompletePaymentButton, { isAwaitingPayment } from "@/components/CompletePaymentButton";
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "Pending", color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
-  confirmed: { label: "Confirmed", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle },
-  processing: { label: "Processing", color: "text-[#d3c4ab] bg-[#f2ede6] border-[#dbcfba]", icon: Package },
-  shipped: { label: "Shipped", color: "text-[#baac96] bg-[#f2ede6] border-[#d7cab3]", icon: Truck },
-  delivered: { label: "Delivered", color: "text-green-600 bg-green-50 border-green-200", icon: CheckCircle },
-  cancelled: { label: "Cancelled", color: "text-red-600 bg-red-50 border-red-200", icon: XCircle },
-};
+import { Truck, Search } from "lucide-react";
+import CompletePaymentButton from "@/components/CompletePaymentButton";
+import { isAwaitingPayment } from "@shared/orderStatus";
+import { FulfillmentBadge, PaymentBadge } from "@/components/StatusBadge";
 
 function money(value: unknown): string {
   return `$${Number(value ?? 0).toFixed(2)}`;
@@ -50,9 +43,6 @@ export default function TrackOrder() {
     const id = Number(orderNumber.replace(/[^0-9]/g, ""));
     if (id > 0 && email.trim()) setSubmitted({ orderId: id, email: email.trim() });
   }
-
-  const status = order ? (STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending) : null;
-  const StatusIcon = status?.icon ?? Clock;
 
   return (
     <div className="flex-1 bg-background">
@@ -104,19 +94,20 @@ export default function TrackOrder() {
           </div>
         )}
 
-        {order && status && (
+        {order && (
           <div className="lab-card p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 pb-5 mb-5 border-b border-gray-100 dark:border-border">
               <div>
                 <p className="text-xs text-lab-muted">Order</p>
                 <p className="text-lg font-bold text-lab-ink">#{order.id}</p>
               </div>
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium ${status.color}`}
-              >
-                <StatusIcon size={13} />
-                {status.label}
-              </span>
+              {/* A guest sees this page and nothing else, so it has to answer
+                  both questions on its own: did my payment go through, and
+                  where is my parcel. */}
+              <div className="flex flex-wrap items-center gap-2">
+                <PaymentBadge order={order} />
+                <FulfillmentBadge order={order} />
+              </div>
             </div>
 
             {/* A guest has no account page to find this on. Without it, the

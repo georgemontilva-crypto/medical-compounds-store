@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { FulfillmentBadge, PaymentBadge } from "@/components/StatusBadge";
+import { paymentView } from "@shared/orderStatus";
 
 const STATUS_OPTIONS = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"] as const;
 const PAYMENT_OPTIONS = ["pending", "paid", "failed", "refunded"] as const;
@@ -75,7 +77,26 @@ export default function AdminOrderDetail({ params }: Props) {
             <p className="lab-section-title mb-0.5">Orders</p>
             <h1 className="text-2xl font-bold">Order #{order.id}</h1>
           </div>
+          {/* The answer to "was this order paid?" belongs next to the order
+              number, not three columns into a table. */}
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
+            <PaymentBadge order={order} audience="admin" />
+            <FulfillmentBadge order={order} />
+          </div>
         </div>
+
+        {paymentView(order).payable && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <TriangleAlert size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900">No payment has been received</p>
+              <p className="text-sm text-amber-800 mt-0.5">
+                Don't ship this order. The buyer reached checkout but the money has not
+                arrived — the payment badge turns green on its own when it does.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Order items */}
