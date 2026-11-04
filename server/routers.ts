@@ -113,7 +113,6 @@ import {
   getCouponById,
   getWelcomeRedemption,
   createWelcomeRedemption,
-  markWelcomeRedemptionUsed,
   setNewCustomerOfferCoupon,
   getOrderById,
   getOrderItems,
@@ -126,7 +125,6 @@ import {
   getVariationById,
   getProducts,
   getUserByEmail,
-  incrementCouponUsage,
   removeCartItem,
   sumOrderRevenue,
   updateCartItemQuantity,
@@ -1153,16 +1151,11 @@ export const appRouter = router({
           });
         }
 
-        // Only burn the coupon if it is the discount that actually applied.
-        // When a referral beats it, the code was never spent — and marking a
-        // single-use welcome coupon as redeemed for a discount the buyer did
-        // not receive would quietly destroy it.
-        if (priced.coupon && priced.appliedDiscount === "coupon") {
-          await incrementCouponUsage(priced.coupon.id);
-          if (ctx.user) {
-            await markWelcomeRedemptionUsed(ctx.user.id, priced.coupon.id, newOrder.id);
-          }
-        }
+        // The coupon is not spent here. Which coupon applied is decided above
+        // and recorded on the order as couponId — only when it is the discount
+        // that actually applied, since a code beaten by a referral was never
+        // used. Burning it is settlePaidOrder's job, because an order that is
+        // never paid must not consume a shopper's single-use welcome code.
 
         // A rejected referral is still recorded: the commission is zero and no
         // discount was given, but the attempt has to be visible to the admin.
@@ -1176,22 +1169,15 @@ export const appRouter = router({
           });
         }
 
-        if (ctx.user) {
-          await clearCart(ctx.user.id);
-        }
+        // The cart is deliberately left alone. This order has not been paid
+        // for yet — the shopper is about to be sent to a payment page they may
+        // well come back from, and emptying their cart first leaves them
+        // nothing to return to. settlePaidOrder clears it once the money is in.
 
-        // Notify admin
-        try {
-          const itemsList = priced.items
-            .map((i) => `${i.productName}${i.variationLabel ? ` (${i.variationLabel})` : ""} x${i.quantity} — $${i.subtotal.toFixed(2)}`)
-            .join("\n");
-          await notifyOwner({
-            title: `New Order #${newOrder.id}`,
-            content: `New order received!\n\nCustomer: ${input.shipping.firstName} ${input.shipping.lastName}\nEmail: ${input.shipping.email}\n\nItems:\n${itemsList}\n\nSubtotal: $${subtotal.toFixed(2)}\nDiscount: $${discount.toFixed(2)}\nTotal: $${total.toFixed(2)}`
-          });
-        } catch (e) {
-          console.warn("Failed to send admin notification", e);
-        }
+        // No owner notification here either. "New Order" for an order nobody
+        // has paid for reads as a sale and is not one; settlePaidOrder sends
+        // "Payment received" when there is something to tell. Abandoned
+        // checkouts are reported separately, by the expiry handler.
 
         return { success: true, orderId: newOrder.id };
       }),

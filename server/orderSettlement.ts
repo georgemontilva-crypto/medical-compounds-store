@@ -15,7 +15,13 @@
  * different figure is not settled, it is escalated.
  */
 
-import { getOrderById, markOrderPaid } from "./db";
+import {
+  clearCart,
+  getOrderById,
+  incrementCouponUsage,
+  markOrderPaid,
+  markWelcomeRedemptionUsed,
+} from "./db";
 import { notifyOwner } from "./_core/notification";
 import { sendAdminOrderNotificationEmail, sendOrderConfirmationEmail } from "./orderEmails";
 import { settleOrderRewards } from "./rewards";
@@ -102,6 +108,8 @@ export async function settlePaidOrder(input: {
 
   console.log(`${label}: order ${orderId} marked paid (${paymentReference})`);
 
+  await consumePurchaseSideEffects(order);
+
   const rewards = await settleOrderRewards(orderId);
   if (rewards.pointsAwarded > 0 || rewards.referralMadeEligible) {
     console.log(
@@ -135,4 +143,87 @@ export async function settlePaidOrder(input: {
   }
 
   return { settled: true };
+}
+
+/** What a paid order consumes. Null means "nothing to do" for that step. */
+export type PurchaseEffects = {
+  /** Whose cart to empty, or null for a guest, who has no server-side cart. */
+  clearCartForUserId: number | null;
+  /** The coupon to spend a use of, or null when none applied. */
+  burnCouponId: number | null;
+  /** The single-use welcome code to close out, or null. */
+  markWelcomeUsed: { userId: number; couponId: number } | null;
+};
+
+/**
+ * Decides what a settled order consumes, from the order alone.
+ *
+ * Pure so the rules can be read and tested without a database. Note what is
+ * *not* here: anything about the cart contents, the shopper's session, or how
+ * they paid. Everything this needs was frozen onto the order at checkout —
+ * couponId is set only when the coupon was the discount that actually applied,
+ * so a code beaten by a referral is never spent.
+ */
+export function purchaseEffectsFor(order: {
+  id: number;
+  userId: number | null;
+  couponId: number | null;
+}): PurchaseEffects {
+  const { userId, couponId } = order;
+  return {
+    clearCartForUserId: userId,
+    burnCouponId: couponId,
+    markWelcomeUsed: userId !== null && couponId !== null ? { userId, couponId } : null,
+  };
+}
+
+/**
+ * Applies those effects, once the money is in.
+ *
+ * These used to run when the order row was created, which is before the
+ * shopper has even seen the payment page. The effect was that abandoning a
+ * checkout emptied the cart, spent a coupon and burned a single-use welcome
+ * code — punishing someone for not buying, and leaving them nothing to come
+ * back to. They belong here, behind markOrderPaid's `updated: true`, which is
+ * what keeps them from happening twice on a redelivered event.
+ *
+ * Each step is independent and none is worth failing a settled payment over,
+ * so a failure is logged and the rest continue. The money has already been
+ * taken; refusing to confirm the order over an uncleared cart would be worse
+ * than the uncleared cart.
+ */
+async function consumePurchaseSideEffects(order: {
+  id: number;
+  userId: number | null;
+  couponId: number | null;
+}) {
+  const effects = purchaseEffectsFor(order);
+
+  if (effects.clearCartForUserId !== null) {
+    try {
+      await clearCart(effects.clearCartForUserId);
+    } catch (e) {
+      console.warn(`Failed to clear cart for order ${order.id}`, e);
+    }
+  }
+
+  if (effects.burnCouponId !== null) {
+    try {
+      await incrementCouponUsage(effects.burnCouponId);
+    } catch (e) {
+      console.warn(`Failed to record coupon use for order ${order.id}`, e);
+    }
+  }
+
+  if (effects.markWelcomeUsed !== null) {
+    try {
+      await markWelcomeRedemptionUsed(
+        effects.markWelcomeUsed.userId,
+        effects.markWelcomeUsed.couponId,
+        order.id
+      );
+    } catch (e) {
+      console.warn(`Failed to mark welcome redemption used for order ${order.id}`, e);
+    }
+  }
 }

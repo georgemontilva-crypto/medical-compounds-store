@@ -2,6 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSearch } from "wouter";
 import { Package, Truck, CheckCircle, XCircle, Clock, Search } from "lucide-react";
+import CompletePaymentButton, { isAwaitingPayment } from "@/components/CompletePaymentButton";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   pending: { label: "Pending", color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
@@ -117,6 +118,21 @@ export default function TrackOrder() {
                 {status.label}
               </span>
             </div>
+
+            {/* A guest has no account page to find this on. Without it, the
+                order number on their screen is the end of the road: they can
+                see what they owe and have no way to pay it. */}
+            {isAwaitingPayment(order) && (
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                <div>
+                  <p className="font-semibold text-amber-900">This order hasn’t been paid yet</p>
+                  <p className="text-sm text-amber-800 mt-0.5">
+                    Nothing ships until payment goes through. You can finish it now.
+                  </p>
+                </div>
+                <CompletePaymentButton orderId={order.id} />
+              </div>
+            )}
 
             {order.trackingNumber && (
               <div className="mb-5 p-4 rounded-xl bg-[#f2ede6] dark:bg-card">

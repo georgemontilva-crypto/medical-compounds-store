@@ -58,10 +58,11 @@ interface ShippingForm {
 /**
  * Reads a payment outcome out of the query string.
  *
- * Card payments are taken on the page now and never leave it, so nothing in
- * the current flow sets these parameters. It stays for the orders that were
- * started on Stripe Checkout before the switch and can still come back here,
- * and for the Stripe webhook's own return URLs.
+ * These are the return URLs Stripe Checkout sends the shopper back to, built
+ * in buildCheckoutReturnUrls. While Stripe is the configured processor this is
+ * the live path, not a legacy one: every shopper who pays — or backs out of
+ * paying — comes back through here. The Argent flow never leaves the page and
+ * sets none of these.
  *
  * Read synchronously during the first render: resolving it in an effect would
  * flash the empty-cart screen before the confirmation appears.
@@ -141,7 +142,7 @@ export default function Checkout() {
     },
     onError: (err) => {
       toast.error(
-        err.message || "We couldn't open the payment page. We'll email you to arrange payment."
+        err.message || "We couldn't open the payment page. Your order is held — try again below."
       );
       setPaymentOutcome("unpaid");
       setStep("confirmation");
@@ -158,7 +159,7 @@ export default function Checkout() {
   const argentConfig = trpc.payments.argentConfig.useMutation({
     onError: (err) => {
       toast.error(
-        err.message || "We couldn't open the payment form. We'll email you to arrange payment."
+        err.message || "We couldn't open the payment form. Your order is held — try again below."
       );
       setPaymentOutcome("unpaid");
       setStep("confirmation");
@@ -172,6 +173,9 @@ export default function Checkout() {
    */
   const argentConfirm = trpc.payments.argentConfirm.useMutation({
     onSuccess: () => {
+      // Paid, so the cart has served its purpose. The Stripe path does this on
+      // the success return instead, which is where that flow lands.
+      clearCart();
       setPaymentOutcome("paid");
       setStep("confirmation");
     },
@@ -187,7 +191,10 @@ export default function Checkout() {
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: (data) => {
       setOrderId(data.orderId);
-      clearCart();
+      // The cart stays until the money is in. The shopper is one redirect away
+      // from a payment page they may come back from, and emptying it here
+      // leaves them nothing to return to — the single most expensive thing
+      // this screen can do to an abandoned checkout.
       if (processor === "stripe") {
         createCheckoutSession.mutate({ orderId: data.orderId });
       } else {
@@ -208,7 +215,7 @@ export default function Checkout() {
     if (paymentReturn.paid) {
       clearCart();
     } else {
-      toast.info("Payment cancelled. Your order is saved — we'll email you about payment.");
+      toast.info("Payment wasn't completed. Your order is still open — you can pay it now.");
     }
     // Drop the params so a refresh doesn't replay this.
     window.history.replaceState({}, "", "/checkout");
@@ -410,6 +417,25 @@ export default function Checkout() {
     });
   };
 
+  /**
+   * Reopens payment for an order that already exists.
+   *
+   * The server allows this: loadPayableOrder accepts an order that is still
+   * pending, and a fresh Stripe session replaces the stored reference, so the
+   * superseded one expiring can no longer cancel the order. Without this
+   * button a shopper who backed out of the payment page had no route back to
+   * their own order at all, and the only way forward was to build the cart
+   * again from scratch.
+   */
+  const retryPayment = () => {
+    if (orderId === null) return;
+    if (processor === "stripe") {
+      createCheckoutSession.mutate({ orderId });
+    } else {
+      argentConfig.mutate({ orderId }, { onSuccess: () => setStep("payment") });
+    }
+  };
+
   const isPlacingOrder =
     createOrder.isPending || argentConfig.isPending || createCheckoutSession.isPending;
   // A shipping choice is part of the price, so the order is not payable until
@@ -502,19 +528,39 @@ export default function Checkout() {
             )}
           </div>
           <h1 className="text-2xl font-bold mb-2">
-            {paymentOutcome === "paid" ? "Payment Received!" : "Order Saved"}
+            {paymentOutcome === "paid" ? "Payment Received!" : "Payment Not Completed"}
           </h1>
           <p className="text-muted-foreground mb-2">
             {paymentOutcome === "paid"
               ? "Thank you — your payment went through and we'll process your order shortly."
-              : "Your order is saved but payment wasn't completed. Our team will email you to arrange it."}
+              : "Your order is being held and nothing has been charged. You can finish paying now — your items are still in your cart either way."}
           </p>
           {orderId && (
             <p className="text-sm font-medium text-primary mb-6">Order #{orderId}</p>
           )}
           <div className="flex flex-col gap-2">
+            {/* An unpaid order needs a way forward on the screen that tells the
+                shopper it is unpaid. Anywhere else and they have to go looking
+                for it, which is the same as not having one. */}
+            {paymentOutcome === "unpaid" && orderId !== null && (
+              <button
+                type="button"
+                onClick={retryPayment}
+                disabled={isPlacingOrder}
+                className="lab-btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {isPlacingOrder ? <Loader2 size={15} className="animate-spin" /> : null}
+                Complete Payment
+              </button>
+            )}
             <Link href="/my-orders">
-              <button className="lab-btn-primary w-full">View My Orders</button>
+              <button
+                className={`w-full ${
+                  paymentOutcome === "paid" ? "lab-btn-primary" : "lab-btn-secondary"
+                }`}
+              >
+                View My Orders
+              </button>
             </Link>
             <Link href="/compounds">
               <button className="lab-btn-secondary w-full">Continue Shopping</button>
@@ -1121,7 +1167,6 @@ function OrderSummary({
   // Collapsed on mobile so the form starts near the top of the screen; always
   // open from lg up, where it has its own column and nothing to compete with.
   const [open, setOpen] = useState(false);
-  const [couponOpen, setCouponOpen] = useState(false);
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
 
   return (
@@ -1149,6 +1194,60 @@ function OrderSummary({
       </button>
 
       <h2 className="hidden lg:block font-semibold mb-4">Order summary</h2>
+
+      {/* Outside the collapsible block on purpose. On a phone the summary
+          starts closed, so a coupon field living inside it was two taps deep
+          and invisible until the shopper thought to open a card that looks
+          like a price recap — which is exactly the complaint that got this
+          changed. The field itself is always a field, never a "Have a coupon?"
+          link: a discount nobody can find is a discount nobody uses. */}
+      <div className="mt-4 lg:mt-0 lg:mb-4">
+        {appliedCoupon ? (
+          <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-green-50 border border-green-200">
+            <div className="flex items-center gap-2 min-w-0">
+              <Tag size={15} className="text-green-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-green-700 truncate">
+                {appliedCoupon.code}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onRemoveCoupon}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <>
+            <label
+              htmlFor="coupon-code"
+              className="flex items-center gap-1.5 text-sm font-medium mb-1.5"
+            >
+              <Tag size={14} className="text-muted-foreground" />
+              Coupon code
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="coupon-code"
+                type="text"
+                placeholder="Enter code"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                className="lab-input flex-1"
+              />
+              <button
+                type="button"
+                onClick={onApplyCoupon}
+                disabled={!couponCode || isValidatingCoupon}
+                className="lab-btn-secondary px-4 whitespace-nowrap"
+              >
+                {isValidatingCoupon ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       <div className={`${open ? "block mt-4" : "hidden"} lg:block`}>
         <div className="space-y-3 mb-4">
@@ -1181,55 +1280,9 @@ function OrderSummary({
           ))}
         </div>
 
-        {/* Discounts sit with the money, which is where shoppers look for them. */}
-        <div className="border-t border-border pt-4">
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-green-50 border border-green-200">
-              <div className="flex items-center gap-2 min-w-0">
-                <Tag size={15} className="text-green-600 flex-shrink-0" />
-                <span className="text-sm font-medium text-green-700 truncate">
-                  {appliedCoupon.code}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={onRemoveCoupon}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
-              >
-                Remove
-              </button>
-            </div>
-          ) : couponOpen ? (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Coupon code"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                className="lab-input flex-1"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={onApplyCoupon}
-                disabled={!couponCode || isValidatingCoupon}
-                className="lab-btn-secondary px-4 whitespace-nowrap"
-              >
-                {isValidatingCoupon ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setCouponOpen(true)}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Have a coupon?
-            </button>
-          )}
-
-          {AFFILIATE_UI_ENABLED && (
-            <div className="mt-3">
+        {AFFILIATE_UI_ENABLED && (
+          <div className="border-t border-border pt-4">
+            <div>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1266,8 +1319,8 @@ function OrderSummary({
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="border-t border-border mt-4 pt-4 space-y-2">
           <div className="flex justify-between text-sm">
