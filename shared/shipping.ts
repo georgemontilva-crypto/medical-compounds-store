@@ -102,12 +102,14 @@ export const shippingSettingsSchema = z.object({
   /**
    * What a bought label comes back as.
    *
-   * "GIF" is an image that prints from any browser onto ordinary paper.
-   * "ZPL" is the instruction language a thermal printer speaks directly, at
-   * exactly 4x6 — sharper, correctly sized, and useless without such a
-   * printer. Defaults to the one that works on whatever the shop already has.
+   * "PDF" is a page that prints at a fixed size from any browser, which is why
+   * it is the default: a GIF is scaled by whatever happens to render it, and a
+   * label printed a few percent small has a barcode a scanner may refuse.
+   * "GIF" stays for shops already set up around it. "ZPL" is the instruction
+   * language a thermal printer speaks directly, at exactly 4x6 — sharper,
+   * correctly sized, and useless without such a printer.
    */
-  labelFormat: z.enum(["GIF", "ZPL"]).default("GIF"),
+  labelFormat: z.enum(["PDF", "GIF", "ZPL"]).default("PDF"),
   /**
    * What one standard vial weighs, in its own packaging.
    *

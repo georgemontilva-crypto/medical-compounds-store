@@ -8,6 +8,7 @@ import {
   billableWeightLbs,
   dimensionalWeightLbs,
   shippingReadiness,
+  shippingSettingsSchema,
   type ShippingBox,
   type ShippingSettings,
 } from "@shared/shipping";
@@ -24,6 +25,68 @@ import {
   Trash2,
   Truck,
 } from "lucide-react";
+
+/**
+ * Field paths in plain words, for the one place the shop sees them.
+ *
+ * Zod reports "boxes.0.maxUnits"; a person reading a red box under a form
+ * needs "Box 1 — holds up to". Anything not listed falls back to the path,
+ * which is still better than the silence this replaces.
+ */
+const FIELD_NAMES: Record<string, string> = {
+  "origin.name": "Ship-from business name",
+  "origin.street": "Ship-from street address",
+  "origin.city": "Ship-from city",
+  "origin.state": "Ship-from state",
+  "origin.zip": "Ship-from ZIP",
+  "origin.country": "Ship-from country",
+  handlingFeeUsd: "Handling fee",
+  defaultVialWeightOz: "Default vial weight",
+  packagingWeightOz: "Packaging weight",
+  labelFormat: "Label format",
+  name: "name",
+  lengthIn: "length",
+  widthIn: "width",
+  heightIn: "height",
+  maxUnits: "holds up to",
+  packagingWeightOz_box: "packaging weight override",
+};
+
+function describePath(path: Array<string | number>): string {
+  if (path[0] === "boxes" && typeof path[1] === "number") {
+    const field = String(path[2] ?? "");
+    const label = field === "packagingWeightOz"
+      ? FIELD_NAMES.packagingWeightOz_box
+      : (FIELD_NAMES[field] ?? field);
+    return `Box ${path[1] + 1} — ${label}`;
+  }
+  const joined = path.join(".");
+  return FIELD_NAMES[joined] ?? joined;
+}
+
+/**
+ * Turns a rejected form into lines a person can act on.
+ *
+ * An empty number input reads back as NaN and a cleared box name as "", both
+ * of which the schema refuses — correctly. What was missing was any way for
+ * the shop to find out: the request went to the server, came back rejected,
+ * and the only evidence was a toast that said nothing about which field.
+ */
+function describeIssues(form: ShippingSettings): string[] {
+  const result = shippingSettingsSchema.safeParse(form);
+  if (result.success) return [];
+  return result.error.issues.map(issue => {
+    const where = describePath(issue.path as Array<string | number>);
+    // "expected number, received NaN" is what an emptied input produces, and
+    // it describes the internals rather than what the reader has to do.
+    const why = issue.message
+      .replace(/expected number, received NaN/i, "needs a number")
+      .replace(/^Invalid input: /, "")
+      .replace(/^Too small: expected number to be >0$/, "must be greater than zero")
+      .replace(/^Too small: expected string to have >=1 characters$/, "cannot be empty");
+    return `${where}: ${why}`;
+  });
+}
 
 const NEW_BOX: ShippingBox = {
   name: "",
@@ -49,13 +112,26 @@ export default function AdminShippingSettings() {
     }
   }, [data, loaded]);
 
+  const [problems, setProblems] = useState<string[]>([]);
+
   const save = trpc.shipping.updateSettings.useMutation({
     onSuccess: () => {
+      setProblems([]);
       toast.success("Shipping settings saved");
       utils.shipping.getSettings.invalidate();
     },
-    onError: err =>
-      toast.error(err.message || "Could not save shipping settings"),
+    onError: err => {
+      // A rejected input arrives as a JSON blob of Zod issues, which in a toast
+      // is a wall of braces. Re-derive the same complaints from the form we
+      // just tried to send and show them where the fields are.
+      const derived = describeIssues(form);
+      setProblems(derived.length > 0 ? derived : [err.message]);
+      toast.error(
+        derived.length > 0
+          ? "Some fields need fixing before this can save"
+          : err.message || "Could not save shipping settings"
+      );
+    },
   });
 
   // Computed from the form rather than the server response, so the checklist
@@ -89,10 +165,30 @@ export default function AdminShippingSettings() {
         <form
           onSubmit={e => {
             e.preventDefault();
+            // Checked here as well as on the server, so a bad field is named
+            // immediately instead of after a round trip that reports nothing.
+            const found = describeIssues(form);
+            setProblems(found);
+            if (found.length > 0) {
+              toast.error("Some fields need fixing before this can save");
+              return;
+            }
             save.mutate(form);
           }}
           className="space-y-6"
         >
+          {problems.length > 0 && (
+            <div className="p-4 rounded-2xl border border-red-200 bg-red-50">
+              <p className="text-sm font-semibold text-red-800 mb-1.5">
+                These settings were not saved
+              </p>
+              <ul className="text-sm text-red-700 space-y-1">
+                {problems.map(problem => (
+                  <li key={problem}>• {problem}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="grid lg:grid-cols-2 gap-6 items-start">
             {/* Origin */}
             <section className="lab-card p-5">
@@ -260,12 +356,13 @@ export default function AdminShippingSettings() {
                 <SectionHeader
                   icon={Printer}
                   title="Label format"
-                  note="What a bought label comes back as. Thermal gives an exact 4x6 for a label printer; image prints from a browser onto ordinary paper."
+                  note="What a bought label comes back as. PDF prints at its true size on ordinary paper; thermal gives an exact 4x6 for a label printer."
                 />
                 <div className="space-y-2">
                   {(
                     [
-                      ["GIF", "Image (GIF)", "Prints from any browser. No special printer needed."],
+                      ["PDF", "PDF (recommended)", "Prints from any browser at the right size. No special printer needed."],
+                      ["GIF", "Image (GIF)", "An image instead of a document. Scaling depends on whatever opens it."],
                       ["ZPL", "Thermal 4x6 (ZPL)", "Downloads a file for a thermal label printer."],
                     ] as const
                   ).map(([value, label, note]) => (

@@ -32,6 +32,7 @@ import {
   isUpsSandbox,
 } from "./ups";
 import { cartFingerprint, resolveQuotedRate, storeQuote } from "./shippingQuotes";
+import { buildPackingListPdf } from "./packingList";
 import { fillTrafficGaps } from "@shared/traffic";
 import {
   BLOG_SLUG_MAX_LENGTH,
@@ -2506,6 +2507,36 @@ export const appRouter = router({
     getLabelImage: adminProcedure
       .input(z.object({ orderId: z.number() }))
       .query(({ input }) => getShippingLabelImage(input.orderId)),
+
+    /**
+     * The sheet that goes in the box, built on demand.
+     *
+     * Not stored: it is derived entirely from the order, so keeping a copy only
+     * creates the chance of printing a stale one after an order is edited.
+     */
+    getPackingList: adminProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        const order = await getOrderById(input.orderId);
+        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+
+        const items = await getOrderItems(order.id);
+        if (items.length === 0) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This order has no items to pack.",
+          });
+        }
+
+        const row = await getSiteSetting(SHIPPING_SETTINGS_KEY);
+        const settings = parseShippingSettings(row?.value);
+
+        const pdf = await buildPackingListPdf(order, items, settings.origin);
+        return {
+          filename: `packing-list-${order.id}.pdf`,
+          data: Buffer.from(pdf).toString("base64"),
+        };
+      }),
 
     markShipped: adminProcedure
       .input(z.object({ orderId: z.number() }))

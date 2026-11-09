@@ -367,8 +367,14 @@ export function parseRates(json: any, settings: ShippingSettings): ShippingRate[
 
 // ─── Labels ──────────────────────────────────────────────────────────────────
 
-/** The formats we ask UPS for. GIF prints anywhere; ZPL needs a thermal printer. */
-export type LabelFormat = "GIF" | "ZPL";
+/**
+ * The formats we ask UPS for.
+ *
+ * PDF and GIF both print from a browser; PDF holds its physical size, which a
+ * GIF scaled by a viewer does not, and a barcode printed a few percent small is
+ * one a scanner may refuse. ZPL needs a thermal printer.
+ */
+export type LabelFormat = "PDF" | "GIF" | "ZPL";
 
 export interface LabelRequest {
   serviceCode: string;
@@ -407,7 +413,7 @@ export type LabelResult = { ok: true; label: PurchasedLabel } | UpsError;
 export async function createShippingLabel(
   origin: ShippingOrigin,
   request: LabelRequest,
-  format: LabelFormat = "GIF"
+  format: LabelFormat = "PDF"
 ): Promise<LabelResult> {
   if (!ENV.upsAccountNumber) {
     return fail("not_configured", SHOPPER_MESSAGE.not_configured, "UPS_ACCOUNT_NUMBER is unset");
@@ -454,7 +460,7 @@ export function buildLabelBody(
   origin: ShippingOrigin,
   request: LabelRequest,
   accountNumber: string,
-  format: LabelFormat = "GIF"
+  format: LabelFormat = "PDF"
 ) {
   return {
     ShipmentRequest: {
@@ -515,9 +521,10 @@ export function buildLabelBody(
               LabelStockSize: { Width: "4", Height: "6" },
             }
           : {
-              // An image, for a shop printing onto ordinary paper. UPS wants a
-              // user agent alongside it.
-              LabelImageFormat: { Code: "GIF" },
+              // A document or an image, for a shop printing onto ordinary
+              // paper. UPS wants a user agent alongside either one, and
+              // rejects the request without it.
+              LabelImageFormat: { Code: format },
               HTTPUserAgent: "Mozilla/5.0",
             },
     },

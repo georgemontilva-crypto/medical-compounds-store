@@ -277,14 +277,21 @@ describe("buildLabelBody label format", () => {
     },
   };
 
-  const spec = (format?: "GIF" | "ZPL") =>
+  const spec = (format?: "PDF" | "GIF" | "ZPL") =>
     (buildLabelBody(origin, request, "A86B60", format) as any).ShipmentRequest.LabelSpecification;
 
-  it("asks for an image by default, which prints without special hardware", () => {
-    expect(spec().LabelImageFormat).toEqual({ Code: "GIF" });
+  it("asks for a PDF by default, which prints at its true size anywhere", () => {
+    expect(spec().LabelImageFormat).toEqual({ Code: "PDF" });
   });
 
-  it("sends the user agent UPS requires alongside a GIF", () => {
+  it("asks UPS for whichever paper format was chosen", () => {
+    expect(spec("PDF").LabelImageFormat).toEqual({ Code: "PDF" });
+    expect(spec("GIF").LabelImageFormat).toEqual({ Code: "GIF" });
+  });
+
+  it("sends the user agent UPS requires alongside either paper format", () => {
+    // UPS rejects the request outright without it, so this is not cosmetic.
+    expect(spec("PDF").HTTPUserAgent).toBeTruthy();
     expect(spec("GIF").HTTPUserAgent).toBeTruthy();
   });
 
@@ -293,7 +300,8 @@ describe("buildLabelBody label format", () => {
     expect(spec("ZPL").LabelStockSize).toEqual({ Width: "4", Height: "6" });
   });
 
-  it("omits the stock size for an image, where UPS ignores it", () => {
+  it("omits the stock size for the paper formats, where UPS ignores it", () => {
+    expect(spec("PDF").LabelStockSize).toBeUndefined();
     expect(spec("GIF").LabelStockSize).toBeUndefined();
   });
 });

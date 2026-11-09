@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import {
   ChevronLeft,
   Download,
+  FileText,
   FlaskConical,
   Loader2,
   Package,
@@ -242,6 +243,40 @@ export default function AdminOrderDetail({ params }: Props) {
  * customer their order shipped stays a thing a person decides, one click away
  * from the label rather than bundled into it.
  */
+
+/** Base64 from the server into bytes, without a data: URI's length limits. */
+function base64ToBlob(base64: string, type: string): Blob {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type });
+}
+
+/**
+ * Hands the viewer a file.
+ *
+ * The object URL is revoked on a timer rather than immediately: revoking it in
+ * the same tick cancels the download in Firefox and Safari, which have not
+ * finished reading it when click() returns.
+ */
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** Opens a file in the browser's own viewer, for anything it can render. */
+function openBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  if (!window.open(url, "_blank")) {
+    toast.error("Allow pop-ups to open it, or check your browser's blocked-pop-up icon.");
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 function ShippingLabelCard({
   orderId,
   status,
@@ -255,6 +290,7 @@ function ShippingLabelCard({
 }) {
   const utils = trpc.useUtils();
   const [downloading, setDownloading] = useState(false);
+  const [packing, setPacking] = useState(false);
 
   // Read off the number this order is holding, not off the current mode: a
   // label bought in sandbox stays useless after somebody switches to
@@ -297,6 +333,21 @@ function ShippingLabelCard({
     onError: (e) => toast.error(e.message),
   });
 
+  // Available whether or not a label has been bought: the sheet is what the
+  // order gets picked against, and picking happens before the parcel is
+  // addressed. It carries the tracking number once there is one.
+  const openPackingList = async () => {
+    setPacking(true);
+    try {
+      const list = await utils.shipping.getPackingList.fetch({ orderId });
+      openBlob(base64ToBlob(list.data, "application/pdf"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not build the packing list.");
+    } finally {
+      setPacking(false);
+    }
+  };
+
   // Fetched on demand rather than with the page: the image is tens of kilobytes
   // and most visits to an order never print anything.
   const downloadLabel = async () => {
@@ -311,24 +362,29 @@ function ShippingLabelCard({
       // ZPL is printer instructions, not a picture — opening it in a tab shows
       // a wall of text. It has to arrive as a file the printer can be given.
       if (label.format === "ZPL") {
-        const zpl = atob(label.data);
-        const url = URL.createObjectURL(new Blob([zpl], { type: "application/octet-stream" }));
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `label-${trackingNumber ?? orderId}.zpl`;
-        link.click();
-        URL.revokeObjectURL(url);
+        downloadBlob(
+          base64ToBlob(label.data, "application/octet-stream"),
+          `label-${trackingNumber ?? orderId}.zpl`
+        );
         return;
       }
 
-      const mime = label.format === "PDF" ? "application/pdf" : "image/gif";
+      // A PDF has to go to the browser's viewer, not into an <img>, which
+      // renders nothing for it. Both formats open through a blob URL rather
+      // than a data: URI: Chrome refuses to navigate a tab to a data: URL,
+      // and a label is large enough to hit URL length limits besides.
+      if (label.format === "PDF") {
+        openBlob(base64ToBlob(label.data, "application/pdf"));
+        return;
+      }
+
       const win = window.open("", "_blank");
       if (!win) {
         toast.error("Allow pop-ups to open the label.");
         return;
       }
       win.document.write(
-        `<title>Label ${trackingNumber ?? orderId}</title><img src="data:${mime};base64,${label.data}" style="max-width:100%">`
+        `<title>Label ${trackingNumber ?? orderId}</title><img src="data:image/gif;base64,${label.data}" style="max-width:100%">`
       );
       win.document.close();
     } finally {
@@ -424,6 +480,18 @@ function ShippingLabelCard({
           </button>
         </div>
       )}
+
+      {/* Outside the label branch: the sheet is needed to pick the order,
+          which happens before anything is addressed. */}
+      <button
+        type="button"
+        onClick={openPackingList}
+        disabled={packing}
+        className="lab-btn-secondary w-full py-2.5 text-sm mt-3"
+      >
+        {packing ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+        Packing list (PDF)
+      </button>
     </div>
   );
 }
