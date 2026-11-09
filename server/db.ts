@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNotNull, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { createPool, type Pool } from "mysql2";
 import {
   CartItem,
   Category,
@@ -53,15 +54,63 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+/**
+ * How the connection pool is allowed to behave.
+ *
+ * Handing drizzle a connection string builds a mysql2 pool on pure defaults,
+ * and two of those defaults combine badly against a hosted database.
+ *
+ * The first is that idle connections are kept forever. The database and the
+ * proxy in front of it drop theirs after their own idle timeout, and mysql2
+ * does not find out — it hands a request a socket the other end closed long
+ * ago, and the query sits there. The second is `queueLimit: 0`, which means
+ * unlimited: once connections start going bad, every later request queues
+ * behind them with no timeout and no error. That is the shape of the bug this
+ * fixes — a save that spins forever, after earlier ones that were merely slow.
+ *
+ * So: keep-alive on, idle connections recycled well before anything upstream
+ * would drop them, and a bounded queue, because a request that fails is a
+ * request somebody can see and retry. A spinner that never stops is not.
+ */
+export const POOL_OPTIONS = {
+  waitForConnections: true,
+  connectionLimit: 10,
+  /** Bounded on purpose: past this, fail loudly instead of hanging. */
+  queueLimit: 25,
+  /** Keeps the socket demonstrably alive rather than assumed alive. */
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10_000,
+  /** Comfortably under the idle timeout of anything in front of MySQL. */
+  idleTimeout: 30_000,
+  maxIdle: 4,
+  connectTimeout: 10_000,
+} as const;
+
+/** Same shape drizzle builds from a connection string, with our pool. */
+const connect = (pool: Pool) => drizzle({ client: pool });
+
+let _db: ReturnType<typeof connect> | null = null;
+let _pool: Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = createPool({ uri: process.env.DATABASE_URL, ...POOL_OPTIONS });
+
+      // A fatal pool error used to leave the cached handle in place, so every
+      // later request reused something already broken until the process was
+      // restarted. Dropping it here means the next caller builds a fresh pool.
+      _pool.on("error", error => {
+        console.error("[Database] Pool error, dropping the pool:", error);
+        _db = null;
+        _pool = null;
+      });
+
+      _db = connect(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
   }
   return _db;
