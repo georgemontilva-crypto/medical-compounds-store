@@ -802,6 +802,7 @@ export const appRouter = router({
           stock: z.number().optional(),
           sku: z.string().optional(),
           active: z.boolean().optional(),
+          availability: z.enum(["auto", "low_stock", "unavailable"]).optional(),
           // Null falls back to the product's weight — see shared/shipping.ts.
           weightOz: optionalDecimal,
         })
@@ -818,6 +819,7 @@ export const appRouter = router({
           stock: z.number().optional(),
           sku: z.string().optional(),
           active: z.boolean().optional(),
+          availability: z.enum(["auto", "low_stock", "unavailable"]).optional(),
           weightOz: optionalDecimal,
         })
       )

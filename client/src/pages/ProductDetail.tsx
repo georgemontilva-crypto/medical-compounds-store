@@ -5,6 +5,8 @@ import { useCart } from "@/contexts/CartContext";
 import { useCompliance } from "@/contexts/ComplianceContext";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
+import AvailabilityPill from "@/components/AvailabilityPill";
+import { variationAvailability } from "@shared/availability";
 import {
   FlaskConical,
   ChevronLeft,
@@ -51,7 +53,12 @@ export default function ProductDetail({ params }: Props) {
   const price = selectedVariation
     ? Number(selectedVariation.price)
     : Number(product?.basePrice ?? 0);
-  const inStock = selectedVariation ? selectedVariation.stock > 0 : true;
+  // The switch decides, falling back to the count only where the shop left it
+  // on "auto". A product with no sizes has nothing to be out of.
+  const selectedState = selectedVariation
+    ? variationAvailability(selectedVariation)
+    : "in_stock";
+  const inStock = selectedState !== "unavailable";
 
   // Buy-more-save-more: same 1/2/5 tiers for every product, percentages
   // come from admin config. Selecting a tier both sets `quantity` and
@@ -66,7 +73,13 @@ export default function ProductDetail({ params }: Props) {
           qty,
           percent,
           unitPrice: price * (1 - percent / 100),
-          disabled: selectedVariation ? qty > selectedVariation.stock : false,
+          // Only the count can rule out a quantity, and only while it is the
+          // thing in charge: a size the shop marked sellable stays sellable at
+          // any quantity, whatever the hand-kept number happens to read.
+          disabled:
+            selectedVariation && selectedVariation.availability === "auto"
+              ? qty > selectedVariation.stock
+              : false,
         };
       })
     : [];
@@ -287,23 +300,28 @@ export default function ProductDetail({ params }: Props) {
               <div>
                 <p className="lab-section-title mb-3">Select Variation</p>
                 <div className="flex flex-wrap gap-2">
-                  {variations.map((v) => (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedVariationId(v.id)}
-                      disabled={!v.active || v.stock === 0}
-                      className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                        selectedVariation?.id === v.id
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : v.stock === 0
-                          ? "border-border text-muted-foreground opacity-50 cursor-not-allowed"
-                          : "border-border hover:border-primary/50 hover:bg-accent"
-                      }`}
-                    >
-                      {formatVariationValue(v.value)}{v.unit}
-                      {v.stock === 0 && <span className="ml-1 text-xs">(Out)</span>}
-                    </button>
-                  ))}
+                  {variations.map((v) => {
+                    const state = variationAvailability(v);
+                    const sold = state === "unavailable";
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedVariationId(v.id)}
+                        disabled={sold}
+                        className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                          selectedVariation?.id === v.id
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : sold
+                            ? "border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                            : "border-border hover:border-primary/50 hover:bg-accent"
+                        }`}
+                      >
+                        {formatVariationValue(v.value)}{v.unit}
+                        {sold && <span className="ml-1 text-xs">(Out)</span>}
+                        {state === "low_stock" && <span className="ml-1 text-xs">(Low)</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -348,8 +366,14 @@ export default function ProductDetail({ params }: Props) {
                   );
                 })}
               </div>
-              {selectedVariation && (
-                <p className="text-xs text-muted-foreground mt-2">{selectedVariation.stock} in stock</p>
+              {/* The count itself is not shown. Nothing in the order path
+                  decrements it, so "12 in stock" was a number somebody typed
+                  once — precise, public, and wrong as often as not. The state
+                  is what the shop actually stands behind. */}
+              {selectedVariation && selectedState !== "in_stock" && (
+                <div className="mt-2">
+                  <AvailabilityPill state={selectedState} size="md" />
+                </div>
               )}
             </div>
 

@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { Plus, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { formatVariationValue } from "@/lib/utils";
+import AvailabilityPill from "@/components/AvailabilityPill";
+import { productAvailability, type AvailabilityState } from "@shared/availability";
 
 // ── Vial SVG placeholder (shown when a product has no uploaded image) ────────
 export function VialPlaceholder({ label, size = "10mg", color = "#a78bfa" }: { label: string; size?: string; color?: string }) {
@@ -31,6 +33,8 @@ export type ProductCardProduct = {
   basePrice: string;
   categoryId?: number | null;
   featured?: boolean | null;
+  /** Rolled up across the sizes by the listing query. */
+  availability?: AvailabilityState;
 };
 
 export type ProductCardCategory = { id: number; name: string; color?: string | null };
@@ -63,12 +67,20 @@ export default function ProductCard({
     ? Math.min(...variations.map((v) => Number(v.price)))
     : Number(product.basePrice);
   const hasVariations = !!variations && variations.length > 1;
+  // The listing query rolls this up server-side. Where a caller passes a
+  // product without it, the sizes this card already fetched answer the same
+  // question — and until they arrive the card simply says nothing, which is
+  // what it says for an available product anyway.
+  const availability: AvailabilityState =
+    product.availability ?? (variations ? productAvailability(variations) : "in_stock");
+  const sold = availability === "unavailable";
   const mainSize = variations?.[0] ? `${formatVariationValue(variations[0].value)}${variations[0].unit}` : "";
   const catGlow = `0 0 0 2px ${catColor}40, 0 8px 24px -6px ${catColor}66`;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (sold) return;
     if (hasVariations) { window.location.href = `/compounds/${product.slug}`; return; }
     const variation = variations?.[0];
     onAdd({
@@ -93,21 +105,27 @@ export default function ProductCard({
         </span>
       )}
       <Link href={`/compounds/${product.slug}`}>
-        <div className="relative h-48 cursor-pointer overflow-hidden bg-white p-2 dark:bg-card">
+        <div
+          className={`relative h-48 cursor-pointer overflow-hidden bg-white p-2 dark:bg-card ${
+            sold ? "opacity-55 grayscale" : ""
+          }`}
+        >
           {image ? (
             <img src={image.url} alt={image.altText || `${product.name} — ${catName} research compound`} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <VialPlaceholder label={product.name} size={mainSize || "10mg"} color={catColor} />
           )}
-          <button
-            onClick={handleQuickAdd}
-            className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
-              added ? "bg-[#d3c4ab] text-white opacity-100 scale-110"
-                    : "bg-white text-gray-700 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white dark:bg-white/10 dark:text-gray-300"
-            }`}
-          >
-            {added ? <Check size={13} /> : <Plus size={13} />}
-          </button>
+          {!sold && (
+            <button
+              onClick={handleQuickAdd}
+              className={`absolute top-3 right-3 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
+                added ? "bg-[#d3c4ab] text-white opacity-100 scale-110"
+                      : "bg-white text-gray-700 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-[#d3c4ab] hover:text-white dark:bg-white/10 dark:text-gray-300"
+              }`}
+            >
+              {added ? <Check size={13} /> : <Plus size={13} />}
+            </button>
+          )}
         </div>
       </Link>
       <div className="p-4 flex-1 flex flex-col">
@@ -115,6 +133,11 @@ export default function ProductCard({
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className="text-[10px] font-semibold tracking-widest uppercase truncate" style={{ color: catColor }}>{catName}</span>
         </div>
+        {availability !== "in_stock" && (
+          <div className="mb-2">
+            <AvailabilityPill state={availability} />
+          </div>
+        )}
         <Link href={`/compounds/${product.slug}`}>
           <h3 className="font-bold text-gray-950 text-sm mb-2 cursor-pointer hover:text-[#d3c4ab] transition-colors dark:text-white line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
         </Link>

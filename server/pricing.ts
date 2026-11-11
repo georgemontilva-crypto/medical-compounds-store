@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { isPurchasable } from "@shared/availability";
 import {
   DEFAULT_BULK_DISCOUNT_TIERS,
   applyBulkDiscount,
@@ -102,7 +103,19 @@ export async function priceOrderLines(lines: RequestedLine[]): Promise<PricedLin
           message: `The selected option for ${product.name} is no longer available.`,
         });
       }
-      if (variation.stock < line.quantity) {
+      // The switch is checked here and not only in the UI. A cart can be hours
+      // old, and the add-to-cart button being disabled on a page somebody
+      // loaded this morning stops nothing at all.
+      if (!isPurchasable(variation)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `${product.name} (${buildVariationLabel(variation)}) is currently unavailable.`,
+        });
+      }
+      // Only meaningful while the count is the thing in charge. A size the shop
+      // has marked sellable is sellable, whatever the hand-kept number reads —
+      // otherwise a stale 0 silently overrules the person who set it.
+      if (variation.availability === "auto" && variation.stock < line.quantity) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Only ${variation.stock} left of ${product.name}.`,

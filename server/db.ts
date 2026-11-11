@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool, type Pool } from "mysql2";
+import { productAvailability, type AvailabilityState } from "@shared/availability";
 import {
   CartItem,
   Category,
@@ -417,13 +418,57 @@ export async function getProducts(opts?: {
     default:
       orderBy = desc(products.featured);
   }
-  return db
+  const rows = await db
     .select()
     .from(products)
     .where(where)
     .orderBy(orderBy)
     .limit(opts?.limit ?? 50)
     .offset(opts?.offset ?? 0);
+
+  return attachAvailability(db, rows);
+}
+
+/**
+ * Adds each product's availability, rolled up from its sizes.
+ *
+ * One extra query for the whole page rather than one per product: the listing
+ * returns up to fifty, and the alternative is fifty round trips to render a
+ * badge. The sizes themselves are not returned — the card only needs the
+ * verdict, and the product page fetches them properly.
+ */
+async function attachAvailability<T extends { id: number }>(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  rows: T[]
+): Promise<Array<T & { availability: AvailabilityState }>> {
+  if (rows.length === 0) return [];
+
+  const sizes = await db
+    .select({
+      productId: productVariations.productId,
+      active: productVariations.active,
+      stock: productVariations.stock,
+      availability: productVariations.availability,
+    })
+    .from(productVariations)
+    .where(inArray(productVariations.productId, rows.map(row => row.id)));
+
+  const byProduct = new Map<number, typeof sizes>();
+  for (const size of sizes) {
+    const list = byProduct.get(size.productId);
+    if (list) list.push(size);
+    else byProduct.set(size.productId, [size]);
+  }
+
+  return rows.map(row => ({
+    ...row,
+    // A product with no sizes at all is sold by its base price and has no
+    // stock to speak of, so it is treated as available rather than inheriting
+    // the empty-list verdict meant for a product whose sizes were all removed.
+    availability: byProduct.has(row.id)
+      ? productAvailability(byProduct.get(row.id)!)
+      : ("in_stock" as const),
+  }));
 }
 
 export async function getProductById(id: number) {

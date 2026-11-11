@@ -2,6 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
 import { formatVariationValue } from "@/lib/utils";
+import AvailabilityPill from "@/components/AvailabilityPill";
+import {
+  AVAILABILITY_SETTINGS,
+  SETTING_LABELS,
+  variationAvailability,
+  type AvailabilitySetting,
+} from "@shared/availability";
 import {
   Plus,
   Pencil,
@@ -58,6 +65,7 @@ type VariationForm = {
   stock: string;
   sku: string;
   weightOz: string;
+  availability: AvailabilitySetting;
 };
 const emptyVariation: VariationForm = {
   unit: "mg",
@@ -66,6 +74,7 @@ const emptyVariation: VariationForm = {
   stock: "0",
   sku: "",
   weightOz: "",
+  availability: "auto",
 };
 
 export default function AdminProducts() {
@@ -455,6 +464,7 @@ export default function AdminProducts() {
                     stock: Number(variationForm.stock),
                     sku: variationForm.sku || undefined,
                     weightOz: variationForm.weightOz || null,
+                    availability: variationForm.availability,
                   })
                 }
                 onDeleteVariation={(id) => deleteVariation.mutate({ id })}
@@ -511,6 +521,7 @@ function ProductRow({
       price: string;
       stock: number;
       weightOz: string | null;
+      availability: AvailabilitySetting;
     }
   ) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -538,6 +549,7 @@ function ProductRow({
     price: string;
     stock: number;
     weightOz?: string | null;
+    availability?: AvailabilitySetting | null;
   }) => {
     setEditingVariationId(v.id);
     setEditVariationForm({
@@ -547,6 +559,7 @@ function ProductRow({
       stock: String(v.stock),
       sku: "",
       weightOz: v.weightOz ?? "",
+      availability: v.availability ?? "auto",
     });
   };
 
@@ -558,6 +571,7 @@ function ProductRow({
       price: editVariationForm.price,
       stock: Number(editVariationForm.stock),
       weightOz: editVariationForm.weightOz || null,
+      availability: editVariationForm.availability,
     });
     setEditingVariationId(null);
   };
@@ -721,6 +735,27 @@ function ProductRow({
                             onChange={(e) => setEditVariationForm({ ...editVariationForm, stock: e.target.value })}
                           />
                         </div>
+                        <div>
+                          <label className="block text-[10px] text-muted-foreground mb-1">
+                            Shows on the site as
+                          </label>
+                          <select
+                            className="lab-input py-1.5 text-xs"
+                            value={editVariationForm.availability}
+                            onChange={(e) =>
+                              setEditVariationForm({
+                                ...editVariationForm,
+                                availability: e.target.value as AvailabilitySetting,
+                              })
+                            }
+                          >
+                            {AVAILABILITY_SETTINGS.map((setting) => (
+                              <option key={setting} value={setting}>
+                                {SETTING_LABELS[setting]}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <button
                           onClick={saveEditVariation}
                           disabled={!editVariationForm.value || !editVariationForm.price}
@@ -759,6 +794,9 @@ function ProductRow({
                       <span className="text-xs font-medium">{formatVariationValue(v.value)}{v.unit}</span>
                       <span className="text-xs text-muted-foreground">${Number(v.price).toFixed(2)}</span>
                       <span className="text-xs text-muted-foreground">Stock: {v.stock}</span>
+                      {/* The verdict, not the setting: what a shopper sees for
+                          this size right now, however it was arrived at. */}
+                      <AvailabilityPill state={variationAvailability(v)} />
                       <label
                         className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                         title="Upload image for this variation"
@@ -839,6 +877,25 @@ function ProductRow({
                   value={variationForm.stock}
                   onChange={(e) => setVariationForm({ ...variationForm, stock: e.target.value })}
                 />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Shows on the site as</label>
+                <select
+                  className="lab-input py-1.5 text-xs"
+                  value={variationForm.availability}
+                  onChange={(e) =>
+                    setVariationForm({
+                      ...variationForm,
+                      availability: e.target.value as AvailabilitySetting,
+                    })
+                  }
+                >
+                  {AVAILABILITY_SETTINGS.map((setting) => (
+                    <option key={setting} value={setting}>
+                      {SETTING_LABELS[setting]}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Weight (oz)</label>

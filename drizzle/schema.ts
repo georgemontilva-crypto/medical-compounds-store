@@ -132,6 +132,16 @@ export const productVariations = mysqlTable("product_variations", {
   stock: int("stock").default(0).notNull(),
   sku: varchar("sku", { length: 100 }),
   active: boolean("active").default(true).notNull(),
+  // What the shop says about this size, overriding the count above.
+  //
+  // The count is hand-maintained — nothing in the order or payment path
+  // decrements it — so a shop that wants to flag a size as running out, or
+  // stop selling it today, should not have to express that by editing a number
+  // whose other readings are already stale. "auto" keeps the count in charge,
+  // which is what every existing row does without being touched.
+  availability: mysqlEnum("availability", ["auto", "low_stock", "unavailable"])
+    .default("auto")
+    .notNull(),
   // Overrides the product's weight when this size actually weighs something
   // different. Worth having for volumes — 30 mL of water outweighs 10 mL by a
   // useful margin — and pointless for masses, where 40 mg of peptide is a
