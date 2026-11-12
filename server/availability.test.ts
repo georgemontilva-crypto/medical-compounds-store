@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  isProductPurchasable,
   isPurchasable,
   productAvailability,
+  resolveProductAvailability,
   variationAvailability,
 } from "@shared/availability";
 
@@ -103,5 +105,65 @@ describe("productAvailability", () => {
     // there — an empty list is a product whose sizes were all removed.
     expect(productAvailability([])).toBe("unavailable");
     expect(productAvailability([size({ active: false })])).toBe("unavailable");
+  });
+});
+
+describe("resolveProductAvailability", () => {
+  // The case that made this function necessary: only two products in this
+  // catalogue have sizes at all. For the other thirteen there is no size row
+  // to carry a setting, so a size-only design left them unmarkable — and an
+  // empty size list must not be read as "sold out" either.
+  it("marks a product that has no sizes at all", () => {
+    expect(resolveProductAvailability({ availability: "unavailable" }, [])).toBe("unavailable");
+    expect(resolveProductAvailability({ availability: "low_stock" }, [])).toBe("low_stock");
+  });
+
+  it("leaves a sizeless product in stock when nothing was set", () => {
+    expect(resolveProductAvailability({}, [])).toBe("in_stock");
+    expect(resolveProductAvailability({ availability: "auto" }, [])).toBe("in_stock");
+  });
+
+  it("lets the product's own switch close every size under it", () => {
+    expect(
+      resolveProductAvailability({ availability: "unavailable" }, [
+        size({ stock: 100 }),
+        size({ stock: 100 }),
+      ])
+    ).toBe("unavailable");
+  });
+
+  it("does not let a product marked low advertise sizes that are all gone", () => {
+    // Otherwise the card invites a click through to a product nobody can buy.
+    expect(
+      resolveProductAvailability({ availability: "low_stock" }, [
+        size({ availability: "unavailable" }),
+      ])
+    ).toBe("unavailable");
+  });
+
+  it("lets a product be marked low while its sizes look fine", () => {
+    expect(
+      resolveProductAvailability({ availability: "low_stock" }, [size({ stock: 80 })])
+    ).toBe("low_stock");
+  });
+
+  it("falls through to the sizes when the product is left on auto", () => {
+    expect(resolveProductAvailability({ availability: "auto" }, [size({ stock: 5 })])).toBe(
+      "in_stock"
+    );
+    expect(
+      resolveProductAvailability({ availability: "auto" }, [size({ availability: "low_stock" })])
+    ).toBe("low_stock");
+    expect(resolveProductAvailability({ availability: "auto" }, [size({ stock: 0 })])).toBe(
+      "unavailable"
+    );
+  });
+});
+
+describe("isProductPurchasable", () => {
+  it("is what checkout asks before a size is even chosen", () => {
+    expect(isProductPurchasable({ availability: "unavailable" }, [])).toBe(false);
+    expect(isProductPurchasable({ availability: "low_stock" }, [])).toBe(true);
+    expect(isProductPurchasable({}, [])).toBe(true);
   });
 });

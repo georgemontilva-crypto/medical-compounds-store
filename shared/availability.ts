@@ -98,3 +98,46 @@ export function productAvailability(
   if (states.some(state => state === "low_stock")) return "low_stock";
   return "in_stock";
 }
+
+export interface ProductAvailabilityInput {
+  availability?: AvailabilitySetting | null;
+}
+
+/**
+ * What a product is, from its own switch and its sizes together.
+ *
+ * Sizes are not where most of this catalogue lives. Only two products have any
+ * at all; the rest sell on their base price and have no size row to carry a
+ * setting, which is why the product needs a switch of its own rather than only
+ * inheriting one.
+ *
+ * The product's own setting is the stronger of the two. "unavailable" closes
+ * the product whatever the sizes say — the shop stopping sales outranks a size
+ * that still looks fine — while "low_stock" cannot talk over a product whose
+ * every size is genuinely gone, because that would advertise something nobody
+ * can buy.
+ */
+export function resolveProductAvailability(
+  product: ProductAvailabilityInput,
+  variations: VariationAvailabilityInput[]
+): AvailabilityState {
+  const setting = product.availability ?? "auto";
+  if (setting === "unavailable") return "unavailable";
+
+  // A product with no sizes has nothing to be out of: its own switch is the
+  // only thing that can say otherwise.
+  const fromSizes = variations.length > 0 ? productAvailability(variations) : "in_stock";
+
+  if (setting === "low_stock") {
+    return fromSizes === "unavailable" ? "unavailable" : "low_stock";
+  }
+  return fromSizes;
+}
+
+/** Whether a product can be bought at all, before any size is chosen. */
+export function isProductPurchasable(
+  product: ProductAvailabilityInput,
+  variations: VariationAvailabilityInput[]
+): boolean {
+  return resolveProductAvailability(product, variations) !== "unavailable";
+}

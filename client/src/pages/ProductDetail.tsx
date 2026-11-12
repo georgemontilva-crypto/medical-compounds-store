@@ -6,7 +6,7 @@ import { useCompliance } from "@/contexts/ComplianceContext";
 import { Link } from "wouter";
 import ProductCard from "@/components/ProductCard";
 import AvailabilityPill from "@/components/AvailabilityPill";
-import { variationAvailability } from "@shared/availability";
+import { resolveProductAvailability, variationAvailability } from "@shared/availability";
 import {
   FlaskConical,
   ChevronLeft,
@@ -53,11 +53,14 @@ export default function ProductDetail({ params }: Props) {
   const price = selectedVariation
     ? Number(selectedVariation.price)
     : Number(product?.basePrice ?? 0);
-  // The switch decides, falling back to the count only where the shop left it
-  // on "auto". A product with no sizes has nothing to be out of.
-  const selectedState = selectedVariation
-    ? variationAvailability(selectedVariation)
-    : "in_stock";
+  // Both switches, for the size actually chosen. bySlug returns the product's
+  // raw setting rather than a verdict, which is what this needs: most products
+  // here have no sizes at all, so the product-level switch is the only thing
+  // that can mark them.
+  const selectedState = resolveProductAvailability(
+    product ?? {},
+    selectedVariation ? [selectedVariation] : []
+  );
   const inStock = selectedState !== "unavailable";
 
   // Buy-more-save-more: same 1/2/5 tiers for every product, percentages
@@ -301,7 +304,10 @@ export default function ProductDetail({ params }: Props) {
                 <p className="lab-section-title mb-3">Select Variation</p>
                 <div className="flex flex-wrap gap-2">
                   {variations.map((v) => {
-                    const state = variationAvailability(v);
+                    const state =
+                      product?.availability === "unavailable"
+                        ? ("unavailable" as const)
+                        : variationAvailability(v);
                     const sold = state === "unavailable";
                     return (
                       <button

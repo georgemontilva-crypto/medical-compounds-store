@@ -92,6 +92,15 @@ export async function priceOrderLines(lines: RequestedLine[]): Promise<PricedLin
       });
     }
 
+    // Checked before the size is even looked at, because most products here
+    // have no sizes: for them this is the only gate there is.
+    if (product.availability === "unavailable") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `${product.name} is currently unavailable.`,
+      });
+    }
+
     let basePrice = Number(product.basePrice);
     let variationLabel: string | undefined;
 

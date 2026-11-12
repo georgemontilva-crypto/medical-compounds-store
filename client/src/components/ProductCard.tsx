@@ -71,8 +71,13 @@ export default function ProductCard({
   // product without it, the sizes this card already fetched answer the same
   // question — and until they arrive the card simply says nothing, which is
   // what it says for an available product anyway.
+  // The listing query resolves this server-side, from the product's switch and
+  // its sizes together. The fallback is only for a caller that passes a product
+  // from somewhere else, and must not read "no sizes" as "sold out" — most
+  // products in this catalogue have none.
   const availability: AvailabilityState =
-    product.availability ?? (variations ? productAvailability(variations) : "in_stock");
+    product.availability ??
+    (variations && variations.length > 0 ? productAvailability(variations) : "in_stock");
   const sold = availability === "unavailable";
   const mainSize = variations?.[0] ? `${formatVariationValue(variations[0].value)}${variations[0].unit}` : "";
   const catGlow = `0 0 0 2px ${catColor}40, 0 8px 24px -6px ${catColor}66`;

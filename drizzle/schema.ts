@@ -69,6 +69,15 @@ export const products = mysqlTable("products", {
   basePrice: decimal("basePrice", { precision: 10, scale: 2 }).notNull(),
   featured: boolean("featured").default(false).notNull(),
   active: boolean("active").default(true).notNull(),
+  // The same switch as on a size, for the product as a whole.
+  //
+  // Not a convenience: most products in this catalogue have no sizes at all —
+  // they sell on basePrice — so without this there is nowhere to mark them.
+  // Where a product does have sizes, this overrides them: "unavailable" here
+  // closes the product whatever the sizes say.
+  availability: mysqlEnum("availability", ["auto", "low_stock", "unavailable"])
+    .default("auto")
+    .notNull(),
   mechanism: text("mechanism"),
   casNumber: varchar("casNumber", { length: 50 }),
   excludeFromBulkDiscount: boolean("excludeFromBulkDiscount").default(false).notNull(),

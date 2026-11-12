@@ -1,7 +1,11 @@
 import { and, desc, eq, inArray, isNotNull, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool, type Pool } from "mysql2";
-import { productAvailability, type AvailabilityState } from "@shared/availability";
+import {
+  resolveProductAvailability,
+  type AvailabilitySetting,
+  type AvailabilityState,
+} from "@shared/availability";
 import {
   CartItem,
   Category,
@@ -437,7 +441,7 @@ export async function getProducts(opts?: {
  * badge. The sizes themselves are not returned — the card only needs the
  * verdict, and the product page fetches them properly.
  */
-async function attachAvailability<T extends { id: number }>(
+async function attachAvailability<T extends { id: number; availability?: AvailabilitySetting | null }>(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   rows: T[]
 ): Promise<Array<T & { availability: AvailabilityState }>> {
@@ -462,12 +466,10 @@ async function attachAvailability<T extends { id: number }>(
 
   return rows.map(row => ({
     ...row,
-    // A product with no sizes at all is sold by its base price and has no
-    // stock to speak of, so it is treated as available rather than inheriting
-    // the empty-list verdict meant for a product whose sizes were all removed.
-    availability: byProduct.has(row.id)
-      ? productAvailability(byProduct.get(row.id)!)
-      : ("in_stock" as const),
+    // `availability` on the row is the shop's setting; what comes back is the
+    // verdict, which the card renders. They deliberately share a name: no
+    // caller should ever see the raw setting and mistake it for the answer.
+    availability: resolveProductAvailability(row, byProduct.get(row.id) ?? []),
   }));
 }
 

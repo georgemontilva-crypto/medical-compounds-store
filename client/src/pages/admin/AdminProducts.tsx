@@ -39,6 +39,7 @@ type ProductForm = {
   testingClaim: string;
   excludeFromBulkDiscount: boolean;
   weightOz: string;
+  availability: AvailabilitySetting;
 };
 
 const emptyForm: ProductForm = {
@@ -56,6 +57,7 @@ const emptyForm: ProductForm = {
   testingClaim: "",
   excludeFromBulkDiscount: false,
   weightOz: "",
+  availability: "auto",
 };
 
 type VariationForm = {
@@ -164,7 +166,7 @@ export default function AdminProducts() {
     }
   };
 
-  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; purityClaim?: string | null; testingClaim?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null }) => {
+  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; purityClaim?: string | null; testingClaim?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null; availability?: AvailabilitySetting | null }) => {
     setEditingId(p.id);
     setForm({
       name: p.name,
@@ -174,6 +176,7 @@ export default function AdminProducts() {
       categoryId: p.categoryId?.toString() ?? "",
       basePrice: p.basePrice,
       featured: p.featured,
+      availability: p.availability ?? "auto",
       active: p.active,
       mechanism: p.mechanism ?? "",
       casNumber: p.casNumber ?? "",
@@ -310,6 +313,25 @@ export default function AdminProducts() {
                   <p className="text-xs text-muted-foreground mt-1">
                     Name only the analyses actually performed on this product. Claiming a test
                     the certificate does not show is the kind of mismatch ad platforms reject.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">Shows on the site as</label>
+                  <select
+                    className="lab-input py-2 text-sm"
+                    value={form.availability}
+                    onChange={(e) =>
+                      setForm({ ...form, availability: e.target.value as AvailabilitySetting })
+                    }
+                  >
+                    {AVAILABILITY_SETTINGS.map((setting) => (
+                      <option key={setting} value={setting}>
+                        {SETTING_LABELS[setting]}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Applies to the whole product. "Unavailable" closes it whatever its sizes say.
                   </p>
                 </div>
                 <div className="flex items-center gap-4 pt-6">
