@@ -323,8 +323,12 @@ export default function ProductDetail({ params }: Props) {
                         }`}
                       >
                         {formatVariationValue(v.value)}{v.unit}
-                        {sold && <span className="ml-1 text-xs">(Out)</span>}
-                        {state === "low_stock" && <span className="ml-1 text-xs">(Few left)</span>}
+                        {/* Spelled out. "(Out)" is a shorthand the shop reads
+                            fluently and a first-time buyer has to decode. */}
+                        {sold && <span className="ml-1.5 text-xs">· Out of Stock</span>}
+                        {state === "low_stock" && (
+                          <span className="ml-1.5 text-xs">· Only a few left</span>
+                        )}
                       </button>
                     );
                   })}
