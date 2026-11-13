@@ -35,7 +35,7 @@ export function registerSitemapRoute(app: Express) {
   app.get("/sitemap.xml", async (_req, res) => {
     try {
       const [products, categories, labReported, blogPosts] = await Promise.all([
-        getProducts({ active: true, limit: 10000 }),
+        getProducts({ active: true, hideUnavailable: true, limit: 10000 }),
         getAllCategories(),
         getProductSlugsWithLabReports(),
         // Published only — the helper filters on status in SQL, so a draft

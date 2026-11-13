@@ -350,13 +350,42 @@ export async function getCategoryBySlug(slug: string) {
 }
 
 /** How many active products sit in a category, for its page description. */
+/**
+ * The SQL form of "a shopper can buy this", for hiding what they cannot.
+ *
+ * It has to agree with resolveProductAvailability in shared/availability.ts,
+ * which is the same rule for a single product already loaded. Two expressions
+ * of one rule is not ideal, but the alternative is filtering after the fetch,
+ * and that breaks limit and offset: pages come back short, and with enough
+ * hidden products an empty page is followed by a full one.
+ *
+ * Buyable means the product's own switch has not closed it, and either it has
+ * no sizes at all or at least one active size is still sellable.
+ */
+const PRODUCT_IS_BUYABLE = sql`(
+  ${products.availability} <> 'unavailable'
+  and (
+    not exists (
+      select 1 from ${productVariations} v where v.productId = ${products.id}
+    )
+    or exists (
+      select 1 from ${productVariations} v
+      where v.productId = ${products.id}
+        and v.active = 1
+        and (v.availability = 'low_stock' or (v.availability = 'auto' and v.stock > 0))
+    )
+  )
+)`;
+
 export async function countActiveProductsInCategory(categoryId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(products)
-    .where(and(eq(products.categoryId, categoryId), eq(products.active, true)));
+    .where(
+      and(eq(products.categoryId, categoryId), eq(products.active, true), PRODUCT_IS_BUYABLE)
+    );
   return Number(result[0]?.count ?? 0);
 }
 
@@ -385,6 +414,11 @@ export async function getProducts(opts?: {
   search?: string;
   featured?: boolean;
   active?: boolean;
+  /**
+   * Drop products nobody can buy. Opt-in, and only the storefront opts in:
+   * the admin has to keep seeing a hidden product or there is no way back.
+   */
+  hideUnavailable?: boolean;
   limit?: number;
   offset?: number;
   sortBy?: "price_asc" | "price_desc" | "name_asc" | "name_desc" | "featured";
@@ -395,6 +429,9 @@ export async function getProducts(opts?: {
   if (opts?.active !== undefined) conditions.push(eq(products.active, opts.active));
   if (opts?.categoryId) conditions.push(eq(products.categoryId, opts.categoryId));
   if (opts?.featured !== undefined) conditions.push(eq(products.featured, opts.featured));
+  if (opts?.hideUnavailable) {
+    conditions.push(PRODUCT_IS_BUYABLE);
+  }
   if (opts?.search) {
     conditions.push(
       or(

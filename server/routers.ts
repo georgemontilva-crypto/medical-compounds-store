@@ -684,7 +684,9 @@ export const appRouter = router({
         }).optional()
       )
       .query(({ input }) =>
-        getProducts({ ...input, active: true })
+        // The storefront hides what cannot be bought; listAdmin below does
+        // not, so a hidden product is still reachable to be switched back.
+        getProducts({ ...input, active: true, hideUnavailable: true })
       ),
 
     listAdmin: adminProcedure
