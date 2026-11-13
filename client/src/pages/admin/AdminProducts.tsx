@@ -4,11 +4,10 @@ import { trpc } from "@/lib/trpc";
 import { formatVariationValue } from "@/lib/utils";
 import AvailabilityPill from "@/components/AvailabilityPill";
 import {
-  AVAILABILITY_SETTINGS,
-  SETTING_LABELS,
+  LOW_STOCK_THRESHOLD,
   resolveProductAvailability,
+  stockState,
   variationAvailability,
-  type AvailabilitySetting,
 } from "@shared/availability";
 import {
   Plus,
@@ -40,7 +39,8 @@ type ProductForm = {
   testingClaim: string;
   excludeFromBulkDiscount: boolean;
   weightOz: string;
-  availability: AvailabilitySetting;
+  /** Blank means untracked, which is not the same as "0". */
+  stock: string;
 };
 
 const emptyForm: ProductForm = {
@@ -58,7 +58,7 @@ const emptyForm: ProductForm = {
   testingClaim: "",
   excludeFromBulkDiscount: false,
   weightOz: "",
-  availability: "auto",
+  stock: "",
 };
 
 type VariationForm = {
@@ -68,7 +68,6 @@ type VariationForm = {
   stock: string;
   sku: string;
   weightOz: string;
-  availability: AvailabilitySetting;
 };
 const emptyVariation: VariationForm = {
   unit: "mg",
@@ -77,7 +76,6 @@ const emptyVariation: VariationForm = {
   stock: "",
   sku: "",
   weightOz: "",
-  availability: "auto",
 };
 
 export default function AdminProducts() {
@@ -156,9 +154,12 @@ export default function AdminProducts() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const { stock, ...rest } = form;
     const data = {
-      ...form,
+      ...rest,
       categoryId: form.categoryId ? Number(form.categoryId) : undefined,
+      // Blank clears the count back to untracked rather than setting none.
+      stock: stock.trim() === "" ? null : Number(stock),
     };
     if (editingId) {
       updateProduct.mutate({ id: editingId, ...data });
@@ -167,7 +168,7 @@ export default function AdminProducts() {
     }
   };
 
-  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; purityClaim?: string | null; testingClaim?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null; availability?: AvailabilitySetting | null }) => {
+  const startEdit = (p: { id: number; name: string; slug: string; description?: string | null; shortDescription?: string | null; categoryId?: number | null; basePrice: string; featured: boolean; active: boolean; mechanism?: string | null; casNumber?: string | null; purityClaim?: string | null; testingClaim?: string | null; excludeFromBulkDiscount?: boolean; weightOz?: string | null; stock?: number | null }) => {
     setEditingId(p.id);
     setForm({
       name: p.name,
@@ -177,7 +178,7 @@ export default function AdminProducts() {
       categoryId: p.categoryId?.toString() ?? "",
       basePrice: p.basePrice,
       featured: p.featured,
-      availability: p.availability ?? "auto",
+      stock: p.stock === null || p.stock === undefined ? "" : String(p.stock),
       active: p.active,
       mechanism: p.mechanism ?? "",
       casNumber: p.casNumber ?? "",
@@ -229,45 +230,216 @@ export default function AdminProducts() {
         {/* Form */}
         {showForm && (
           <div className="lab-card p-6">
-            <h2 className="font-semibold text-lg mb-5">
-              {editingId ? "Edit Product" : "Create New Product"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Product Name *</label>
+            {/* Laid out the way a product editor is read rather than the way
+                the columns happen to be ordered in the table: what the page
+                says on the left, what governs it on the right. The old single
+                stack put the stock question between a purity claim and a
+                checkbox row, which is how it went unfound for a week. */}
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <h2 className="font-semibold text-lg">
+                {editingId ? "Edit Product" : "Create New Product"}
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}
+                  className="lab-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  form="product-form"
+                  disabled={createProduct.isPending || updateProduct.isPending}
+                  className="lab-btn-primary"
+                >
+                  {(createProduct.isPending || updateProduct.isPending) ? (
+                    <><Loader2 size={14} className="animate-spin" /> Saving...</>
+                  ) : (
+                    <><Check size={14} /> {editingId ? "Update Product" : "Create Product"}</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <form id="product-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+              {/* ── What the page says ─────────────────────────────────── */}
+              <div className="lg:col-span-2 space-y-5">
+                <section className="rounded-2xl border border-border p-5">
+                  <h3 className="text-sm font-semibold mb-4">Product</h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Product Name *</label>
+                        <input
+                          className="lab-input"
+                          value={form.name}
+                          onChange={(e) => setForm({ ...form, name: e.target.value, slug: autoSlug(e.target.value) })}
+                          required
+                          placeholder="BPC-157"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Slug *</label>
+                        <input
+                          className="lab-input"
+                          value={form.slug}
+                          onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                          required
+                          placeholder="bpc-157"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Short Description</label>
+                      <input
+                        className="lab-input"
+                        value={form.shortDescription}
+                        onChange={(e) => setForm({ ...form, shortDescription: e.target.value })}
+                        placeholder="Brief product summary (max 500 chars)"
+                        maxLength={500}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Full Description</label>
+                      <textarea
+                        className="lab-input min-h-[110px] resize-none"
+                        value={form.description}
+                        onChange={(e) => setForm({ ...form, description: e.target.value })}
+                        placeholder="Detailed product description..."
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-border p-5">
+                  <h3 className="text-sm font-semibold mb-1">Science</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    What this compound is and what its certificate actually reports.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">CAS Number</label>
+                        <input
+                          className="lab-input"
+                          value={form.casNumber}
+                          onChange={(e) => setForm({ ...form, casNumber: e.target.value })}
+                          placeholder="137525-51-0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Purity claim</label>
+                        <input
+                          className="lab-input"
+                          value={form.purityClaim}
+                          onChange={(e) => setForm({ ...form, purityClaim: e.target.value })}
+                          placeholder="≥99%"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Testing claim</label>
+                        <input
+                          className="lab-input"
+                          value={form.testingClaim}
+                          onChange={(e) => setForm({ ...form, testingClaim: e.target.value })}
+                          placeholder="HPLC/MS"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Both are shown on the lab reports page. Leave them empty for the ≥99% ·
+                      HPLC/MS defaults, and set them where this product differs — bacteriostatic
+                      water has no purity figure on its COA. Naming a test the certificate does
+                      not show is the kind of mismatch ad platforms reject.
+                    </p>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Mechanism of Action</label>
+                      <textarea
+                        className="lab-input min-h-[80px] resize-none"
+                        value={form.mechanism}
+                        onChange={(e) => setForm({ ...form, mechanism: e.target.value })}
+                        placeholder="How this compound works..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* ── What governs it ────────────────────────────────────── */}
+              <div className="space-y-5">
+                <section className="rounded-2xl border border-border p-5">
+                  <h3 className="text-sm font-semibold mb-4">Status</h3>
+                  <div className="space-y-2.5">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.active}
+                        onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium">Active</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.featured}
+                        onChange={(e) => setForm({ ...form, featured: e.target.checked })}
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium">Featured</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.excludeFromBulkDiscount}
+                        onChange={(e) => setForm({ ...form, excludeFromBulkDiscount: e.target.checked })}
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium">Exclude from bulk discount</span>
+                    </label>
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-border p-5">
+                  <h3 className="text-sm font-semibold mb-4">Inventory</h3>
+                  <label className="block text-sm font-medium mb-1.5">Units in stock</label>
                   <input
                     className="lab-input"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value, slug: autoSlug(e.target.value) })}
-                    required
-                    placeholder="BPC-157"
+                    type="number"
+                    min="0"
+                    value={form.stock}
+                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                    placeholder="Not tracked"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Slug *</label>
-                  <input
-                    className="lab-input"
-                    value={form.slug}
-                    onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                    required
-                    placeholder="bpc-157"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Category</label>
-                  <select
-                    className="lab-input"
-                    value={form.categoryId}
-                    onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-                  >
-                    <option value="">No category</option>
-                    {categories?.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
+                  {/* Shows the consequence beside the cause, so the number is
+                      typed with its effect visible rather than discovered on
+                      the storefront afterwards. */}
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-xs text-muted-foreground">On the site:</span>
+                    {form.stock.trim() === "" ? (
+                      <span className="text-xs text-muted-foreground">no badge</span>
+                    ) : Number(form.stock) <= 0 ? (
+                      <span className="text-xs font-semibold text-gray-600">
+                        hidden from the catalogue
+                      </span>
+                    ) : (
+                      <AvailabilityPill state={stockState(Number(form.stock))} />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    0 hides the product. 1–{LOW_STOCK_THRESHOLD} shows “Only a few left”. More
+                    than {LOW_STOCK_THRESHOLD} shows “In stock”. Leave it empty to say nothing.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Products with sizes keep their count on each size instead.
+                  </p>
+                </section>
+
+                <section className="rounded-2xl border border-border p-5">
+                  <h3 className="text-sm font-semibold mb-4">Pricing</h3>
                   <label className="block text-sm font-medium mb-1.5">Base Price ($) *</label>
                   <input
                     className="lab-input"
@@ -279,99 +451,28 @@ export default function AdminProducts() {
                     required
                     placeholder="55.00"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">CAS Number</label>
-                  <input
-                    className="lab-input"
-                    value={form.casNumber}
-                    onChange={(e) => setForm({ ...form, casNumber: e.target.value })}
-                    placeholder="137525-51-0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Purity claim</label>
-                  <input
-                    className="lab-input"
-                    value={form.purityClaim}
-                    onChange={(e) => setForm({ ...form, purityClaim: e.target.value })}
-                    placeholder="≥99%"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Shown on the lab reports page. Leave empty for the ≥99% default. Set it to
-                    what this product's certificate reports — bacteriostatic water, for
-                    instance, has no purity figure on its COA.
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Testing claim</label>
-                  <input
-                    className="lab-input"
-                    value={form.testingClaim}
-                    onChange={(e) => setForm({ ...form, testingClaim: e.target.value })}
-                    placeholder="HPLC/MS"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Name only the analyses actually performed on this product. Claiming a test
-                    the certificate does not show is the kind of mismatch ad platforms reject.
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1">Shows on the site as</label>
+                </section>
+
+                <section className="rounded-2xl border border-border p-5">
+                  <h3 className="text-sm font-semibold mb-4">Organization</h3>
+                  <label className="block text-sm font-medium mb-1.5">Category</label>
                   <select
-                    className="lab-input py-2 text-sm"
-                    value={form.availability}
-                    onChange={(e) =>
-                      setForm({ ...form, availability: e.target.value as AvailabilitySetting })
-                    }
+                    className="lab-input"
+                    value={form.categoryId}
+                    onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
                   >
-                    {AVAILABILITY_SETTINGS.map((setting) => (
-                      <option key={setting} value={setting}>
-                        {SETTING_LABELS[setting]}
-                      </option>
+                    <option value="">No category</option>
+                    {categories?.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Applies to the whole product. "Unavailable" closes it whatever its sizes say.
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 pt-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.featured}
-                      onChange={(e) => setForm({ ...form, featured: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Featured</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.active}
-                      onChange={(e) => setForm({ ...form, active: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Active</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.excludeFromBulkDiscount}
-                      onChange={(e) => setForm({ ...form, excludeFromBulkDiscount: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Exclude from bulk volume discount</span>
-                  </label>
-                </div>
-              </div>
+                </section>
 
-              {/* Shipping. Only the weight lives here, and only as an
-                  exception: box dimensions belong to the box an order ships in,
-                  which depends on how many units it holds. */}
-              <div className="border-t border-border pt-5">
-                <p className="lab-section-title mb-1">Shipping</p>
-                <div className="max-w-sm">
+                {/* Only the weight lives here, and only as an exception: box
+                    dimensions belong to the box an order ships in, which
+                    depends on how many units it holds. */}
+                <section className="rounded-2xl border border-border p-5">
+                  <h3 className="text-sm font-semibold mb-4">Shipping</h3>
                   <label className="block text-sm font-medium mb-1.5">Weight override</label>
                   <div className="relative">
                     <input
@@ -387,61 +488,11 @@ export default function AdminProducts() {
                       oz
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Leave empty for standard vials. Only set this for items that genuinely
-                    differ — BAC Water, kits, multi-vial packs, accessories.
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Leave empty for standard vials. Only for items that genuinely differ — BAC
+                    Water, kits, multi-vial packs, accessories.
                   </p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Short Description</label>
-                <input
-                  className="lab-input"
-                  value={form.shortDescription}
-                  onChange={(e) => setForm({ ...form, shortDescription: e.target.value })}
-                  placeholder="Brief product summary (max 500 chars)"
-                  maxLength={500}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Full Description</label>
-                <textarea
-                  className="lab-input min-h-[100px] resize-none"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Detailed product description..."
-                  rows={4}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Mechanism of Action</label>
-                <textarea
-                  className="lab-input min-h-[80px] resize-none"
-                  value={form.mechanism}
-                  onChange={(e) => setForm({ ...form, mechanism: e.target.value })}
-                  placeholder="How this compound works..."
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={createProduct.isPending || updateProduct.isPending}
-                  className="lab-btn-primary"
-                >
-                  {(createProduct.isPending || updateProduct.isPending) ? (
-                    <><Loader2 size={14} className="animate-spin" /> Saving...</>
-                  ) : (
-                    <><Check size={14} /> {editingId ? "Update Product" : "Create Product"}</>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}
-                  className="lab-btn-secondary"
-                >
-                  Cancel
-                </button>
+                </section>
               </div>
             </form>
           </div>
@@ -487,13 +538,9 @@ export default function AdminProducts() {
                     stock: Number(variationForm.stock || 0),
                     sku: variationForm.sku || undefined,
                     weightOz: variationForm.weightOz || null,
-                    availability: variationForm.availability,
                   })
                 }
                 onDeleteVariation={(id) => deleteVariation.mutate({ id })}
-                onSetAvailability={(availability) =>
-                  updateProduct.mutate({ id: product.id, availability })
-                }
                 onSetStock={(stock) => updateProduct.mutate({ id: product.id, stock })}
                 onUpdateVariation={(id, data) => updateVariation.mutate({ id, ...data })}
                 fileInputRef={fileInputRef}
@@ -522,7 +569,6 @@ function ProductRow({
   setVariationForm,
   onAddVariation,
   onDeleteVariation,
-  onSetAvailability,
   onSetStock,
   onUpdateVariation,
   fileInputRef,
@@ -530,7 +576,7 @@ function ProductRow({
   setUploadingFor,
   isUploading,
 }: {
-  product: { id: number; name: string; slug: string; basePrice: string; active: boolean; featured: boolean; categoryId?: number | null; availability?: AvailabilitySetting | null; stock?: number | null };
+  product: { id: number; name: string; slug: string; basePrice: string; active: boolean; featured: boolean; categoryId?: number | null; stock?: number | null };
   categories?: Array<{ id: number; name: string }>;
   expanded: boolean;
   onToggle: () => void;
@@ -542,7 +588,6 @@ function ProductRow({
   setVariationForm: (v: VariationForm) => void;
   onAddVariation: () => void;
   onDeleteVariation: (id: number) => void;
-  onSetAvailability: (value: AvailabilitySetting) => void;
   onSetStock: (value: number | null) => void;
   onUpdateVariation: (
     id: number,
@@ -552,7 +597,6 @@ function ProductRow({
       price: string;
       stock: number;
       weightOz: string | null;
-      availability: AvailabilitySetting;
     }
   ) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -590,7 +634,6 @@ function ProductRow({
     price: string;
     stock: number;
     weightOz?: string | null;
-    availability?: AvailabilitySetting | null;
   }) => {
     setEditingVariationId(v.id);
     setEditVariationForm({
@@ -600,7 +643,6 @@ function ProductRow({
       stock: String(v.stock),
       sku: "",
       weightOz: v.weightOz ?? "",
-      availability: v.availability ?? "auto",
     });
   };
 
@@ -612,7 +654,6 @@ function ProductRow({
       price: editVariationForm.price,
       stock: Number(editVariationForm.stock),
       weightOz: editVariationForm.weightOz || null,
-      availability: editVariationForm.availability,
     });
     setEditingVariationId(null);
   };
@@ -755,17 +796,11 @@ function ProductRow({
                   />
                 </label>
               )}
-              <select
-                className="lab-input py-1.5 text-xs ml-auto"
-                value={product.availability ?? "auto"}
-                onChange={(e) => onSetAvailability(e.target.value as AvailabilitySetting)}
-              >
-                {AVAILABILITY_SETTINGS.map((setting) => (
-                  <option key={setting} value={setting}>
-                    {SETTING_LABELS[setting]}
-                  </option>
-                ))}
-              </select>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {(variations?.length ?? 0) > 0
+                  ? "Set per size below"
+                  : `0 hides it · 1–${LOW_STOCK_THRESHOLD} few left · more in stock`}
+              </span>
             </div>
 
             <p className="text-sm font-semibold mb-3">Variations (MG / ML)</p>
@@ -819,27 +854,6 @@ function ProductRow({
                             value={editVariationForm.stock}
                             onChange={(e) => setEditVariationForm({ ...editVariationForm, stock: e.target.value })}
                           />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-muted-foreground mb-1">
-                            Shows on the site as
-                          </label>
-                          <select
-                            className="lab-input py-1.5 text-xs"
-                            value={editVariationForm.availability}
-                            onChange={(e) =>
-                              setEditVariationForm({
-                                ...editVariationForm,
-                                availability: e.target.value as AvailabilitySetting,
-                              })
-                            }
-                          >
-                            {AVAILABILITY_SETTINGS.map((setting) => (
-                              <option key={setting} value={setting}>
-                                {SETTING_LABELS[setting]}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                         <button
                           onClick={saveEditVariation}
@@ -965,25 +979,6 @@ function ProductRow({
                   value={variationForm.stock}
                   onChange={(e) => setVariationForm({ ...variationForm, stock: e.target.value })}
                 />
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">Shows on the site as</label>
-                <select
-                  className="lab-input py-1.5 text-xs"
-                  value={variationForm.availability}
-                  onChange={(e) =>
-                    setVariationForm({
-                      ...variationForm,
-                      availability: e.target.value as AvailabilitySetting,
-                    })
-                  }
-                >
-                  {AVAILABILITY_SETTINGS.map((setting) => (
-                    <option key={setting} value={setting}>
-                      {SETTING_LABELS[setting]}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Weight (oz)</label>
