@@ -619,6 +619,8 @@ function ProductRow({
     );
   }, [product.stock]);
 
+  const [stockDrafts, setStockDrafts] = useState<Record<number, string>>({});
+
   const [nextOrder, setNextOrder] = useState(0);
   useEffect(() => {
     if (images) setNextOrder(images.length);
@@ -803,135 +805,184 @@ function ProductRow({
               </span>
             </div>
 
-            <p className="text-sm font-semibold mb-3">Variations (MG / ML)</p>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {variations && variations.length > 0 ? (
-                variations.map((v) => {
-                  const variationImage = images?.find((img) => img.variationId === v.id);
+            {/* A table, not a row of chips. Each size's stock is typed in
+                the row that shows it, because the question "where do I put
+                the stock" had no answer when the number was three clicks deep
+                behind a pencil, in a form that looked identical to the one for
+                creating a size and sat beside it. */}
+            <div className="flex items-baseline gap-2 mb-2">
+              <p className="text-sm font-semibold">Sizes</p>
+              <p className="text-xs text-muted-foreground">
+                Each size carries its own stock. The product's own count is not used.
+              </p>
+            </div>
 
-                  if (editingVariationId === v.id) {
-                    return (
-                      <div
-                        key={v.id}
-                        className="flex flex-wrap gap-2 items-end bg-card border border-primary rounded-xl px-3 py-2"
-                      >
-                        <div>
-                          <label className="block text-[10px] text-muted-foreground mb-1">Unit</label>
-                          <select
-                            className="lab-input py-1.5 text-xs w-20"
-                            value={editVariationForm.unit}
-                            onChange={(e) => setEditVariationForm({ ...editVariationForm, unit: e.target.value as "mg" | "ml" })}
-                          >
-                            <option value="mg">mg</option>
-                            <option value="ml">ml</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-muted-foreground mb-1">Value</label>
-                          <input
-                            className="lab-input py-1.5 text-xs w-20"
-                            type="number"
-                            step="0.01"
-                            value={editVariationForm.value}
-                            onChange={(e) => setEditVariationForm({ ...editVariationForm, value: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-muted-foreground mb-1">Price ($)</label>
-                          <input
-                            className="lab-input py-1.5 text-xs w-24"
-                            type="number"
-                            step="0.01"
-                            value={editVariationForm.price}
-                            onChange={(e) => setEditVariationForm({ ...editVariationForm, price: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-muted-foreground mb-1">Stock</label>
-                          <input
-                            className="lab-input py-1.5 text-xs w-20"
-                            type="number"
-                            value={editVariationForm.stock}
-                            onChange={(e) => setEditVariationForm({ ...editVariationForm, stock: e.target.value })}
-                          />
-                        </div>
-                        <button
-                          onClick={saveEditVariation}
-                          disabled={!editVariationForm.value || !editVariationForm.price}
-                          className="lab-btn-primary py-1.5 px-3 text-xs"
-                        >
-                          <Check size={12} />
-                          Guardar
-                        </button>
-                        <button
-                          onClick={() => setEditingVariationId(null)}
-                          className="lab-btn-secondary py-1.5 px-3 text-xs"
-                        >
-                          <X size={12} />
-                          Cancelar
-                        </button>
-                      </div>
-                    );
-                  }
+            {variations && variations.length > 0 ? (
+              <div className="rounded-xl border border-border overflow-hidden mb-3">
+                <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 px-3 py-2 bg-secondary/40 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span>Size</span>
+                  <span>Price</span>
+                  <span>Units in stock</span>
+                  <span>On the site</span>
+                  <span />
+                </div>
+
+                {variations.map((v) => {
+                  const variationImage = images?.find((img) => img.variationId === v.id);
+                  const draft = stockDrafts[v.id] ?? String(v.stock);
 
                   return (
-                    <div
-                      key={v.id}
-                      className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-1.5"
-                    >
-                      {variationImage ? (
-                        <img
-                          src={variationImage.url}
-                          alt=""
-                          className="w-8 h-8 rounded-lg object-cover border border-border shrink-0"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                          <ImageIcon size={12} className="text-muted-foreground/40" />
+                    <div key={v.id} className="border-t border-border">
+                      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 items-center px-3 py-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {variationImage ? (
+                            <img
+                              src={variationImage.url}
+                              alt=""
+                              className="w-8 h-8 rounded-lg object-cover border border-border shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                              <ImageIcon size={12} className="text-muted-foreground/40" />
+                            </div>
+                          )}
+                          <span className="text-sm font-medium truncate">
+                            {formatVariationValue(v.value)}{v.unit}
+                          </span>
                         </div>
-                      )}
-                      <span className="text-xs font-medium">{formatVariationValue(v.value)}{v.unit}</span>
-                      <span className="text-xs text-muted-foreground">${Number(v.price).toFixed(2)}</span>
-                      <span className="text-xs text-muted-foreground">Stock: {v.stock}</span>
-                      {/* The verdict, not the setting: what a shopper sees for
-                          this size right now, however it was arrived at. */}
-                      <AvailabilityPill state={variationAvailability(v)} />
-                      <label
-                        className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                        title="Upload image for this variation"
-                      >
-                        <Upload size={12} />
+
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          ${Number(v.price).toFixed(2)}
+                        </span>
+
                         <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) { setUploadingFor(product.id); onUploadImage(file, nextOrder, v.id); }
-                            e.target.value = "";
+                          className="lab-input py-1 text-xs w-20 text-center"
+                          type="number"
+                          min={0}
+                          value={draft}
+                          onChange={(e) =>
+                            setStockDrafts({ ...stockDrafts, [v.id]: e.target.value })
+                          }
+                          onBlur={() => {
+                            const next = Number(draft);
+                            if (draft.trim() === "" || Number.isNaN(next) || next === v.stock) {
+                              // Nothing to save, and a blank box should snap
+                              // back to the stored number rather than linger.
+                              setStockDrafts({ ...stockDrafts, [v.id]: String(v.stock) });
+                              return;
+                            }
+                            onUpdateVariation(v.id, {
+                              unit: v.unit as "mg" | "ml",
+                              value: v.value,
+                              price: v.price,
+                              stock: next,
+                              weightOz: v.weightOz ?? null,
+                            });
                           }}
                         />
-                      </label>
-                      <button
-                        onClick={() => startEditVariation(v)}
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                        title="Edit variation"
-                      >
-                        <Pencil size={12} />
-                      </button>
-                      <button
-                        onClick={() => onDeleteVariation(v.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <X size={12} />
-                      </button>
+
+                        {/* The verdict, not the setting: what a shopper sees
+                            for this size right now. */}
+                        <AvailabilityPill state={variationAvailability(v)} />
+
+                        <div className="flex items-center gap-2 pl-1">
+                          <label
+                            className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                            title="Upload image for this size"
+                          >
+                            <Upload size={13} />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) { setUploadingFor(product.id); onUploadImage(file, nextOrder, v.id); }
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                          <button
+                            onClick={() =>
+                              editingVariationId === v.id
+                                ? setEditingVariationId(null)
+                                : startEditVariation(v)
+                            }
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title="Edit size and price"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            onClick={() => onDeleteVariation(v.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            title="Remove this size"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Size and price only. Stock is in the row above and
+                          does not need opening anything. */}
+                      {editingVariationId === v.id && (
+                        <div className="flex flex-wrap gap-2 items-end px-3 pb-3 pt-1 bg-secondary/30">
+                          <div>
+                            <label className="block text-[10px] text-muted-foreground mb-1">Unit</label>
+                            <select
+                              className="lab-input py-1.5 text-xs w-20"
+                              value={editVariationForm.unit}
+                              onChange={(e) => setEditVariationForm({ ...editVariationForm, unit: e.target.value as "mg" | "ml" })}
+                            >
+                              <option value="mg">mg</option>
+                              <option value="ml">ml</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-muted-foreground mb-1">Value</label>
+                            <input
+                              className="lab-input py-1.5 text-xs w-20"
+                              type="number"
+                              step="0.01"
+                              value={editVariationForm.value}
+                              onChange={(e) => setEditVariationForm({ ...editVariationForm, value: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-muted-foreground mb-1">Price ($)</label>
+                            <input
+                              className="lab-input py-1.5 text-xs w-24"
+                              type="number"
+                              step="0.01"
+                              value={editVariationForm.price}
+                              onChange={(e) => setEditVariationForm({ ...editVariationForm, price: e.target.value })}
+                            />
+                          </div>
+                          <button
+                            onClick={saveEditVariation}
+                            disabled={!editVariationForm.value || !editVariationForm.price}
+                            className="lab-btn-primary py-1.5 px-3 text-xs"
+                          >
+                            <Check size={12} />
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingVariationId(null)}
+                            className="lab-btn-secondary py-1.5 px-3 text-xs"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
-                })
-              ) : (
-                <p className="text-xs text-muted-foreground">No variations yet</p>
-              )}
-            </div>
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground mb-3">
+                No sizes. This product sells at its base price, and its stock is the count above.
+              </p>
+            )}
             {/* Add variation form */}
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-4 mb-1.5">
               Add a size
@@ -971,10 +1022,11 @@ function ProductRow({
                 />
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Stock</label>
+                <label className="block text-xs text-muted-foreground mb-1">Units in stock</label>
                 <input
-                  className="lab-input py-1.5 text-xs w-20"
+                  className="lab-input py-1.5 text-xs w-24"
                   type="number"
+                  min={0}
                   placeholder="100"
                   value={variationForm.stock}
                   onChange={(e) => setVariationForm({ ...variationForm, stock: e.target.value })}
