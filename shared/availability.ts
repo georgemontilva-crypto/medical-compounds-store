@@ -1,24 +1,33 @@
 /**
  * Whether a thing can be bought, and what the shop wants said about it.
  *
- * There are two sources of truth here and they are not equal. The `stock`
- * number has been in the schema from the start, but nothing ever decrements it
- * — no order, no payment, no webhook touches it — so it only changes when
- * somebody types into the admin. A figure maintained entirely by hand, shown to
- * shoppers as "12 in stock", is a figure that is confidently wrong as often as
- * it is right.
+ * The count decides, and it decides automatically: nothing in stock means the
+ * product leaves the catalogue, a handful left says so on the card, and a
+ * healthy number says so too. The switch stays as an override for the cases a
+ * number cannot express — a product pulled for a reason that has nothing to do
+ * with how many are on the shelf.
  *
- * So the shop gets a switch, and the switch wins. `auto` keeps the old
- * behaviour for everything that already exists — the number still decides —
- * and the two explicit settings override it. Nothing had to be migrated and
- * nobody has to go set a value on 17 products before this is useful.
+ * One thing the count cannot say is "I do not know", and that distinction
+ * carries real weight here: a product whose stock has never been entered is
+ * not a product with none. Those read as null and are shown without any badge
+ * at all, which is also what every product in this catalogue looked like
+ * before stock existed on it. The alternative — treating a blank as zero —
+ * empties the shop the moment the column is added.
  */
 
-/** What the shop sets on a size. Stored. */
+/** Where "a few left" ends and "plenty" begins. */
+export const LOW_STOCK_THRESHOLD = 5;
+
+/** What the shop sets on a product or a size. Stored. */
 export type AvailabilitySetting = "auto" | "low_stock" | "unavailable";
 
-/** What a shopper is told. Derived; never stored. */
-export type AvailabilityState = "in_stock" | "low_stock" | "unavailable";
+/**
+ * What a shopper is told. Derived; never stored.
+ *
+ * "unknown" is not a hedge — it is the honest state for stock nobody has
+ * entered, and it renders as nothing rather than as a claim.
+ */
+export type AvailabilityState = "unknown" | "in_stock" | "low_stock" | "unavailable";
 
 export const AVAILABILITY_SETTINGS: AvailabilitySetting[] = [
   "auto",
@@ -33,12 +42,24 @@ export const SETTING_LABELS: Record<AvailabilitySetting, string> = {
   unavailable: "Unavailable",
 };
 
-/** Copy a shopper sees. "in_stock" renders as nothing at all. */
+/** Copy a shopper sees. "unknown" renders as nothing at all. */
 export const STATE_LABELS: Record<AvailabilityState, string> = {
+  unknown: "",
   in_stock: "In stock",
-  low_stock: "Low stock",
+  low_stock: "Only a few left",
   unavailable: "Unavailable",
 };
+
+/**
+ * The automatic rule, from a count alone.
+ *
+ * null is untracked, not empty. Zero or less is empty.
+ */
+export function stockState(stock: number | null | undefined): AvailabilityState {
+  if (stock === null || stock === undefined) return "unknown";
+  if (stock <= 0) return "unavailable";
+  return stock <= LOW_STOCK_THRESHOLD ? "low_stock" : "in_stock";
+}
 
 export interface VariationAvailabilityInput {
   active: boolean;
@@ -51,12 +72,11 @@ export interface VariationAvailabilityInput {
  *
  * Order matters. An inactive size is gone whatever the switch says — that is
  * the shop having removed it, not having run out. After that the switch
- * decides, and only `auto` consults the count.
+ * decides, and only "auto" consults the count.
  *
- * Note that "low_stock" does not check the count. A shop that marks a size low
- * means it: letting a stale 40 in the stock column quietly override that would
- * put the hand-maintained number back in charge of the thing it was too
- * unreliable to decide.
+ * "low_stock" set by hand does not check the count, because a shop that marks
+ * a size low means it; letting a stale number override that would put the
+ * count back in charge of the one case the switch exists to handle.
  */
 export function variationAvailability(variation: VariationAvailabilityInput): AvailabilityState {
   if (!variation.active) return "unavailable";
@@ -67,7 +87,7 @@ export function variationAvailability(variation: VariationAvailabilityInput): Av
     case "low_stock":
       return "low_stock";
     default:
-      return variation.stock > 0 ? "in_stock" : "unavailable";
+      return stockState(variation.stock);
   }
 }
 
@@ -77,15 +97,12 @@ export function isPurchasable(variation: VariationAvailabilityInput): boolean {
 }
 
 /**
- * What the catalogue card says for a product, from its sizes.
+ * What a product's sizes add up to.
  *
- * A card is a summary, so it leans toward warning rather than reassuring: one
- * size running low is worth saying even when another is fully stocked, because
- * the shopper who wants that size would rather hear it on the listing than
- * after clicking. The product page shows the truth per size.
- *
- * A product with no active sizes is unavailable rather than in stock — the
- * fallback has to be the one that cannot sell something that does not exist.
+ * It leans toward warning: one size running low is worth saying even when
+ * another is fully stocked, because the shopper who wants that size would
+ * rather hear it on the listing than after clicking. The product page shows
+ * the truth per size.
  */
 export function productAvailability(
   variations: VariationAvailabilityInput[]
@@ -96,26 +113,27 @@ export function productAvailability(
   const states = active.map(variationAvailability);
   if (states.every(state => state === "unavailable")) return "unavailable";
   if (states.some(state => state === "low_stock")) return "low_stock";
-  return "in_stock";
+  if (states.some(state => state === "in_stock")) return "in_stock";
+  return "unknown";
 }
 
 export interface ProductAvailabilityInput {
   availability?: AvailabilitySetting | null;
+  /** Null means nobody has entered one — not that there are none. */
+  stock?: number | null;
 }
 
 /**
- * What a product is, from its own switch and its sizes together.
+ * What a product is, from its switch, its own count, and its sizes.
  *
- * Sizes are not where most of this catalogue lives. Only two products have any
- * at all; the rest sell on their base price and have no size row to carry a
- * setting, which is why the product needs a switch of its own rather than only
- * inheriting one.
+ * Only two products in this catalogue have sizes; the rest sell on their base
+ * price, and their own count is the only thing that can speak for them. Where
+ * sizes do exist they are the finer truth and the product's count is ignored —
+ * a number on the product would be a second, competing total.
  *
- * The product's own setting is the stronger of the two. "unavailable" closes
- * the product whatever the sizes say — the shop stopping sales outranks a size
- * that still looks fine — while "low_stock" cannot talk over a product whose
- * every size is genuinely gone, because that would advertise something nobody
- * can buy.
+ * The switch outranks both. "unavailable" closes the product whatever the
+ * numbers say, while "low_stock" cannot talk over sizes that are all genuinely
+ * gone, because that would advertise something nobody can buy.
  */
 export function resolveProductAvailability(
   product: ProductAvailabilityInput,
@@ -124,14 +142,13 @@ export function resolveProductAvailability(
   const setting = product.availability ?? "auto";
   if (setting === "unavailable") return "unavailable";
 
-  // A product with no sizes has nothing to be out of: its own switch is the
-  // only thing that can say otherwise.
-  const fromSizes = variations.length > 0 ? productAvailability(variations) : "in_stock";
+  const base =
+    variations.length > 0 ? productAvailability(variations) : stockState(product.stock);
 
   if (setting === "low_stock") {
-    return fromSizes === "unavailable" ? "unavailable" : "low_stock";
+    return base === "unavailable" ? "unavailable" : "low_stock";
   }
-  return fromSizes;
+  return base;
 }
 
 /** Whether a product can be bought at all, before any size is chosen. */

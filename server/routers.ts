@@ -721,6 +721,9 @@ export const appRouter = router({
           featured: z.boolean().optional(),
           active: z.boolean().optional(),
           availability: z.enum(["auto", "low_stock", "unavailable"]).optional(),
+          // Nullable on purpose: null clears the count back to untracked,
+          // which is not the same as setting it to nought.
+          stock: z.number().int().min(0).nullable().optional(),
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
           purityClaim: z.string().optional(),
@@ -744,6 +747,9 @@ export const appRouter = router({
           featured: z.boolean().optional(),
           active: z.boolean().optional(),
           availability: z.enum(["auto", "low_stock", "unavailable"]).optional(),
+          // Nullable on purpose: null clears the count back to untracked,
+          // which is not the same as setting it to nought.
+          stock: z.number().int().min(0).nullable().optional(),
           mechanism: z.string().optional(),
           casNumber: z.string().optional(),
           purityClaim: z.string().optional(),

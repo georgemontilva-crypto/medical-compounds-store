@@ -365,14 +365,17 @@ export async function getCategoryBySlug(slug: string) {
 const PRODUCT_IS_BUYABLE = sql`(
   ${products.availability} <> 'unavailable'
   and (
-    not exists (
-      select 1 from ${productVariations} v where v.productId = ${products.id}
-    )
-    or exists (
+    exists (
       select 1 from ${productVariations} v
       where v.productId = ${products.id}
         and v.active = 1
         and (v.availability = 'low_stock' or (v.availability = 'auto' and v.stock > 0))
+    )
+    or (
+      not exists (
+        select 1 from ${productVariations} v where v.productId = ${products.id}
+      )
+      and (${products.stock} is null or ${products.stock} > 0)
     )
   )
 )`;
@@ -478,7 +481,9 @@ export async function getProducts(opts?: {
  * badge. The sizes themselves are not returned — the card only needs the
  * verdict, and the product page fetches them properly.
  */
-async function attachAvailability<T extends { id: number; availability?: AvailabilitySetting | null }>(
+async function attachAvailability<
+  T extends { id: number; availability?: AvailabilitySetting | null; stock?: number | null },
+>(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   rows: T[]
 ): Promise<Array<T & { availability: AvailabilityState }>> {

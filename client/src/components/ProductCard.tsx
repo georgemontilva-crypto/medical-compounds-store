@@ -77,7 +77,7 @@ export default function ProductCard({
   // products in this catalogue have none.
   const availability: AvailabilityState =
     product.availability ??
-    (variations && variations.length > 0 ? productAvailability(variations) : "in_stock");
+    (variations && variations.length > 0 ? productAvailability(variations) : "unknown");
   const sold = availability === "unavailable";
   const mainSize = variations?.[0] ? `${formatVariationValue(variations[0].value)}${variations[0].unit}` : "";
   const catGlow = `0 0 0 2px ${catColor}40, 0 8px 24px -6px ${catColor}66`;
@@ -138,7 +138,7 @@ export default function ProductCard({
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
           <span className="text-[10px] font-semibold tracking-widest uppercase truncate" style={{ color: catColor }}>{catName}</span>
         </div>
-        {availability !== "in_stock" && (
+        {availability !== "unknown" && (
           <div className="mb-2">
             <AvailabilityPill state={availability} />
           </div>

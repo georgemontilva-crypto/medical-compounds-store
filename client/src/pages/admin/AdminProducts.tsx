@@ -6,6 +6,7 @@ import AvailabilityPill from "@/components/AvailabilityPill";
 import {
   AVAILABILITY_SETTINGS,
   SETTING_LABELS,
+  resolveProductAvailability,
   variationAvailability,
   type AvailabilitySetting,
 } from "@shared/availability";
@@ -73,7 +74,7 @@ const emptyVariation: VariationForm = {
   unit: "mg",
   value: "",
   price: "",
-  stock: "0",
+  stock: "",
   sku: "",
   weightOz: "",
   availability: "auto",
@@ -483,13 +484,17 @@ export default function AdminProducts() {
                     unit: variationForm.unit,
                     value: variationForm.value,
                     price: variationForm.price,
-                    stock: Number(variationForm.stock),
+                    stock: Number(variationForm.stock || 0),
                     sku: variationForm.sku || undefined,
                     weightOz: variationForm.weightOz || null,
                     availability: variationForm.availability,
                   })
                 }
                 onDeleteVariation={(id) => deleteVariation.mutate({ id })}
+                onSetAvailability={(availability) =>
+                  updateProduct.mutate({ id: product.id, availability })
+                }
+                onSetStock={(stock) => updateProduct.mutate({ id: product.id, stock })}
                 onUpdateVariation={(id, data) => updateVariation.mutate({ id, ...data })}
                 fileInputRef={fileInputRef}
                 uploadingFor={uploadingFor}
@@ -517,13 +522,15 @@ function ProductRow({
   setVariationForm,
   onAddVariation,
   onDeleteVariation,
+  onSetAvailability,
+  onSetStock,
   onUpdateVariation,
   fileInputRef,
   uploadingFor,
   setUploadingFor,
   isUploading,
 }: {
-  product: { id: number; name: string; slug: string; basePrice: string; active: boolean; featured: boolean; categoryId?: number | null };
+  product: { id: number; name: string; slug: string; basePrice: string; active: boolean; featured: boolean; categoryId?: number | null; availability?: AvailabilitySetting | null; stock?: number | null };
   categories?: Array<{ id: number; name: string }>;
   expanded: boolean;
   onToggle: () => void;
@@ -535,6 +542,8 @@ function ProductRow({
   setVariationForm: (v: VariationForm) => void;
   onAddVariation: () => void;
   onDeleteVariation: (id: number) => void;
+  onSetAvailability: (value: AvailabilitySetting) => void;
+  onSetStock: (value: number | null) => void;
   onUpdateVariation: (
     id: number,
     data: {
@@ -555,6 +564,16 @@ function ProductRow({
   const { data: images } = trpc.products.images.useQuery({ productId: product.id }, { enabled: expanded });
   const { data: variations } = trpc.products.variations.useQuery({ productId: product.id }, { enabled: expanded });
   const category = categories?.find((c) => c.id === product.categoryId);
+
+  // Held locally so a half-typed number is not sent on every keystroke.
+  const [stockDraft, setStockDraft] = useState(
+    product.stock === null || product.stock === undefined ? "" : String(product.stock)
+  );
+  useEffect(() => {
+    setStockDraft(
+      product.stock === null || product.stock === undefined ? "" : String(product.stock)
+    );
+  }, [product.stock]);
 
   const [nextOrder, setNextOrder] = useState(0);
   useEffect(() => {
@@ -705,6 +724,50 @@ function ProductRow({
 
           {/* Variations */}
           <div>
+            {/* Put where the shop looks for stock. Most products here have no
+                sizes, so the list below reads "No variations yet" and the
+                create form under it shows an empty Stock box — which reads as
+                "this product has none". This is the control that actually
+                governs those products, so it belongs above them, not only in
+                the edit form behind the pencil. */}
+            <div className="flex flex-wrap items-center gap-3 mb-4 p-3 rounded-xl bg-secondary/40 border border-border">
+              <span className="text-sm font-semibold">Availability</span>
+              <AvailabilityPill state={resolveProductAvailability(product, variations ?? [])} />
+              {(variations?.length ?? 0) === 0 && (
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  Units in stock
+                  <input
+                    className="lab-input py-1.5 text-xs w-20"
+                    type="number"
+                    min={0}
+                    placeholder="—"
+                    value={stockDraft}
+                    onChange={(e) => setStockDraft(e.target.value)}
+                    onBlur={() => {
+                      // Blank is not nought. Clearing the box means "stop
+                      // tracking this one", and the product goes back to
+                      // showing no badge rather than vanishing from the shop.
+                      const next = stockDraft.trim() === "" ? null : Number(stockDraft);
+                      if (next !== (product.stock ?? null) && !Number.isNaN(next)) {
+                        onSetStock(next);
+                      }
+                    }}
+                  />
+                </label>
+              )}
+              <select
+                className="lab-input py-1.5 text-xs ml-auto"
+                value={product.availability ?? "auto"}
+                onChange={(e) => onSetAvailability(e.target.value as AvailabilitySetting)}
+              >
+                {AVAILABILITY_SETTINGS.map((setting) => (
+                  <option key={setting} value={setting}>
+                    {SETTING_LABELS[setting]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <p className="text-sm font-semibold mb-3">Variations (MG / ML)</p>
             <div className="flex flex-wrap gap-2 mb-3">
               {variations && variations.length > 0 ? (
@@ -856,6 +919,9 @@ function ProductRow({
               )}
             </div>
             {/* Add variation form */}
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-4 mb-1.5">
+              Add a size
+            </p>
             <div className="flex flex-wrap gap-2 items-end">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Unit</label>

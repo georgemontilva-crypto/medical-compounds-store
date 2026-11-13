@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  LOW_STOCK_THRESHOLD,
   isProductPurchasable,
   isPurchasable,
   productAvailability,
   resolveProductAvailability,
+  stockState,
   variationAvailability,
 } from "@shared/availability";
 
@@ -20,6 +22,7 @@ describe("variationAvailability", () => {
     // has to keep deciding or this change silently alters the whole catalogue.
     expect(variationAvailability(size({ stock: 10 }))).toBe("in_stock");
     expect(variationAvailability(size({ stock: 0 }))).toBe("unavailable");
+    expect(variationAvailability(size({ stock: 3 }))).toBe("low_stock");
   });
 
   it("lets the shop mark a stocked size unavailable", () => {
@@ -54,7 +57,7 @@ describe("variationAvailability", () => {
   });
 
   it("reads a missing setting as auto, for rows written before the column", () => {
-    expect(variationAvailability({ active: true, stock: 5 })).toBe("in_stock");
+    expect(variationAvailability({ active: true, stock: 50 })).toBe("in_stock");
     expect(variationAvailability({ active: true, stock: 0, availability: null })).toBe(
       "unavailable"
     );
@@ -118,9 +121,24 @@ describe("resolveProductAvailability", () => {
     expect(resolveProductAvailability({ availability: "low_stock" }, [])).toBe("low_stock");
   });
 
-  it("leaves a sizeless product in stock when nothing was set", () => {
-    expect(resolveProductAvailability({}, [])).toBe("in_stock");
-    expect(resolveProductAvailability({ availability: "auto" }, [])).toBe("in_stock");
+  it("shows a sizeless product with no count entered, saying nothing about it", () => {
+    // This is the case that decides whether adding the column empties the
+    // shop. Every product predates it; all of them read null.
+    expect(resolveProductAvailability({}, [])).toBe("unknown");
+    expect(resolveProductAvailability({ availability: "auto", stock: null }, [])).toBe("unknown");
+    expect(isProductPurchasable({ stock: null }, [])).toBe(true);
+  });
+
+  it("applies the count to a sizeless product once one is entered", () => {
+    expect(resolveProductAvailability({ stock: 0 }, [])).toBe("unavailable");
+    expect(resolveProductAvailability({ stock: 1 }, [])).toBe("low_stock");
+    expect(resolveProductAvailability({ stock: LOW_STOCK_THRESHOLD }, [])).toBe("low_stock");
+    expect(resolveProductAvailability({ stock: LOW_STOCK_THRESHOLD + 1 }, [])).toBe("in_stock");
+  });
+
+  it("ignores the product count where sizes carry their own", () => {
+    // Otherwise the product total silently competes with the per-size ones.
+    expect(resolveProductAvailability({ stock: 0 }, [size({ stock: 50 })])).toBe("in_stock");
   });
 
   it("lets the product's own switch close every size under it", () => {
@@ -148,7 +166,7 @@ describe("resolveProductAvailability", () => {
   });
 
   it("falls through to the sizes when the product is left on auto", () => {
-    expect(resolveProductAvailability({ availability: "auto" }, [size({ stock: 5 })])).toBe(
+    expect(resolveProductAvailability({ availability: "auto" }, [size({ stock: 50 })])).toBe(
       "in_stock"
     );
     expect(
@@ -165,5 +183,29 @@ describe("isProductPurchasable", () => {
     expect(isProductPurchasable({ availability: "unavailable" }, [])).toBe(false);
     expect(isProductPurchasable({ availability: "low_stock" }, [])).toBe(true);
     expect(isProductPurchasable({}, [])).toBe(true);
+    expect(isProductPurchasable({ stock: 0 }, [])).toBe(false);
+    expect(isProductPurchasable({ stock: 1 }, [])).toBe(true);
+  });
+});
+
+describe("stockState", () => {
+  it("separates untracked from empty, which is the whole point of the null", () => {
+    // A blank count is not a count of nought. Reading it as nought hides the
+    // product, which for a catalogue that has never had counts means hiding
+    // all of it at once.
+    expect(stockState(null)).toBe("unknown");
+    expect(stockState(undefined)).toBe("unknown");
+    expect(stockState(0)).toBe("unavailable");
+  });
+
+  it("puts the boundary where the shop asked for it", () => {
+    expect(LOW_STOCK_THRESHOLD).toBe(5);
+    expect(stockState(1)).toBe("low_stock");
+    expect(stockState(5)).toBe("low_stock");
+    expect(stockState(6)).toBe("in_stock");
+  });
+
+  it("treats a negative count as empty rather than as plenty", () => {
+    expect(stockState(-3)).toBe("unavailable");
   });
 });

@@ -324,7 +324,7 @@ export default function ProductDetail({ params }: Props) {
                       >
                         {formatVariationValue(v.value)}{v.unit}
                         {sold && <span className="ml-1 text-xs">(Out)</span>}
-                        {state === "low_stock" && <span className="ml-1 text-xs">(Low)</span>}
+                        {state === "low_stock" && <span className="ml-1 text-xs">(Few left)</span>}
                       </button>
                     );
                   })}
@@ -376,7 +376,7 @@ export default function ProductDetail({ params }: Props) {
                   decrements it, so "12 in stock" was a number somebody typed
                   once — precise, public, and wrong as often as not. The state
                   is what the shop actually stands behind. */}
-              {selectedVariation && selectedState !== "in_stock" && (
+              {selectedState !== "unknown" && (
                 <div className="mt-2">
                   <AvailabilityPill state={selectedState} size="md" />
                 </div>

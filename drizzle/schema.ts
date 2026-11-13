@@ -78,6 +78,17 @@ export const products = mysqlTable("products", {
   availability: mysqlEnum("availability", ["auto", "low_stock", "unavailable"])
     .default("auto")
     .notNull(),
+  // Units on the shelf, for a product sold without sizes.
+  //
+  // Nullable, and the null is load-bearing: it means nobody has entered a
+  // count, which is not the same as entering nought. Every product predates
+  // this column, so a NOT NULL DEFAULT 0 would have emptied the catalogue the
+  // moment the migration ran — zero hides a product. Null shows it, exactly as
+  // before, until somebody types a number.
+  //
+  // Ignored where the product has sizes: those carry their own counts, and a
+  // number here would be a second total competing with them.
+  stock: int("stock"),
   mechanism: text("mechanism"),
   casNumber: varchar("casNumber", { length: 50 }),
   excludeFromBulkDiscount: boolean("excludeFromBulkDiscount").default(false).notNull(),
