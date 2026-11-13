@@ -3,8 +3,13 @@ import {
   getCategoryBySlug,
   getProductBySlug,
   getProductImages,
+  getProductVariations,
   getPublishedBlogPostBySlug,
 } from "../db";
+import {
+  resolveProductAvailability,
+  type AvailabilityState,
+} from "@shared/availability";
 import { blogDescription, truncateAtWord } from "@shared/blog";
 import { FAQS } from "@shared/faqs";
 
@@ -558,6 +563,21 @@ async function resolveProduct(slug: string, base: MetaBase): Promise<ResolvedMet
   // product that isn't there.
   if (!product || !product.active) return catalogFallback(base, "noindex, follow");
 
+  // Google is told what the page says, not a constant. This was hardcoded to
+  // InStock, which told search engines every product was buyable however the
+  // shop had marked it — and a rich result offering something nobody can buy
+  // is the kind of mismatch that gets a merchant's listings pulled.
+  let availabilityState: AvailabilityState = "in_stock";
+  try {
+    availabilityState = resolveProductAvailability(
+      product,
+      await getProductVariations(product.id)
+    );
+  } catch (err) {
+    // Worth a page without an accurate offer, not worth losing the page.
+    console.error(`Failed to resolve availability for product meta (${slug}):`, err);
+  }
+
   let image = base.image;
   try {
     const images = await getProductImages(product.id);
@@ -601,7 +621,10 @@ async function resolveProduct(slug: string, base: MetaBase): Promise<ResolvedMet
           "@type": "Offer",
           url: base.canonical,
           priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
+          availability:
+            availabilityState === "unavailable"
+              ? "https://schema.org/OutOfStock"
+              : "https://schema.org/InStock",
         },
       },
     ],
