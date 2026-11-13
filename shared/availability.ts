@@ -46,7 +46,7 @@ export const SETTING_LABELS: Record<AvailabilitySetting, string> = {
 export const STATE_LABELS: Record<AvailabilityState, string> = {
   unknown: "",
   in_stock: "In stock",
-  low_stock: "Only a few left",
+  low_stock: "Low stock",
   unavailable: "Unavailable",
 };
 

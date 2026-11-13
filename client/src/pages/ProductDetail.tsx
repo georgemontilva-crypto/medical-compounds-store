@@ -327,7 +327,7 @@ export default function ProductDetail({ params }: Props) {
                             fluently and a first-time buyer has to decode. */}
                         {sold && <span className="ml-1.5 text-xs">· Out of Stock</span>}
                         {state === "low_stock" && (
-                          <span className="ml-1.5 text-xs">· Only a few left</span>
+                          <span className="ml-1.5 text-xs">· Low stock</span>
                         )}
                       </button>
                     );

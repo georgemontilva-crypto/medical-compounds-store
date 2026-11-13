@@ -430,7 +430,7 @@ export default function AdminProducts() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    0 hides the product. 1–{LOW_STOCK_THRESHOLD} shows “Only a few left”. More
+                    0 hides the product. 1–{LOW_STOCK_THRESHOLD} shows “Low stock”. More
                     than {LOW_STOCK_THRESHOLD} shows “In stock”. Leave it empty to say nothing.
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">

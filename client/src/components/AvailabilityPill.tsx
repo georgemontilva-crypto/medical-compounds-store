@@ -30,7 +30,7 @@ export default function AvailabilityPill({
     state === "in_stock"
       ? "In stock"
       : state === "low_stock"
-      ? "Only a few left"
+      ? "Low stock"
       : "Unavailable";
 
   return (
