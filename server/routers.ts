@@ -33,6 +33,7 @@ import {
 } from "./ups";
 import { cartFingerprint, resolveQuotedRate, storeQuote } from "./shippingQuotes";
 import { buildPackingListPdf } from "./packingList";
+import { cropLabelToFourBySix } from "./labelSize";
 import { fillTrafficGaps } from "@shared/traffic";
 import {
   BLOG_SLUG_MAX_LENGTH,
@@ -2516,9 +2517,24 @@ export const appRouter = router({
      * buyer's full name and home address, and object storage here serves
      * permanently cached public links.
      */
+    /**
+     * The label, cropped to 4x6 on the way out.
+     *
+     * The carrier's original is what the database holds; the cropping happens
+     * here so that every label already bought prints correctly too, and so a
+     * change to the carrier's template never needs a migration over stored
+     * binaries. ZPL and GIF pass through: the first is already 4x6 thermal, and
+     * the second carries no page size for us to correct.
+     */
     getLabelImage: adminProcedure
       .input(z.object({ orderId: z.number() }))
-      .query(({ input }) => getShippingLabelImage(input.orderId)),
+      .query(async ({ input }) => {
+        const label = await getShippingLabelImage(input.orderId);
+        if (!label || label.format !== "PDF") return label;
+
+        const cropped = await cropLabelToFourBySix(Buffer.from(label.data, "base64"));
+        return { ...label, data: Buffer.from(cropped).toString("base64") };
+      }),
 
     /**
      * The sheet that goes in the box, built on demand.

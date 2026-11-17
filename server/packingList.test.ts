@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PDFDocument } from "pdf-lib";
 import { addressLines, buildPackingListPdf, totalUnits } from "./packingList";
 
 const ORIGIN = {
@@ -84,6 +85,32 @@ describe("buildPackingListPdf", () => {
     // %PDF- — the magic number a viewer checks before anything else.
     expect(Buffer.from(bytes.slice(0, 5)).toString("latin1")).toBe("%PDF-");
     expect(bytes.length).toBeGreaterThan(500);
+  });
+
+  it("is 4x6, which is the stock the shop's thermal printer is loaded with", async () => {
+    // Pinned because it is the requirement, not an implementation detail: a
+    // Letter sheet sent to a 4x6 printer comes out shrunk or clipped, and that
+    // is invisible from the code — it only shows up on the printer.
+    const pdf = await PDFDocument.load(await buildPackingListPdf(ORDER, items, ORIGIN));
+    for (const page of pdf.getPages()) {
+      expect(page.getWidth()).toBeCloseTo(288, 5); // 4 inches
+      expect(page.getHeight()).toBeCloseTo(432, 5); // 6 inches
+    }
+  });
+
+  it("keeps every page 4x6 once the list spills over", async () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({
+      productName: `Compound ${i + 1}`,
+      variationLabel: "10mg",
+      quantity: 1,
+    }));
+    const pdf = await PDFDocument.load(await buildPackingListPdf(ORDER, many, ORIGIN));
+
+    expect(pdf.getPageCount()).toBeGreaterThan(1);
+    for (const page of pdf.getPages()) {
+      expect(page.getWidth()).toBeCloseTo(288, 5);
+      expect(page.getHeight()).toBeCloseTo(432, 5);
+    }
   });
 
   it("survives a product name far longer than its column", async () => {

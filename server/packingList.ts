@@ -11,6 +11,12 @@
  * No prices. A packing list is not an invoice: the money side already reached
  * the buyer by email, and a price sheet in a parcel is the thing that goes
  * wrong when an order is reshipped, split or sent as a replacement.
+ *
+ * Printed 4x6, on the same thermal stock as the shipping label. A shop that
+ * packs parcels has one printer loaded with one size of media, and a Letter
+ * sheet sent to it comes out shrunk to a third of the page or cut off. Four by
+ * six is a small canvas and the type is set accordingly — every measurement
+ * below is chosen for that page, not scaled down from a larger one.
  */
 
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
@@ -40,13 +46,23 @@ const INK = rgb(0.1, 0.1, 0.1);
 const MUTED = rgb(0.42, 0.44, 0.47);
 const RULE = rgb(0.85, 0.85, 0.85);
 
-const PAGE = { width: 612, height: 792 }; // US Letter, 72dpi
-const MARGIN = 54;
+/** 4x6 inches at 72 points to the inch — thermal label stock. */
+const PAGE = { width: 288, height: 432 };
+const MARGIN = 14;
 const CONTENT = PAGE.width - MARGIN * 2;
 
-/** Rows that fit under the header on the first page, and on a later one. */
-const ROWS_FIRST_PAGE = 22;
-const ROWS_LATER_PAGE = 34;
+/** How tall one item row is, tick box included. */
+const ROW_HEIGHT = 17;
+
+/**
+ * The line below which no further row is started.
+ *
+ * Rows are placed against the real remaining space rather than counted out in
+ * advance: the header's height varies with the address, and a fixed row count
+ * either wastes a short page or runs a long one off the bottom. On this page
+ * there is no slack to spend on either.
+ */
+const BODY_FLOOR = MARGIN + 46;
 
 function formatDate(value: Date | string): string {
   const date = value instanceof Date ? value : new Date(value);
@@ -122,8 +138,17 @@ export async function buildPackingListPdf(
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
+  const RIGHT = MARGIN + CONTENT;
+
+  // Columns. The tick box and the quantity are fixed; the name takes what is
+  // left, which on this page is not much and is why it gets truncated.
+  const COL_TICK = MARGIN;
+  const COL_ITEM = MARGIN + 14;
+  const QTY_WIDTH = 22;
+  const ITEM_WIDTH = CONTENT - 14 - QTY_WIDTH - 6;
+
   let page = pdf.addPage([PAGE.width, PAGE.height]);
-  let y = PAGE.height - MARGIN;
+  let y = PAGE.height - MARGIN - 9;
 
   const text = (
     value: string,
@@ -133,135 +158,139 @@ export async function buildPackingListPdf(
     color = INK
   ) => page.drawText(value, { x, y, size, font, color });
 
-  const rule = () => {
+  /** Draws `value` so it ends at `right`, for the quantity column. */
+  const textRight = (
+    value: string,
+    right: number,
+    size: number,
+    font = regular,
+    color = INK
+  ) => page.drawText(value, { x: right - font.widthOfTextAtSize(value, size), y, size, font, color });
+
+  const rule = (thickness = 0.6, color = RULE) => {
     page.drawLine({
       start: { x: MARGIN, y },
-      end: { x: MARGIN + CONTENT, y },
-      thickness: 0.75,
-      color: RULE,
+      end: { x: RIGHT, y },
+      thickness,
+      color,
     });
+  };
+
+  const drawTableHead = () => {
+    text("ITEM", COL_ITEM, 5.5, bold, MUTED);
+    textRight("QTY", RIGHT, 5.5, bold, MUTED);
+    y -= 5;
+    rule();
+    y -= 12;
   };
 
   // ── Masthead ───────────────────────────────────────────────────────────────
   const shopName = origin.name?.trim() || "Brighter Days Labs";
-  text(shopName, MARGIN, 16, bold);
-  text("PACKING LIST", MARGIN + CONTENT - bold.widthOfTextAtSize("PACKING LIST", 11), 11, bold, MUTED);
-  y -= 10;
-  rule();
-  y -= 24;
+  text(truncate(shopName, CONTENT - 56, 9, bold), MARGIN, 9, bold);
+  textRight("PACKING LIST", RIGHT, 6, bold, MUTED);
+  y -= 6;
+  rule(0.8);
 
-  // ── Order and destination, side by side ────────────────────────────────────
-  const rightColumn = MARGIN + CONTENT / 2;
-  const blockTop = y;
-
-  text("ORDER", MARGIN, 8, bold, MUTED);
+  // ── Order ──────────────────────────────────────────────────────────────────
   y -= 15;
-  text(`#${order.id}`, MARGIN, 14, bold);
-  y -= 15;
-  text(formatDate(order.createdAt), MARGIN, 9.5, regular, MUTED);
+  text(`#${order.id}`, MARGIN, 13, bold);
+  textRight(formatDate(order.createdAt), RIGHT, 7, regular, MUTED);
 
-  if (order.trackingNumber) {
-    y -= 15;
-    text(`Tracking  ${order.trackingNumber}`, MARGIN, 9, regular, MUTED);
-  }
   if (order.shippingServiceName) {
-    y -= 13;
-    text(order.shippingServiceName, MARGIN, 9, regular, MUTED);
+    y -= 11;
+    text(truncate(order.shippingServiceName, CONTENT, 6.5, regular), MARGIN, 6.5, regular, MUTED);
+  }
+  if (order.trackingNumber) {
+    y -= 9;
+    text(truncate(order.trackingNumber, CONTENT, 6.5, regular), MARGIN, 6.5, regular, MUTED);
   }
 
-  const leftBottom = y;
-  y = blockTop;
-
-  text("SHIP TO", rightColumn, 8, bold, MUTED);
-  y -= 15;
-  for (const line of addressLines(order)) {
-    text(truncate(line, CONTENT / 2 - 10, 10, regular), rightColumn, 10);
+  // ── Destination ────────────────────────────────────────────────────────────
+  // Under the order rather than beside it: half of 260 points is not a column,
+  // it is a place where addresses get cut in half.
+  const destination = addressLines(order);
+  if (destination.length > 0) {
     y -= 14;
+    text("SHIP TO", MARGIN, 5.5, bold, MUTED);
+    y -= 10;
+    for (const line of destination) {
+      text(truncate(line, CONTENT, 8, regular), MARGIN, 8);
+      y -= 9.5;
+    }
+    y += 9.5;
   }
-
-  y = Math.min(leftBottom, y) - 26;
 
   // ── Items ──────────────────────────────────────────────────────────────────
-  const COL_TICK = MARGIN;
-  const COL_ITEM = MARGIN + 26;
-  const COL_QTY = MARGIN + CONTENT - 34;
-  const ITEM_WIDTH = COL_QTY - COL_ITEM - 16;
-
-  const drawTableHead = () => {
-    text("ITEM", COL_ITEM, 8, bold, MUTED);
-    text("QTY", COL_QTY, 8, bold, MUTED);
-    y -= 8;
-    rule();
-    y -= 18;
-  };
-
+  y -= 14;
   drawTableHead();
 
-  let rowsLeft = ROWS_FIRST_PAGE;
   for (const item of items) {
-    if (rowsLeft === 0) {
+    if (y - ROW_HEIGHT < BODY_FLOOR) {
       page = pdf.addPage([PAGE.width, PAGE.height]);
-      y = PAGE.height - MARGIN;
-      text(`Packing list — Order #${order.id} (continued)`, MARGIN, 9, regular, MUTED);
-      y -= 20;
+      y = PAGE.height - MARGIN - 7;
+      text(`#${order.id} — continued`, MARGIN, 7, regular, MUTED);
+      y -= 12;
       drawTableHead();
-      rowsLeft = ROWS_LATER_PAGE;
     }
 
     // An empty square per line. The packer ticks it; the buyer ticks it again
     // on arrival. Cheaper than any reconciliation that happens afterwards.
     page.drawRectangle({
       x: COL_TICK,
-      y: y - 2,
-      width: 11,
-      height: 11,
-      borderColor: rgb(0.65, 0.65, 0.65),
-      borderWidth: 0.9,
+      y: y - 1.5,
+      width: 8,
+      height: 8,
+      borderColor: rgb(0.6, 0.6, 0.6),
+      borderWidth: 0.7,
     });
 
     const name = item.variationLabel
       ? `${item.productName} — ${item.variationLabel}`
       : item.productName;
-    text(truncate(name, ITEM_WIDTH, 10.5, regular), COL_ITEM, 10.5);
-    text(`${item.quantity}`, COL_QTY, 10.5, bold);
+    text(truncate(name, ITEM_WIDTH, 8, regular), COL_ITEM, 8);
+    textRight(`${item.quantity}`, RIGHT, 8, bold);
 
-    y -= 13;
+    y -= 7;
     page.drawLine({
-      start: { x: MARGIN, y: y + 4 },
-      end: { x: MARGIN + CONTENT, y: y + 4 },
-      thickness: 0.4,
-      color: rgb(0.93, 0.93, 0.93),
+      start: { x: MARGIN, y: y + 2 },
+      end: { x: RIGHT, y: y + 2 },
+      thickness: 0.35,
+      color: rgb(0.9, 0.9, 0.9),
     });
-    y -= 12;
-    rowsLeft--;
+    y -= ROW_HEIGHT - 7;
   }
 
   // ── Total ──────────────────────────────────────────────────────────────────
-  y -= 4;
-  rule();
-  y -= 18;
-  const units = totalUnits(items);
-  text("Total units in this parcel", MARGIN + 26, 10, bold);
-  text(`${units}`, COL_QTY, 10, bold);
+  y -= 3;
+  rule(0.8);
+  y -= 12;
+  text("Total units", COL_ITEM, 8, bold);
+  textRight(`${totalUnits(items)}`, RIGHT, 8, bold);
 
   // ── Terms ──────────────────────────────────────────────────────────────────
   // Low on the page and small, but present: this catalogue does not ship
   // without the handling terms, and the parcel is where a buyer meets them.
-  const footerY = MARGIN + 34;
+  const footerY = MARGIN + 6;
   page.drawLine({
-    start: { x: MARGIN, y: footerY + 22 },
-    end: { x: MARGIN + CONTENT, y: footerY + 22 },
-    thickness: 0.75,
+    start: { x: MARGIN, y: footerY + 20 },
+    end: { x: RIGHT, y: footerY + 20 },
+    thickness: 0.6,
     color: RULE,
   });
-  page.drawText(
-    "All materials are supplied for laboratory research use only. Not for human or veterinary",
-    { x: MARGIN, y: footerY + 8, size: 8, font: regular, color: MUTED }
-  );
-  page.drawText(
-    "use. Check the contents against this list on arrival and report any discrepancy within 7 days.",
-    { x: MARGIN, y: footerY - 2, size: 8, font: regular, color: MUTED }
-  );
+  const terms = [
+    "Supplied for laboratory research use only.",
+    "Not for human or veterinary use. Check the contents",
+    "on arrival and report any discrepancy within 7 days.",
+  ];
+  terms.forEach((line, i) => {
+    page.drawText(line, {
+      x: MARGIN,
+      y: footerY + 12 - i * 6.5,
+      size: 5.2,
+      font: regular,
+      color: MUTED,
+    });
+  });
 
   return pdf.save();
 }

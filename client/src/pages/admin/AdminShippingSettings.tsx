@@ -356,14 +356,14 @@ export default function AdminShippingSettings() {
                 <SectionHeader
                   icon={Printer}
                   title="Label format"
-                  note="What a bought label comes back as. PDF prints at its true size on ordinary paper; thermal gives an exact 4x6 for a label printer."
+                  note="What a bought label comes back as. Both PDF and ZPL print a true 4x6 on a thermal printer; the difference is whether you can preview it first."
                 />
                 <div className="space-y-2">
                   {(
                     [
-                      ["PDF", "PDF (recommended)", "Prints from any browser at the right size. No special printer needed."],
-                      ["GIF", "Image (GIF)", "An image instead of a document. Scaling depends on whatever opens it."],
-                      ["ZPL", "Thermal 4x6 (ZPL)", "Downloads a file for a thermal label printer."],
+                      ["PDF", "PDF 4x6 (recommended)", "Opens on screen, then prints at exactly 4x6 on a thermal printer or on ordinary paper."],
+                      ["GIF", "Image (GIF)", "An image instead of a document. Its printed size depends on whatever opens it, so it can come out scaled."],
+                      ["ZPL", "Thermal 4x6 (ZPL)", "Sent straight to a label printer. No preview, and the printer must be set to 6in labels."],
                     ] as const
                   ).map(([value, label, note]) => (
                     <label
