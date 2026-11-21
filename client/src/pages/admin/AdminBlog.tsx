@@ -111,6 +111,25 @@ function nextWeekdayMorning(now: Date = new Date()): Date {
   return next;
 }
 
+/**
+ * Whether this article is still waiting for its release date.
+ *
+ * A scheduled post whose date has passed is already public — the server
+ * decides that per request and the promoter converts the row within a few
+ * minutes — so the stored status alone cannot answer the question and the
+ * clock has to be consulted.
+ *
+ * Shared by the badge, which shows the date instead of a word while this is
+ * true, and by the phone layout, which then leaves the date off its own line
+ * so the same date is not printed twice side by side.
+ */
+function isPendingSchedule(status: BlogStatus, scheduledFor: Date | string | null) {
+  return (
+    status === "scheduled" &&
+    (scheduledFor === null || new Date(scheduledFor).getTime() > Date.now())
+  );
+}
+
 function StatusBadge({
   status,
   scheduledFor,
@@ -128,12 +147,9 @@ function StatusBadge({
   }
 
   if (status === "scheduled") {
-    // A scheduled post whose date has passed is already public — the server
-    // decides that per request and the promoter converts the row within a few
-    // minutes. Saying "Scheduled" about a live article would be a lie, so the
-    // badge checks the clock rather than trusting the stored status.
-    const live = scheduledFor !== null && new Date(scheduledFor).getTime() <= Date.now();
-    if (live) {
+    // Saying "Scheduled" about an article that is already live would be a lie,
+    // so the badge asks the clock rather than trusting the stored status.
+    if (!isPendingSchedule(status, scheduledFor)) {
       return (
         <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-500/10 dark:text-emerald-400">
           <Eye size={11} />
@@ -311,10 +327,100 @@ export default function AdminBlog() {
   const saving = createPost.isPending || updatePost.isPending;
   const excerptLength = form.excerpt.trim().length;
 
+  type Post = NonNullable<typeof posts>[number];
+
+  /**
+   * The cover thumbnail, or a placeholder when there is none.
+   *
+   * Shared between the phone list and the desktop table so the two cannot
+   * drift apart; the same reasoning applies to the actions below, with more
+   * at stake.
+   */
+  const postThumb = (post: Post) =>
+    post.coverImageUrl ? (
+      <img
+        src={post.coverImageUrl}
+        alt=""
+        className="w-12 h-9 object-cover rounded shrink-0"
+      />
+    ) : (
+      <div className="w-12 h-9 rounded bg-gray-100 flex items-center justify-center shrink-0 dark:bg-white/10">
+        <ImageIcon size={14} className="text-gray-300" />
+      </div>
+    );
+
+  /**
+   * The per-article controls.
+   *
+   * Defined once rather than written out in both layouts. The publish toggle
+   * carries a detail that is easy to lose in a copy — sending
+   * `scheduledFor: null` alongside the draft is what actually cancels a
+   * schedule, instead of leaving a date the promoter would act on later — and
+   * two copies of that is how one of them ends up wrong.
+   *
+   * `touch` gives the buttons a 40px hit area on a phone, where they are the
+   * reason someone opened this screen, and leaves the desktop row compact.
+   */
+  const postActions = (post: Post, touch = false) => {
+    const pad = touch ? "p-2.5" : "p-2";
+    return (
+      <>
+        <button
+          onClick={() =>
+            toggleStatus.mutate({
+              id: post.id,
+              status: post.status === "draft" ? "published" : "draft",
+              ...(post.status === "scheduled" ? { scheduledFor: null } : {}),
+            })
+          }
+          disabled={toggleStatus.isPending}
+          title={
+            post.status === "draft"
+              ? "Publish"
+              : post.status === "scheduled"
+                ? "Cancel schedule"
+                : "Unpublish"
+          }
+          className={`${pad} rounded-lg hover:bg-gray-100 disabled:opacity-40 dark:hover:bg-white/10`}
+        >
+          {post.status === "draft" ? <Eye size={15} /> : <EyeOff size={15} />}
+        </button>
+        {post.status === "published" && (
+          <a
+            href={`/blog/${post.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View live"
+            className={`${pad} rounded-lg hover:bg-gray-100 dark:hover:bg-white/10`}
+          >
+            <ExternalLink size={15} />
+          </a>
+        )}
+        <button
+          onClick={() => startEdit(post.id)}
+          title="Edit"
+          className={`${pad} rounded-lg hover:bg-gray-100 dark:hover:bg-white/10`}
+        >
+          <Pencil size={15} />
+        </button>
+        <button
+          onClick={() => setPendingDelete({ id: post.id, title: post.title })}
+          title="Delete"
+          className={`${pad} rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10`}
+        >
+          <Trash2 size={15} />
+        </button>
+      </>
+    );
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
+        {/* Wraps on a narrow screen: the title and two buttons do not fit on
+            one line at phone width, and forcing them to is what pushed the
+            heading off the left edge. */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="lab-section-title mb-1">Content</p>
             <h1 className="text-2xl font-bold">Blog</h1>
@@ -601,7 +707,59 @@ export default function AdminBlog() {
               <p className="text-sm text-gray-500">No articles yet.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/*
+              Phone: one card per article.
+
+              A five-column table cannot be made to fit a phone — the choice is
+              between scrolling sideways and type nobody can read. Scrolling
+              sideways is the worse of the two here, because the controls sit in
+              the last column: the article you can see and the button you need
+              are never on screen at the same time. Worse, a table wider than
+              the viewport drags the whole page with it, which is why the
+              heading was cut off too.
+
+              So the same data is stacked instead. Nothing is dropped; the
+              columns become lines.
+            */}
+            <ul className="divide-y divide-gray-100 md:hidden dark:divide-border">
+              {posts.map((post) => (
+                <li key={post.id} className="p-4">
+                  <div className="flex gap-3">
+                    {postThumb(post)}
+                    <div className="min-w-0 flex-1">
+                      {/* Two lines rather than truncated: a phone has the
+                          vertical room, and a title cut at four words is not
+                          enough to tell two articles apart. */}
+                      <p className="font-medium leading-snug line-clamp-2">{post.title}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 truncate">/blog/{post.slug}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <StatusBadge status={post.status} scheduledFor={post.scheduledFor} />
+                    {/* The badge is already the date while a post is waiting
+                        on its release, so printing it again beside itself
+                        would read as a bug. */}
+                    {!isPendingSchedule(post.status, post.scheduledFor) && (
+                      <span className="text-xs text-gray-500">{formatDate(post.publishedAt)}</span>
+                    )}
+                    {post.categories.length > 0 && (
+                      <span className="min-w-0 truncate text-xs text-gray-500 dark:text-gray-400">
+                        {post.categories.map((c) => c.name).join(", ")}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-1 -ml-2.5">
+                    {postActions(post, true)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Tablet and up, where five columns genuinely fit. */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-white/5">
                   <tr>
@@ -617,17 +775,7 @@ export default function AdminBlog() {
                     <tr key={post.id} className="hover:bg-gray-50/60 dark:hover:bg-white/5">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          {post.coverImageUrl ? (
-                            <img
-                              src={post.coverImageUrl}
-                              alt=""
-                              className="w-12 h-9 object-cover rounded shrink-0"
-                            />
-                          ) : (
-                            <div className="w-12 h-9 rounded bg-gray-100 flex items-center justify-center shrink-0 dark:bg-white/10">
-                              <ImageIcon size={14} className="text-gray-300" />
-                            </div>
-                          )}
+                          {postThumb(post)}
                           <div className="min-w-0">
                             <p className="font-medium truncate">{post.title}</p>
                             <p className="text-xs text-gray-400 truncate">/blog/{post.slug}</p>
@@ -651,62 +799,7 @@ export default function AdminBlog() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() =>
-                              toggleStatus.mutate({
-                                id: post.id,
-                                // The eye means "make it a draft" for
-                                // anything currently public or pending, and
-                                // "publish now" only for a draft. Sending
-                                // scheduledFor: null with the draft is what
-                                // cancels a schedule rather than leaving a
-                                // date the promoter would act on later.
-                                status: post.status === "draft" ? "published" : "draft",
-                                ...(post.status === "scheduled" ? { scheduledFor: null } : {}),
-                              })
-                            }
-                            disabled={toggleStatus.isPending}
-                            title={
-                              post.status === "draft"
-                                ? "Publish"
-                                : post.status === "scheduled"
-                                  ? "Cancel schedule"
-                                  : "Unpublish"
-                            }
-                            className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 dark:hover:bg-white/10"
-                          >
-                            {post.status === "draft" ? <Eye size={15} /> : <EyeOff size={15} />}
-                          </button>
-                          {post.status === "published" && (
-                            <a
-                              href={`/blog/${post.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="View live"
-                              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10"
-                            >
-                              <ExternalLink size={15} />
-                            </a>
-                          )}
-                          <button
-                            onClick={() => startEdit(post.id)}
-                            title="Edit"
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              setPendingDelete({
-                                id: post.id,
-                                title: post.title,
-                              })
-                            }
-                            title="Delete"
-                            className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {postActions(post)}
                         </div>
                       </td>
                     </tr>
@@ -714,6 +807,7 @@ export default function AdminBlog() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </div>

@@ -159,8 +159,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </>
       )}
 
-      {/* Main */}
-      <div className="flex-1 md:ml-56 flex flex-col min-h-screen">
+      {/*
+        Main.
+
+        `min-w-0` is load-bearing on a phone. A flex item's default
+        `min-width: auto` refuses to shrink below the intrinsic width of its
+        content, so a wide child — any of the admin's tables — pushes this
+        column wider than the screen and drags the whole page with it,
+        including the heading and the top bar. The page then scrolls sideways
+        and `truncate` further down stops working, because nothing in the
+        chain has a definite width to truncate against.
+
+        Setting it here and on <main> lets the column shrink to the viewport
+        and makes each table's own `overflow-x-auto` do its job: the table
+        scrolls inside its card, the page does not.
+      */}
+      <div className="flex-1 md:ml-56 flex flex-col min-h-screen min-w-0">
         {/* Mobile top bar */}
         <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card">
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-secondary">
@@ -170,8 +184,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <div className="w-8" />
         </div>
 
-        {/* Page content */}
-        <main className="flex-1 p-6 overflow-auto">
+        {/* Page content. See the note above for why min-w-0 is here too. */}
+        <main className="flex-1 min-w-0 overflow-auto p-4 sm:p-6">
           {children}
         </main>
       </div>
